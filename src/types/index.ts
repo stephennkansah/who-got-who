@@ -3,7 +3,7 @@ import { Socket } from 'socket.io-client';
 // Game Types
 export type GameStatus = 'draft' | 'live' | 'ended';
 export type GameMode = 'casual' | 'competitive';
-export type TaskStatus = 'pending' | 'got' | 'failed' | 'disputed';
+export type TaskStatus = 'pending' | 'completed' | 'failed' | 'disputed';
 export type DisputeResult = 'upheld' | 'overturned' | 'pending';
 
 export interface Game {

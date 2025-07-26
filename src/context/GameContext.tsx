@@ -469,7 +469,7 @@ export function GameProvider({ children }: GameProviderProps) {
       // Update task status and add target
       const updatedTasks = state.currentPlayer.tasks.map(task => 
         task.id === taskId 
-          ? { ...task, status: 'got' as const, targetId, gotAt: new Date() }
+          ? { ...task, status: 'completed' as const, targetId, gotAt: new Date() }
           : task
       );
       
@@ -570,7 +570,7 @@ export function GameProvider({ children }: GameProviderProps) {
   // Update player tasks directly
   const updatePlayerTasks = (playerId: string, updatedTasks: TaskInstance[]) => {
     dispatch({
-      type: 'UPDATE_GAME',
+      type: 'SET_GAME',
       payload: {
         ...state.currentGame!,
         players: state.currentGame!.players.map(player => 
