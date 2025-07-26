@@ -395,9 +395,12 @@ export function GameProvider({ children }: GameProviderProps) {
   };
 
   const swapTask = async (taskId: string) => {
-    if (!state.currentPlayer) return;
+    const currentPlayer = state.currentPlayer;
+    const currentGame = state.currentGame;
     
-    if (state.currentPlayer.swapsLeft <= 0) {
+    if (!currentPlayer || !currentGame) return;
+    
+    if (currentPlayer.swapsLeft <= 0) {
       dispatch({ type: 'SET_ERROR', payload: 'No swaps remaining' });
       return;
     }
@@ -414,32 +417,34 @@ export function GameProvider({ children }: GameProviderProps) {
         return;
       }
       
-      const updatedTasks = state.currentPlayer.tasks.map(task => 
+      const updatedTasks = currentPlayer.tasks.map(task => 
         task.id === taskId 
           ? {
               ...newTask,
               id: taskId,
-              gameId: state.currentGame!.id,
-              playerId: state.currentPlayer.id,
+              gameId: currentGame.id,
+              playerId: currentPlayer.id,
               status: task.status // Preserve the original status
             }
           : task
       );
       
       const updatedPlayer = {
-        ...state.currentPlayer,
+        ...currentPlayer,
         tasks: updatedTasks,
-        swapsLeft: state.currentPlayer.swapsLeft - 1
+        swapsLeft: currentPlayer.swapsLeft - 1
       };
       
-      const updatedGame = {
-        ...state.currentGame,
-        players: state.currentGame.players.map(p => 
+      dispatch({ type: 'UPDATE_PLAYER', payload: updatedPlayer });
+      
+      // Update the game state with the new player data
+      const updatedGame: Game = {
+        ...currentGame,
+        players: currentGame.players.map(p => 
           p.id === updatedPlayer.id ? updatedPlayer : p
         )
       };
       
-      dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
       dispatch({ type: 'SET_GAME', payload: updatedGame });
       localStorage.setItem('gameData', JSON.stringify(updatedGame));
       
