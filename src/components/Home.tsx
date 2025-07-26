@@ -42,7 +42,13 @@ function Home() {
   };
 
   const handleCreateGame = async () => {
-    await createGame(playerName.trim(), 'casual'); // Always use casual mode for now
+    console.log('🔥 CREATE GAME BUTTON CLICKED!');
+    console.log('Player name:', playerName);
+    try {
+      await createGame(playerName.trim(), 'casual'); // Always use casual mode for now
+    } catch (error) {
+      console.error('Create game error:', error);
+    }
   };
 
   const handleJoinGame = async (e: React.FormEvent) => {
@@ -477,7 +483,10 @@ function Home() {
             </p>
             
             <button 
-              onClick={handleCreateGame} 
+              onClick={() => {
+                console.log('🔥 BUTTON CLICK DETECTED!');
+                handleCreateGame();
+              }}
               style={{ 
                 fontSize: '1.3em',
                 fontWeight: '700',
@@ -488,18 +497,7 @@ function Home() {
                 color: 'white',
                 width: '100%',
                 boxShadow: '0 10px 30px rgba(59, 130, 246, 0.4)',
-                transition: 'all 0.3s ease',
                 cursor: 'pointer'
-              }}
-              onMouseEnter={(e) => {
-                const target = e.target as HTMLButtonElement;
-                target.style.transform = 'translateY(-3px)';
-                target.style.boxShadow = '0 15px 40px rgba(59, 130, 246, 0.5)';
-              }}
-              onMouseLeave={(e) => {
-                const target = e.target as HTMLButtonElement;
-                target.style.transform = 'translateY(0)';
-                target.style.boxShadow = '0 10px 30px rgba(59, 130, 246, 0.4)';
               }}
             >
               ✨ Create Game

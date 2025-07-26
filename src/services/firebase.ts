@@ -2,15 +2,15 @@ import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, push, set, get, onValue, off, remove, update } from 'firebase/database';
 import { Game, Player, TaskInstance, GameStatus } from '../types';
 
-// Firebase configuration - Replace with your actual config
+// Firebase configuration - Hardcoded for testing
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "demo-key",
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "who-got-who-demo.firebaseapp.com",
-  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL || "https://who-got-who-demo-default-rtdb.firebaseio.com",
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "who-got-who-demo",
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "who-got-who-demo.appspot.com",
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:123456789:web:abcdef123456789"
+  apiKey: "AIzaSyA-dXRiaKqESjoanSePUAB1Avn2Y0xh-2U",
+  authDomain: "who-got-who.firebaseapp.com",
+  databaseURL: "https://who-got-who-default-rtdb.firebaseio.com",
+  projectId: "who-got-who",
+  storageBucket: "who-got-who.firebasestorage.app",
+  messagingSenderId: "96566213225",
+  appId: "1:96566213225:web:e4cf0ae1532ad0a77fd978"
 };
 
 // Initialize Firebase

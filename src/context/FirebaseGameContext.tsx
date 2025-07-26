@@ -3,6 +3,39 @@ import { Game, Player, TaskInstance, GameState, GameContextType } from '../types
 import { getRandomTasks } from '../data/mockTasks';
 import FirebaseService from '../services/firebase';
 
+// Check if Firebase is properly configured
+const isFirebaseConfigured = () => {
+  const requiredVars = [
+    'REACT_APP_FIREBASE_API_KEY',
+    'REACT_APP_FIREBASE_DATABASE_URL',
+    'REACT_APP_FIREBASE_PROJECT_ID'
+  ];
+  
+  console.log('🔍 Checking Firebase Environment Variables:');
+  console.log('API_KEY:', process.env.REACT_APP_FIREBASE_API_KEY);
+  console.log('DATABASE_URL:', process.env.REACT_APP_FIREBASE_DATABASE_URL);
+  console.log('PROJECT_ID:', process.env.REACT_APP_FIREBASE_PROJECT_ID);
+  
+  const missing = requiredVars.filter(varName => {
+    const value = process.env[varName];
+    const isEmpty = !value || value === 'demo-key' || value === 'your_actual_api_key_here' || value.includes('demo');
+    if (isEmpty) {
+      console.log(`❌ ${varName} is missing or has demo value:`, value);
+    } else {
+      console.log(`✅ ${varName} is set correctly`);
+    }
+    return isEmpty;
+  });
+  
+  if (missing.length > 0) {
+    console.warn('❌ Firebase not configured properly. Missing/demo variables:', missing);
+    return false;
+  }
+  
+  console.log('✅ Firebase configuration is valid');
+  return true;
+};
+
 // Initial state
 const initialState: GameState = {
   isLoading: false,
@@ -50,7 +83,7 @@ function firebaseGameReducer(state: GameState, action: FirebaseGameAction): Game
 }
 
 // Create context
-const FirebaseGameContext = createContext<GameContextType | null>(null);
+export const FirebaseGameContext = createContext<GameContextType | null>(null);
 
 interface FirebaseGameProviderProps {
   children: ReactNode;

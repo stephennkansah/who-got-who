@@ -202,6 +202,7 @@ export function getRandomTasks(packId: string, count: number = 7): Task[] {
 export function getTaskPack(packId: string): TaskPack | null {
   switch (packId) {
     case 'core-a':
+    case 'core-pack-a':  // Handle both IDs
       return corePackA;
     // Future packs would go here
     default:
