@@ -90,12 +90,6 @@ export default function Game() {
             {task.text}
           </div>
           
-          {task.tips && (
-            <div className="task-tips">
-              💡 {task.tips}
-            </div>
-          )}
-          
           {task.status === 'completed' && task.targetId && (
             <div className="task-target">
               🎯 Target: {currentGame?.players.find(p => p.id === task.targetId)?.name || 'Unknown'}

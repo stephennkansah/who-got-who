@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
-import { Player, TaskInstance } from '../types';
-import CardDeck from './CardDeck';
+import { Player } from '../types';
 
 export default function Lobby() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const { state, lockInPlayer, swapTask, startGame } = useGame();
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const { state, lockInPlayer, startGame } = useGame();
   const [showPlayerList, setShowPlayerList] = useState(false);
 
   const currentPlayer = state.currentPlayer;
@@ -45,57 +43,7 @@ export default function Lobby() {
     await startGame();
   };
 
-  const handleSwapTask = async (taskId: string) => {
-    if (!currentPlayer || currentPlayer.swapsLeft <= 0) return;
-    await swapTask(taskId);
-  };
 
-  const getSwapButtonText = () => {
-    if (!currentPlayer || currentPlayer.swapsLeft <= 0) return 'No swaps left';
-    return `Swap (${currentPlayer.swapsLeft} left)`;
-  };
-
-  // Create cards for the deck
-  const createTaskCards = () => {
-    if (!currentPlayer || !currentPlayer.tasks) return [];
-    
-    return currentPlayer.tasks.map(task => ({
-      id: task.id,
-      onSwipeLeft: undefined,
-      onSwipeRight: undefined,
-      onSwipeUp: undefined,
-      onSwipeDown: undefined,
-      leftAction: '',
-      rightAction: '',
-      upAction: '',
-      downAction: '',
-      content: (
-        <div className="task-card-content">
-          <div className="task-header">
-            <div className="task-id">#{task.id.slice(-3)}</div>
-          </div>
-          <div className="task-text">
-            {task.text}
-          </div>
-          {task.tips && (
-            <div className="task-tips">
-              💡 {task.tips}
-            </div>
-          )}
-          <div className="task-footer">
-            <button
-              className="btn btn-secondary btn-small"
-              onClick={() => handleSwapTask(task.id)}
-              disabled={currentPlayer.swapsLeft <= 0}
-              style={{ fontSize: '0.8rem' }}
-            >
-              {getSwapButtonText()}
-            </button>
-          </div>
-        </div>
-      )
-    }));
-  };
 
   if (!currentGame || !currentPlayer) {
     return (
@@ -107,8 +55,6 @@ export default function Lobby() {
       </div>
     );
   }
-
-  const taskCards = createTaskCards();
 
   return (
     <div className="container">
@@ -133,7 +79,7 @@ export default function Lobby() {
         </div>
       </div>
 
-      {/* Task Cards */}
+      {/* Task Preview */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ 
           fontSize: '1.2rem', 
@@ -144,18 +90,42 @@ export default function Lobby() {
           Your Secret Tasks
         </h2>
         
-        <CardDeck 
-          cards={taskCards}
-          emptyState={<div className="empty-deck">No tasks available</div>}
-        />
-        
-        <div style={{ 
-          textAlign: 'center', 
-          marginTop: '1rem',
-          fontSize: '0.9rem',
-          color: '#666'
+        <div style={{
+          textAlign: 'center',
+          padding: '3rem 2rem',
+          background: 'linear-gradient(135deg, rgba(103, 126, 234, 0.1), rgba(118, 75, 162, 0.1))',
+          borderRadius: '20px',
+          border: '2px dashed rgba(103, 126, 234, 0.3)'
         }}>
-          💡 Swipe through your tasks and use swaps if needed
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎯</div>
+          <h3 style={{ 
+            color: '#667eea', 
+            marginBottom: '0.5rem',
+            fontSize: '1.3rem',
+            fontWeight: '700'
+          }}>
+            Tasks Will Be Revealed
+          </h3>
+          <p style={{ 
+            color: '#666', 
+            fontSize: '1rem',
+            lineHeight: '1.6',
+            maxWidth: '300px',
+            margin: '0 auto'
+          }}>
+            Your secret missions will appear here once everyone locks in and the game starts!
+          </p>
+          <div style={{
+            marginTop: '1.5rem',
+            padding: '0.75rem 1.5rem',
+            background: 'rgba(103, 126, 234, 0.1)',
+            borderRadius: '25px',
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            color: '#667eea'
+          }}>
+            🎲 You'll get {currentPlayer?.tasks?.length || 7} tasks to complete
+          </div>
         </div>
       </div>
 
@@ -199,9 +169,9 @@ export default function Lobby() {
                   <div style={{ fontWeight: '600' }}>
                     {player.name} {player.isHost && '👑'} {player.id === currentPlayer.id && '(You)'}
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#666' }}>
-                    Swaps: {player.swapsLeft} • Tasks: {player.tasks.length}
-                  </div>
+                                     <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                     Ready to play with {player.tasks.length} secret tasks
+                   </div>
                 </div>
                 <div style={{
                   padding: '0.25rem 0.75rem',
@@ -230,7 +200,7 @@ export default function Lobby() {
           {!currentPlayer.lockedIn ? (
             <div>
               <p style={{ marginBottom: '1rem', color: '#666' }}>
-                Review your tasks and swap any you don't like, then lock in when ready.
+                Ready to start? Lock in when you're prepared to begin the game!
               </p>
               <button 
                 className="btn btn-primary"
