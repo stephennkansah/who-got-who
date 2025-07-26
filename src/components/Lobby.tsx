@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../hooks/useGame';
 import { Player, TaskInstance } from '../types';
 import CardDeck from './CardDeck';
 

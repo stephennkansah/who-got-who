@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../hooks/useGame';
 import { Player, Award, AwardType } from '../types';
 
 export default function Recap() {
