@@ -9,15 +9,20 @@ function Home() {
   const [playerName, setPlayerName] = useState('');
   const [gameId, setGameId] = useState('');
   const [showGameOptions, setShowGameOptions] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  // Clear any existing game state when Home loads (allows fresh game creation)
+  // Clear any existing game state only on first load from other pages
   useEffect(() => {
-    // Only clear if there's no join parameter (so rejoin links still work)
-    const joinGameId = searchParams.get('join');
-    if (!joinGameId && state.currentGame) {
-      leaveGame();
+    if (!hasInitialized) {
+      setHasInitialized(true);
+      // Only clear if there's no join parameter (so rejoin links still work)
+      const joinGameId = searchParams.get('join');
+      if (!joinGameId && state.currentGame) {
+        console.log('🧹 Clearing stale game state on Home initial load');
+        leaveGame();
+      }
     }
-  }, [searchParams, state.currentGame, leaveGame]);
+  }, [hasInitialized, searchParams, state.currentGame, leaveGame]);
 
   // Check for join parameter in URL
   useEffect(() => {
