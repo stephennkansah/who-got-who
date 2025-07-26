@@ -180,13 +180,13 @@ const corePackATasks: Task[] = [
 ];
 
 export const corePackA: TaskPack = {
-  id: 'core-a',
+  id: 'core-pack-a',
   name: 'Core Pack A',
-  description: 'Essential stealth tasks perfect for any party or gathering. Tested and balanced for maximum fun!',
-  tasks: corePackATasks,
+  description: 'Essential stealth tasks perfect for any group',
   difficulty: 'medium',
-  minPlayers: 3,
-  maxPlayers: 8
+  minPlayers: 2,
+  maxPlayers: 8,
+  tasks: corePackATasks
 };
 
 // Helper function to get random tasks for a player

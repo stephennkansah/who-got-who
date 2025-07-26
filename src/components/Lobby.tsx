@@ -466,12 +466,37 @@ export default function Lobby() {
             Game ID
           </div>
         </div>
+        
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
+          <button 
+            className="btn btn-secondary"
+            onClick={() => {
+              navigator.clipboard.writeText(currentGame.id);
+              alert('Game ID copied! Share this code with friends.');
+            }}
+            style={{ flex: 1, fontSize: '0.9rem' }}
+          >
+            📋 Copy ID
+          </button>
+          <button 
+            className="btn btn-primary"
+            onClick={() => {
+              const gameUrl = `${window.location.origin}/?join=${currentGame.id}`;
+              navigator.clipboard.writeText(gameUrl);
+              alert('Game link copied! Share this link via WhatsApp, email, etc.');
+            }}
+            style={{ flex: 1, fontSize: '0.9rem' }}
+          >
+            🔗 Copy Link
+          </button>
+        </div>
+        
         <p style={{ 
           textAlign: 'center',
           fontWeight: '600',
           marginBottom: '1rem'
         }}>
-          <strong>Share this Game ID</strong> with friends to join!
+          Share the <strong>Game ID</strong> or <strong>Link</strong> with friends!
         </p>
         <div style={{ 
           fontSize: '0.8rem',
@@ -479,7 +504,7 @@ export default function Lobby() {
           color: '#666',
           textAlign: 'center'
         }}>
-          💡 Tip: Use incognito windows to test multiplayer locally
+          💡 Tip: Links auto-fill the game code for easy joining
         </div>
       </div>
 

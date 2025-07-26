@@ -93,42 +93,52 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     dispatch({ type: 'SET_ERROR', payload: null });
 
     try {
+      console.log('Creating game for:', hostName, 'mode:', mode);
+      
       const playerId = generatePlayerId();
-             const rawTasks = getRandomTasks('core-pack-a'); // Get random tasks
-       const tasks = rawTasks.slice(0, 7).map(task => ({
-         ...task,
-         gameId: '', // Will be set after game creation
-         playerId,
-         status: 'pending' as const
-       }));
-       
-       const hostPlayer: Player = {
-         id: playerId,
-         name: hostName,
-         gameId: '', // Will be set after game creation
-         swapsLeft: mode === 'casual' ? 2 : 1,
-         score: 0,
-         lockedIn: false,
-         isHost: true,
-         token: `token_${playerId}`,
-         tasks,
-         stats: {
-           gothcas: 0,
-           failed: 0,
-           disputesLost: 0,
-           uniqueTargets: [],
-           firstTimeTargets: 0
-         }
+      const rawTasks = getRandomTasks('core-pack-a', 7); // Fix: Add count parameter
+      const tasks = rawTasks.map(task => ({
+        ...task,
+        gameId: '', // Will be set after game creation
+        playerId,
+        status: 'pending' as const
+      }));
+      
+      console.log('Generated tasks:', tasks.length);
+      
+      const hostPlayer: Player = {
+        id: playerId,
+        name: hostName,
+        gameId: '', // Will be set after game creation
+        swapsLeft: mode === 'casual' ? 2 : 1,
+        score: 0,
+        lockedIn: false,
+        isHost: true,
+        token: `token_${playerId}`,
+        tasks,
+        stats: {
+          gothcas: 0,
+          failed: 0,
+          disputesLost: 0,
+          uniqueTargets: [],
+          firstTimeTargets: 0
+        }
       };
 
+      console.log('Creating game with host player:', hostPlayer.name);
       const gameId = await FirebaseService.createGame(hostPlayer, mode);
+      console.log('Game created with ID:', gameId);
       
       // Update player with correct gameId
       const updatedPlayer = { ...hostPlayer, gameId };
+      updatedPlayer.tasks = updatedPlayer.tasks.map(task => ({ ...task, gameId }));
+      
       await FirebaseService.updatePlayer(gameId, updatedPlayer);
+      console.log('Player updated with gameId');
 
       // Get the created game
       const game = await FirebaseService.getGame(gameId);
+      console.log('Retrieved game:', game);
       
       if (game) {
         dispatch({ type: 'SET_GAME', payload: game });
@@ -137,10 +147,14 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         // Store in localStorage for rejoin functionality
         localStorage.setItem('currentGameId', gameId);
         localStorage.setItem('currentPlayerId', playerId);
+        
+        console.log('Game creation successful');
+      } else {
+        throw new Error('Failed to retrieve created game');
       }
     } catch (error) {
       console.error('Error creating game:', error);
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to create game. Please try again.' });
+      dispatch({ type: 'SET_ERROR', payload: `Failed to create game: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
