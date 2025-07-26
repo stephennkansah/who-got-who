@@ -6,14 +6,13 @@ import { Player } from '../types';
 export default function Lobby() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const { state, lockInPlayer, startGame, leaveGame } = useGame();
+  const { state, startGame, leaveGame } = useGame();
   const [showPlayerList, setShowPlayerList] = useState(false);
 
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
   const isHost = currentPlayer?.isHost || false;
-  const allPlayersLocked = currentGame?.players.every(p => p.lockedIn) || false;
-  const canStart = allPlayersLocked && (currentGame?.players.length || 0) >= 2;
+  const canStart = (currentGame?.players.length || 0) >= 2;
 
   useEffect(() => {
     if (!gameId) {
@@ -33,10 +32,6 @@ export default function Lobby() {
       navigate(`/game/${gameId}`);
     }
   }, [currentGame?.status, gameId, navigate]);
-
-  const handleLockIn = async () => {
-    await lockInPlayer();
-  };
 
   const handleStartGame = async () => {
     if (!isHost || !canStart) return;
@@ -184,47 +179,30 @@ export default function Lobby() {
                   fontSize: '0.7rem',
                   fontWeight: '600',
                   textTransform: 'uppercase',
-                  background: player.lockedIn ? '#10b981' : '#f59e0b',
+                  background: '#10b981',
                   color: 'white'
                 }}>
-                  {player.lockedIn ? 'Ready' : 'Preparing'}
+                  Connected
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div style={{ textAlign: 'center', color: '#666' }}>
-            {allPlayersLocked ? '✅ Everyone is ready!' : `⏳ ${currentGame.players.filter(p => !p.lockedIn).length} players still preparing...`}
+            ✅ All players connected and ready!
           </div>
         )}
       </div>
 
-      {/* Ready/Start Controls */}
+      {/* Start Game Controls */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ textAlign: 'center' }}>
-          {!currentPlayer.lockedIn ? (
+          {isHost ? (
             <div>
               <p style={{ marginBottom: '1rem', color: '#666' }}>
-                Ready to start? Lock in when you're prepared to begin the game!
+                When you're ready, start the game and reveal everyone's secret tasks!
               </p>
-              <button 
-                className="btn btn-primary"
-                onClick={handleLockIn}
-                style={{ 
-                  fontSize: '1.1rem',
-                  padding: '0.75rem 2rem',
-                  fontWeight: '700'
-                }}
-              >
-                🔒 Lock In & Ready Up
-              </button>
-            </div>
-          ) : (
-            <div>
-              <p style={{ color: '#10b981', fontWeight: '600', marginBottom: '1rem' }}>
-                ✅ You're locked in and ready!
-              </p>
-              {isHost && canStart && (
+              {canStart ? (
                 <button 
                   className="btn btn-success"
                   onClick={handleStartGame}
@@ -236,17 +214,20 @@ export default function Lobby() {
                 >
                   🚀 Start Game
                 </button>
-              )}
-              {isHost && !canStart && (
+              ) : (
                 <p style={{ color: '#f59e0b', fontSize: '0.9rem' }}>
-                  ⏳ Waiting for all players to lock in...
+                  ⏳ Need at least 2 players to start
                 </p>
               )}
-              {!isHost && (
-                <p style={{ color: '#666', fontSize: '0.9rem' }}>
-                  ⏳ Waiting for host to start the game...
-                </p>
-              )}
+            </div>
+          ) : (
+            <div>
+              <p style={{ color: '#666', fontSize: '1rem' }}>
+                ⏳ Waiting for host to start the game...
+              </p>
+              <p style={{ color: '#888', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                Tasks will be revealed when the game begins!
+              </p>
             </div>
           )}
         </div>

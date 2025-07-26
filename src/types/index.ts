@@ -201,7 +201,6 @@ export interface GameContextType {
   startGame: () => Promise<void>;
   endGame: () => Promise<void>;
   leaveGame: () => Promise<void>;
-  lockInPlayer: () => Promise<void>;
   updatePlayerName: (newName: string) => Promise<void>;
   swapTask: (taskId: string) => Promise<void>;
   claimGotcha: (taskId: string, targetId: string) => Promise<void>;

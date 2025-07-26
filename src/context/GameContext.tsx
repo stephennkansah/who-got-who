@@ -373,22 +373,6 @@ export function GameProvider({ children }: GameProviderProps) {
     dispatch({ type: 'SET_PLAYER', payload: null });
   };
 
-  const lockInPlayer = async () => {
-    if (!state.currentPlayer || !state.currentGame) return;
-    
-    const updatedPlayer = { ...state.currentPlayer, lockedIn: true };
-    const updatedGame = {
-      ...state.currentGame,
-      players: state.currentGame.players.map(p => 
-        p.id === updatedPlayer.id ? updatedPlayer : p
-      )
-    };
-    
-    dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
-    dispatch({ type: 'SET_GAME', payload: updatedGame });
-    localStorage.setItem('gameData', JSON.stringify(updatedGame));
-  };
-
   const updatePlayerName = async (name: string) => {
     if (!state.currentPlayer || !state.currentGame) return;
     
@@ -622,7 +606,6 @@ export function GameProvider({ children }: GameProviderProps) {
     startGame,
     endGame,
     leaveGame,
-    lockInPlayer,
     updatePlayerName,
     swapTask,
     claimGotcha,

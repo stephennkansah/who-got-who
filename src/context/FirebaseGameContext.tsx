@@ -299,20 +299,6 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     }
   };
 
-  // Lock in player
-  const lockInPlayer = async () => {
-    if (!state.currentPlayer || !state.currentGame) return;
-
-    const updatedPlayer = { ...state.currentPlayer, lockedIn: true };
-    
-    try {
-      await FirebaseService.updatePlayer(state.currentGame.id, updatedPlayer);
-      dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
-    } catch (error) {
-      console.error('Error locking in player:', error);
-    }
-  };
-
   // Update player name
   const updatePlayerName = async (newName: string) => {
     if (!state.currentPlayer || !state.currentGame) return;
@@ -472,7 +458,6 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     startGame,
     endGame,
     leaveGame,
-    lockInPlayer,
     updatePlayerName,
     swapTask,
     claimGotcha,
