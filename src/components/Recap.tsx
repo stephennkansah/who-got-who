@@ -91,7 +91,7 @@ export default function Recap() {
 
   const handleNewGame = async () => {
     if (currentGame && currentPlayer) {
-      await createGame(currentGame.mode, currentPlayer.name);
+      await createGame(currentPlayer.name, currentGame.mode);
     }
   };
 

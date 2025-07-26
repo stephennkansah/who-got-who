@@ -1,14 +1,17 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { io, Socket } from 'socket.io-client';
+import React, { createContext, useReducer, useContext, useEffect, ReactNode } from 'react';
+import { Socket } from 'socket.io-client';
 import { 
   GameState, 
-  Game, 
-  Player, 
-  TaskInstance, 
-  Dispute,
-  SocketEvents,
-  Task
+  GameStatus, 
+  Player,
+  TaskInstance,
+  Game,
+  Award,
+  Task,
+  GameContextType,
+  Dispute
 } from '../types';
+import { getRandomTasks } from '../data/mockTasks';
 
 // Initial State
 const initialState: GameState = {
@@ -21,7 +24,7 @@ const initialState: GameState = {
   leaderboard: []
 };
 
-// Actions
+// Define local GameAction type
 type GameAction = 
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
@@ -133,34 +136,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
   }
 }
 
-// Context
-interface GameContextType {
-  state: GameState;
-  socket: Socket | null;
-  // Game actions
-  createGame: (mode: 'casual' | 'competitive', playerName: string) => Promise<void>;
-  joinGame: (gameId: string, playerName: string) => Promise<void>;
-  startGame: () => Promise<void>;
-  endGame: () => Promise<void>;
-  
-  // Player actions
-  lockInPlayer: () => Promise<void>;
-  updatePlayerName: (name: string) => Promise<void>;
-  
-  // Task actions
-  swapTask: (taskId: string) => Promise<void>;
-  claimGotcha: (taskId: string, targetId: string) => Promise<void>;
-  
-  // Dispute actions
-  disputeGotcha: (taskId: string, reason?: string) => Promise<void>;
-  voteOnDispute: (disputeId: string, vote: boolean) => Promise<void>;
-  acceptGotcha: (taskId: string) => Promise<void>;
-
-  // Testing utilities (demo only)
-  forceGameState?: (status: 'draft' | 'live' | 'ended') => Promise<void>;
-  simulateScore?: (points: number) => Promise<void>;
-  updatePlayerTasks?: (playerId: string, updatedTasks: TaskInstance[]) => void;
-}
+// Context Creation
 
 export const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -213,36 +189,34 @@ export function GameProvider({ children }: GameProviderProps) {
   }, []);
 
   // Game Actions
-  const createGame = async (mode: 'casual' | 'competitive', playerName: string) => {
+  const createGame = async (hostName: string, mode: 'casual' | 'competitive') => {
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
     
     try {
-      const gameId = Math.random().toString(36).substr(2, 9).toUpperCase();
-      const playerId = Math.random().toString(36).substr(2, 9);
+      const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const playerId = Math.random().toString(36).substring(2, 15);
       
-      // Import task functions
-      const { getRandomTasks } = await import('../data/mockTasks');
-      const playerTasks = getRandomTasks('core-a', 7);
-      
-      // Create mock player
-      const mockPlayer: Player = {
-        id: playerId,
-        name: playerName,
+      // Get random tasks from core pack A
+      const rawTasks = getRandomTasks('core-pack-a', 7);
+      const tasks: TaskInstance[] = rawTasks.map(task => ({
+        ...task,
+        id: Math.random().toString(36).substring(2, 15),
         gameId: gameId,
+        playerId: playerId,
+        status: 'pending'
+      }));
+      
+      const player: Player = {
+        id: playerId,
+        name: hostName,
+        gameId,
         swapsLeft: mode === 'casual' ? 2 : 1,
         score: 0,
         lockedIn: false,
         isHost: true,
         token: 'mock-token',
-        tasks: playerTasks.map((task, index) => ({
-          id: `task-instance-${index}`,
-          gameId: gameId,
-          playerId: playerId,
-          text: task.text,
-          tips: task.tips,
-          status: 'pending' as const
-        })),
+        tasks: tasks,
         stats: {
           gothcas: 0,
           failed: 0,
@@ -257,10 +231,10 @@ export function GameProvider({ children }: GameProviderProps) {
         status: 'draft',
         mode,
         packId: 'core-a',
-        createdBy: playerName,
+        createdBy: hostName,
         createdAt: new Date(),
         hostId: playerId,
-        players: [mockPlayer],
+        players: [player],
         settings: {
           swapsAllowed: mode === 'casual' ? 2 : 1,
           disputeTimeoutSeconds: 120,
@@ -273,7 +247,7 @@ export function GameProvider({ children }: GameProviderProps) {
       };
       
       dispatch({ type: 'SET_GAME', payload: mockGame });
-      dispatch({ type: 'SET_PLAYER', payload: mockPlayer });
+      dispatch({ type: 'SET_PLAYER', payload: player });
       
       // Store game info for rejoin
       localStorage.setItem('currentGameId', mockGame.id);
@@ -314,7 +288,6 @@ export function GameProvider({ children }: GameProviderProps) {
       if (!existingPlayer) {
         // Create new player
         const playerId = Math.random().toString(36).substr(2, 9);
-        const { getRandomTasks } = await import('../data/mockTasks');
         const playerTasks = getRandomTasks('core-a', 7);
         
         const newPlayer: Player = {
@@ -422,12 +395,19 @@ export function GameProvider({ children }: GameProviderProps) {
   };
 
   const swapTask = async (taskId: string) => {
-    if (!state.currentPlayer || !state.currentGame || state.currentPlayer.swapsLeft <= 0) return;
+    if (!state.currentPlayer) return;
+    
+    if (state.currentPlayer.swapsLeft <= 0) {
+      dispatch({ type: 'SET_ERROR', payload: 'No swaps remaining' });
+      return;
+    }
+    
+    dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      const { getRandomTask } = await import('../data/mockTasks');
-      const currentTaskIds = state.currentPlayer.tasks.map(t => t.text); // Use text as ID for exclusion
-      const newTask = getRandomTask('core-a', currentTaskIds);
+      // Get one new random task
+      const newTasks = getRandomTasks('core-pack-a', 1);
+      const newTask = newTasks[0];
       
       if (!newTask) {
         dispatch({ type: 'SET_ERROR', payload: 'No more tasks available for swapping' });
@@ -436,7 +416,13 @@ export function GameProvider({ children }: GameProviderProps) {
       
       const updatedTasks = state.currentPlayer.tasks.map(task => 
         task.id === taskId 
-          ? { ...task, text: newTask.text, tips: newTask.tips }
+          ? {
+              ...newTask,
+              id: taskId,
+              gameId: state.currentGame!.id,
+              playerId: state.currentPlayer.id,
+              status: task.status // Preserve the original status
+            }
           : task
       );
       
@@ -459,6 +445,8 @@ export function GameProvider({ children }: GameProviderProps) {
       
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to swap task' });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 

@@ -37,7 +37,7 @@ export default function Home() {
     e.preventDefault();
     if (!playerName.trim()) return;
     
-    await createGame(selectedMode, playerName.trim());
+    await createGame(playerName.trim(), selectedMode);
   };
 
   const handleJoinGame = async (e: React.FormEvent) => {
@@ -88,7 +88,7 @@ export default function Home() {
 
   const quickTestGame = async () => {
     // Create a game with multiple players and set it to live for testing
-    await createGame('casual', 'TestHost');
+    await createGame('TestHost', 'casual');
     
     // Wait for game to be created, then add demo players
     setTimeout(async () => {
