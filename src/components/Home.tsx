@@ -5,10 +5,19 @@ import { useGame } from '../hooks/useGame';
 function Home() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { state, createGame, joinGame } = useGame();
+  const { state, createGame, joinGame, leaveGame } = useGame();
   const [playerName, setPlayerName] = useState('');
   const [gameId, setGameId] = useState('');
   const [showGameOptions, setShowGameOptions] = useState(false);
+
+  // Clear any existing game state when Home loads (allows fresh game creation)
+  useEffect(() => {
+    // Only clear if there's no join parameter (so rejoin links still work)
+    const joinGameId = searchParams.get('join');
+    if (!joinGameId && state.currentGame) {
+      leaveGame();
+    }
+  }, [searchParams, state.currentGame, leaveGame]);
 
   // Check for join parameter in URL
   useEffect(() => {

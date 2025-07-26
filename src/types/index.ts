@@ -200,6 +200,7 @@ export interface GameContextType {
   joinGame: (gameId: string, playerName: string) => Promise<void>;
   startGame: () => Promise<void>;
   endGame: () => Promise<void>;
+  leaveGame: () => Promise<void>;
   lockInPlayer: () => Promise<void>;
   updatePlayerName: (newName: string) => Promise<void>;
   swapTask: (taskId: string) => Promise<void>;

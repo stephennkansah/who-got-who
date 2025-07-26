@@ -282,6 +282,23 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     }
   };
 
+  // Leave game - clears local state and returns to home
+  const leaveGame = async () => {
+    try {
+      // Clear localStorage
+      localStorage.removeItem('currentGameId');
+      localStorage.removeItem('currentPlayerId');
+      
+      // Clear local state
+      dispatch({ type: 'SET_GAME', payload: null });
+      dispatch({ type: 'SET_PLAYER', payload: null });
+      
+      console.log('🚪 Left game successfully');
+    } catch (error) {
+      console.error('Error leaving game:', error);
+    }
+  };
+
   // Lock in player
   const lockInPlayer = async () => {
     if (!state.currentPlayer || !state.currentGame) return;
@@ -454,6 +471,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     joinGame,
     startGame,
     endGame,
+    leaveGame,
     lockInPlayer,
     updatePlayerName,
     swapTask,

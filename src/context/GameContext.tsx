@@ -362,6 +362,17 @@ export function GameProvider({ children }: GameProviderProps) {
     localStorage.setItem('gameData', JSON.stringify(updatedGame));
   };
 
+  const leaveGame = async () => {
+    // Clear localStorage
+    localStorage.removeItem('currentGameId');
+    localStorage.removeItem('currentPlayerId');
+    localStorage.removeItem('gameData');
+    
+    // Reset state
+    dispatch({ type: 'SET_GAME', payload: null });
+    dispatch({ type: 'SET_PLAYER', payload: null });
+  };
+
   const lockInPlayer = async () => {
     if (!state.currentPlayer || !state.currentGame) return;
     
@@ -610,6 +621,7 @@ export function GameProvider({ children }: GameProviderProps) {
     joinGame,
     startGame,
     endGame,
+    leaveGame,
     lockInPlayer,
     updatePlayerName,
     swapTask,

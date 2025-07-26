@@ -6,7 +6,7 @@ import { Player, Award, AwardType } from '../types';
 export default function Recap() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const { state, createGame } = useGame();
+  const { state, createGame, leaveGame } = useGame();
   const [showTimeline, setShowTimeline] = useState(false);
   const [showAwards, setShowAwards] = useState(false);
 
@@ -95,10 +95,9 @@ export default function Recap() {
     }
   };
 
-  const handleNewGroup = () => {
-    // Clear local storage and go to home
-    localStorage.removeItem('currentGameId');
-    localStorage.removeItem('playerToken');
+  const handleNewGroup = async () => {
+    // Clear game state and return to home
+    await leaveGame();
     navigate('/');
   };
 

@@ -6,7 +6,7 @@ import { Player } from '../types';
 export default function Lobby() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const { state, lockInPlayer, startGame } = useGame();
+  const { state, lockInPlayer, startGame, leaveGame } = useGame();
   const [showPlayerList, setShowPlayerList] = useState(false);
 
   const currentPlayer = state.currentPlayer;
@@ -41,6 +41,11 @@ export default function Lobby() {
   const handleStartGame = async () => {
     if (!isHost || !canStart) return;
     await startGame();
+  };
+
+  const handleLeaveGame = async () => {
+    await leaveGame();
+    navigate('/');
   };
 
 
@@ -310,6 +315,24 @@ export default function Lobby() {
         }}>
           💡 Tip: Links auto-fill the game code for easy joining
         </div>
+      </div>
+
+      {/* Leave Game */}
+      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+        <button 
+          className="btn btn-secondary btn-small"
+          onClick={handleLeaveGame}
+          style={{ fontSize: '0.9rem' }}
+        >
+          🚪 Leave Game
+        </button>
+        <p style={{ 
+          fontSize: '0.8rem',
+          color: '#666',
+          marginTop: '0.5rem'
+        }}>
+          Return to home screen
+        </p>
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ import TargetSelectModal from './TargetSelectModal';
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const { state, claimGotcha } = useGame();
+  const { state, claimGotcha, endGame: endGameContext, leaveGame } = useGame();
   const [selectedTask, setSelectedTask] = useState<TaskInstance | null>(null);
   const [showTargetModal, setShowTargetModal] = useState(false);
 
@@ -117,8 +117,14 @@ export default function Game() {
     );
   }
 
-  const endGame = () => {
+  const handleEndGame = async () => {
+    await endGameContext();
     navigate(`/recap/${gameId}`);
+  };
+
+  const handleLeaveGame = async () => {
+    await leaveGame();
+    navigate('/');
   };
 
   const taskCards = createTaskCards();
@@ -226,18 +232,32 @@ export default function Game() {
         </div>
       </div>
 
-      {/* End Game Button (for testing) */}
+      {/* Game Controls */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ textAlign: 'center' }}>
-          <button
-            className="btn btn-danger"
-            onClick={endGame}
-            style={{ fontSize: '1rem' }}
-          >
-            🏁 End Game
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {currentPlayer?.isHost && (
+              <button
+                className="btn btn-danger"
+                onClick={handleEndGame}
+                style={{ fontSize: '1rem', minWidth: '140px' }}
+              >
+                🏁 End Game
+              </button>
+            )}
+            <button
+              className="btn btn-secondary"
+              onClick={handleLeaveGame}
+              style={{ fontSize: '1rem', minWidth: '140px' }}
+            >
+              🚪 Leave Game
+            </button>
+          </div>
           <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.5rem' }}>
-            Click when all tasks are complete or time is up
+            {currentPlayer?.isHost 
+              ? "Host can end the game for everyone, or leave individually" 
+              : "Leave the game and return to home screen"
+            }
           </p>
         </div>
       </div>
