@@ -1,22 +1,20 @@
-// Universal hook that works with both GameProvider and FirebaseGameProvider
-// This detects if Firebase is configured and uses the appropriate hook
-
-import { useGame as useLocalGame } from '../context/GameContext';
-import { useFirebaseGame } from '../context/FirebaseGameContext';
-
-// Check if Firebase is configured
-const isFirebaseConfigured = process.env.REACT_APP_FIREBASE_API_KEY && 
-                           process.env.REACT_APP_FIREBASE_DATABASE_URL &&
-                           process.env.REACT_APP_FIREBASE_PROJECT_ID;
+import { useContext } from 'react';
+import { GameContextType } from '../types';
+import { GameContext } from '../context/GameContext';
+import FirebaseGameContext from '../context/FirebaseGameContext';
 
 export function useGame() {
-  if (isFirebaseConfigured) {
-    // Use Firebase hook when Firebase is configured
-    return useFirebaseGame();
-  } else {
-    // Use local hook when Firebase is not configured
-    return useLocalGame();
+  // Always call both useContext hooks (safe: they just read context)
+  const firebaseContext = useContext(FirebaseGameContext) as unknown as GameContextType | null;
+  const localContext = useContext(GameContext) as GameContextType | null;
+
+  if (firebaseContext) {
+    return firebaseContext;
   }
+  if (localContext) {
+    return localContext;
+  }
+  throw new Error('useGame must be used within a GameProvider or FirebaseGameProvider');
 }
 
 export default useGame; 

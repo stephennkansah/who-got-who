@@ -162,7 +162,7 @@ interface GameContextType {
   updatePlayerTasks?: (playerId: string, updatedTasks: TaskInstance[]) => void;
 }
 
-const GameContext = createContext<GameContextType | undefined>(undefined);
+export const GameContext = createContext<GameContextType | undefined>(undefined);
 
 // Socket instance
 let socket: Socket | null = null;
