@@ -165,6 +165,15 @@ function Home() {
               }}>
                 The ultimate party game
               </p>
+              <div style={{ 
+                color: 'rgba(255,255,255,0.75)', 
+                fontSize: '0.95em',
+                fontWeight: '400',
+                marginTop: '15px',
+                lineHeight: '1.4'
+              }}>
+                Perfect for parties • dinner guests • trips away • game nights • team building • family gatherings
+              </div>
             </div>
           )}
         </header>
@@ -659,6 +668,58 @@ function Home() {
           </p>
         </div>
       )}
+      
+      {/* When to Play Section */}
+      <div style={{
+        background: 'rgba(255,255,255,0.1)',
+        borderRadius: '16px',
+        padding: '20px',
+        marginTop: '30px',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255,255,255,0.2)'
+      }}>
+        <h3 style={{ 
+          color: 'white', 
+          marginBottom: '15px', 
+          fontSize: '1.3em', 
+          fontWeight: '700',
+          textAlign: 'center'
+        }}>
+          🎯 Perfect For...
+        </h3>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: '12px',
+          fontSize: '0.9em',
+          color: 'rgba(255,255,255,0.9)'
+        }}>
+          <div style={{ textAlign: 'center', padding: '8px' }}>
+            🎉 <strong>House Parties</strong><br/>
+            <span style={{ fontSize: '0.8em', opacity: 0.8 }}>Break the ice & get everyone laughing</span>
+          </div>
+          <div style={{ textAlign: 'center', padding: '8px' }}>
+            🍽️ <strong>Dinner Guests</strong><br/>
+            <span style={{ fontSize: '0.8em', opacity: 0.8 }}>Perfect conversation starter</span>
+          </div>
+          <div style={{ textAlign: 'center', padding: '8px' }}>
+            ✈️ <strong>Trips Away</strong><br/>
+            <span style={{ fontSize: '0.8em', opacity: 0.8 }}>Hotels, cabins, road trips</span>
+          </div>
+          <div style={{ textAlign: 'center', padding: '8px' }}>
+            🏢 <strong>Team Building</strong><br/>
+            <span style={{ fontSize: '0.8em', opacity: 0.8 }}>Office events & retreats</span>
+          </div>
+          <div style={{ textAlign: 'center', padding: '8px' }}>
+            👨‍👩‍👧‍👦 <strong>Family Time</strong><br/>
+            <span style={{ fontSize: '0.8em', opacity: 0.8 }}>Holidays & reunions</span>
+          </div>
+          <div style={{ textAlign: 'center', padding: '8px' }}>
+            🎲 <strong>Game Nights</strong><br/>
+            <span style={{ fontSize: '0.8em', opacity: 0.8 }}>Replace boring board games</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
