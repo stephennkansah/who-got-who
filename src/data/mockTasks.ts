@@ -496,7 +496,7 @@ const taskPacks: { [key: string]: TaskPack } = {
   'core-pack-a': {
     id: 'core-pack-a',
     name: 'Core Pack A',
-    description: 'Complete collection of social manipulation tasks',
+    description: 'Complete collection of social challenge tasks',
     tasks: allTasks,
     difficulty: 'medium',
     minPlayers: 1,
