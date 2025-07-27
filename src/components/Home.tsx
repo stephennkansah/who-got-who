@@ -29,12 +29,8 @@ function Home() {
     const joinGameId = searchParams.get('join');
     if (joinGameId) {
       setGameId(joinGameId.toUpperCase());
-      // If we already have a name, show game options directly
-      if (playerName.trim()) {
-        setShowGameOptions(true);
-      }
     }
-  }, [searchParams, playerName]);
+  }, [searchParams]);
 
   // Navigate to game when one is created/joined
   useEffect(() => {
@@ -49,10 +45,17 @@ function Home() {
     }
   }, [state.currentGame, navigate]);
 
-  const handleNameSubmit = (e: React.FormEvent) => {
+  const handleNameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!playerName.trim()) return;
-    setShowGameOptions(true);
+    
+    // If joining via link, go directly to that game
+    const joinGameId = searchParams.get('join');
+    if (joinGameId) {
+      await joinGame(joinGameId.toUpperCase(), playerName.trim());
+    } else {
+      setShowGameOptions(true);
+    }
   };
 
   const handleCreateGame = async () => {
@@ -200,8 +203,18 @@ function Home() {
               color: '#1f2937',
               letterSpacing: '-1px'
             }}>
-              {joinGameId ? 'Ready to Join!' : 'Welcome!'}
+              {joinGameId ? 'Join the Lobby!' : 'Welcome!'}
             </h2>
+            {joinGameId && (
+              <p style={{
+                color: '#666',
+                fontSize: '1rem',
+                marginBottom: '20px',
+                textAlign: 'center'
+              }}>
+                Enter your name to see who's playing and wait for the game to start
+              </p>
+            )}
             <form onSubmit={handleNameSubmit}>
               <input
                 type="text"
@@ -277,7 +290,7 @@ function Home() {
                   }
                 }}
               >
-                {joinGameId ? '🚀 Join Game' : '✨ Continue'}
+                {joinGameId ? '🚀 Join Lobby' : '✨ Continue'}
               </button>
             </form>
           </div>

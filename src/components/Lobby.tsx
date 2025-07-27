@@ -225,6 +225,141 @@ export default function Lobby() {
     );
   }
 
+  // Guest/Non-Host Layout - Simplified and focused
+  if (!isHost) {
+    return (
+      <div className="container">
+        {/* Compact Header */}
+        <div style={{ 
+          textAlign: 'center', 
+          marginBottom: '1rem',
+          padding: '0.5rem 0'
+        }}>
+          <h1 style={{ 
+            fontSize: '1.8rem', 
+            marginBottom: '0.3rem',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontWeight: '800'
+          }}>
+            Who Got Who
+          </h1>
+          <div style={{ color: '#666', fontSize: '0.9rem', fontWeight: '600' }}>
+            Lobby • {currentGame.players.length} player{currentGame.players.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+
+        {/* Players List - Always Expanded for Guests */}
+        <div className="card" style={{ marginBottom: '1rem' }}>
+          <h3 style={{ 
+            fontSize: '1.2rem', 
+            margin: '0 0 1rem 0',
+            color: '#333',
+            textAlign: 'center'
+          }}>
+            👥 Players ({currentGame.players.length})
+          </h3>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            {currentGame.players.map((player: Player) => (
+              <div key={player.id} style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1rem',
+                background: player.id === currentPlayer.id ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.02)',
+                borderRadius: '12px',
+                border: player.id === currentPlayer.id ? '2px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(0,0,0,0.1)'
+              }}>
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '0.2rem' }}>
+                    {player.name} {player.isHost && '👑'} {player.id === currentPlayer.id && '(You)'}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                    {player.isHost ? 'Host - Will start the game' : 'Ready to play'}
+                  </div>
+                </div>
+                <div style={{
+                  padding: '0.4rem 0.8rem',
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  background: '#10b981',
+                  color: 'white'
+                }}>
+                  Connected
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tasks Banner */}
+        <div className="card" style={{ 
+          marginBottom: '1rem',
+          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+          border: '2px solid #0ea5e9',
+          textAlign: 'center'
+        }}>
+          <div style={{ 
+            fontSize: '2.5rem', 
+            marginBottom: '0.5rem' 
+          }}>
+            🎯
+          </div>
+          <h3 style={{ 
+            color: '#0c4a6e', 
+            marginBottom: '0.5rem',
+            fontSize: '1.2rem',
+            fontWeight: '700'
+          }}>
+            Your Secret Tasks Will Be Revealed Soon!
+          </h3>
+          <p style={{ 
+            color: '#0369a1', 
+            fontSize: '0.9rem',
+            margin: '0',
+            lineHeight: '1.4'
+          }}>
+            Host <strong>{currentGame.players.find(p => p.isHost)?.name}</strong> 👑 will start when ready
+          </p>
+        </div>
+
+        {/* Leave Game */}
+        <div className="card" style={{ marginBottom: '1rem' }}>
+          <div style={{ textAlign: 'center' }}>
+            <button
+              onClick={handleLeaveGame}
+              style={{
+                background: 'linear-gradient(135deg, #6c757d, #495057)',
+                border: 'none',
+                borderRadius: '12px',
+                color: 'white',
+                fontSize: '1rem',
+                fontWeight: '600',
+                padding: '0.75rem 2rem',
+                cursor: 'pointer',
+                width: '100%'
+              }}
+            >
+              🚪 Leave Game
+            </button>
+            <p style={{ 
+              fontSize: '0.8rem', 
+              color: '#666', 
+              margin: '0.5rem 0 0 0' 
+            }}>
+              Return to home screen
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Host Layout - Full functionality
   return (
     <div className="container">
       {/* Compact Header */}
@@ -245,6 +380,81 @@ export default function Lobby() {
         </h1>
         <div style={{ color: '#666', fontSize: '1rem', fontWeight: '600' }}>
           Lobby • {currentGame.players.length} player{currentGame.players.length !== 1 ? 's' : ''}
+        </div>
+      </div>
+
+      {/* Compact Share Section for Host */}
+      <div className="card" style={{ 
+        marginBottom: '1rem',
+        background: 'linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%)',
+        border: '1px solid #3b82f6'
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          gap: '1rem'
+        }}>
+          <div style={{ textAlign: 'center', flex: '0 0 auto' }}>
+            <div style={{ 
+              fontSize: '1.1rem',
+              fontWeight: '700',
+              color: '#1976D2',
+              marginBottom: '0.2rem'
+            }}>
+              {currentGame.id}
+            </div>
+            <div style={{ 
+              fontSize: '0.7rem',
+              fontWeight: '600',
+              textTransform: 'uppercase',
+              color: '#1976D2'
+            }}>
+              Game ID
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(currentGame.id);
+                alert('Game ID copied!');
+              }}
+              style={{ 
+                flex: 1,
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                border: 'none',
+                borderRadius: '8px',
+                color: 'white',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                padding: '0.6rem 0.8rem',
+                cursor: 'pointer'
+              }}
+            >
+              📋 Copy ID
+            </button>
+            <button 
+              onClick={() => {
+                const gameUrl = `${window.location.origin}/?join=${currentGame.id}`;
+                navigator.clipboard.writeText(gameUrl);
+                alert('Game link copied!');
+              }}
+              style={{ 
+                flex: 1,
+                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                border: 'none',
+                borderRadius: '8px',
+                color: 'white',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                padding: '0.6rem 0.8rem',
+                cursor: 'pointer'
+              }}
+            >
+              🔗 Copy Link
+            </button>
+          </div>
         </div>
       </div>
 
@@ -453,70 +663,7 @@ export default function Lobby() {
 
 
 
-      {/* Share Game */}
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ 
-          textAlign: 'center',
-          marginBottom: '1rem'
-        }}>
-          <div style={{ 
-            fontSize: '1.2rem',
-            fontWeight: '700',
-            marginBottom: '0.5rem',
-            color: '#1976D2'
-          }}>
-            {currentGame.id}
-          </div>
-          <div style={{ 
-            fontSize: '0.8rem',
-            fontWeight: '700',
-            textTransform: 'uppercase',
-            color: '#1976D2'
-          }}>
-            Game ID
-          </div>
-        </div>
-        
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
-          <button 
-            className="btn btn-secondary"
-            onClick={() => {
-              navigator.clipboard.writeText(currentGame.id);
-              alert('Game ID copied! Share this code with friends.');
-            }}
-            style={{ flex: 1, fontSize: '0.9rem' }}
-          >
-            📋 Copy ID
-          </button>
-          <button 
-            className="btn btn-primary"
-            onClick={() => {
-              const gameUrl = `${window.location.origin}/?join=${currentGame.id}`;
-              navigator.clipboard.writeText(gameUrl);
-              alert('Game link copied! Share this link via WhatsApp, email, etc.');
-            }}
-            style={{ flex: 1, fontSize: '0.9rem' }}
-          >
-            🔗 Copy Link
-          </button>
-        </div>
-        
-        <p style={{ 
-          textAlign: 'center',
-          fontWeight: '600',
-          marginBottom: '1rem'
-        }}>
-          Share the <strong>Game ID</strong> or <strong>Link</strong> with friends!
-        </p>
-        <div style={{ 
-          fontSize: '0.8rem',
-          fontWeight: '600',
-          color: '#666',
-          textAlign: 'center'
-        }}>
-          💡 Tip: Links auto-fill the game code for easy joining
-        </div>
-      </div>
+
 
       {/* Leave Game */}
       <div style={{ textAlign: 'center', marginTop: '2rem' }}>
