@@ -162,23 +162,22 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
       const createdGameId = await FirebaseService.createGame(player); // Standard game mode
       console.log('Game created with ID:', createdGameId);
       
-      // Update player with correct gameId
-      const updatedPlayer = { ...player, gameId };
-      updatedPlayer.tasks = updatedPlayer.tasks.map(task => ({ ...task, gameId }));
-      
-      await FirebaseService.updatePlayer(createdGameId, updatedPlayer);
+      // The gameId should be the same as what we created
+      if (createdGameId !== gameId) {
+        console.error('Game ID mismatch!', { expected: gameId, actual: createdGameId });
+      }
       console.log('Player updated with gameId');
 
       // Get the created game
-      const game = await FirebaseService.getGame(createdGameId);
+      const game = await FirebaseService.getGame(gameId);
       console.log('Retrieved game:', game);
       
       if (game) {
         dispatch({ type: 'SET_GAME', payload: game });
-        dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
+        dispatch({ type: 'SET_PLAYER', payload: player });
         
         // Store in localStorage for rejoin functionality
-        localStorage.setItem('currentGameId', createdGameId);
+        localStorage.setItem('currentGameId', gameId);
         localStorage.setItem('currentPlayerId', playerId);
         
         console.log('Game creation successful');

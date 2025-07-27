@@ -43,15 +43,15 @@ export class FirebaseService {
         currentPhase: 'draft'
       };
 
-      const gameRef = push(ref(database, 'games'));
-      const gameIdFromRef = gameRef.key!;
+      // Use the provided gameId instead of generating a new one
+      const gameRef = ref(database, `games/${gameId}`);
 
       await set(gameRef, {
         ...gameData,
         createdAt: gameData.createdAt.toISOString()
       });
 
-      return gameIdFromRef;
+      return gameId;
     } catch (error) {
       console.error('Error creating game:', error);
       throw new Error('Failed to create game');
