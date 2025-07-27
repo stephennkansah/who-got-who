@@ -394,6 +394,40 @@ function Home() {
                 }}>3</span>
                 First to 4 completed tasks wins!
               </div>
+              
+              {/* Example Tasks */}
+              <div style={{ 
+                background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                padding: '20px',
+                borderRadius: '15px',
+                marginTop: '25px',
+                border: '2px solid #f59e0b'
+              }}>
+                <h4 style={{ 
+                  color: '#92400e', 
+                  marginBottom: '15px', 
+                  fontSize: '1.1em',
+                  fontWeight: '700',
+                  textAlign: 'center'
+                }}>
+                  💡 Example Tasks
+                </h4>
+                <div style={{ color: '#78350f', fontSize: '0.95em', lineHeight: '1.6' }}>
+                  <div style={{ marginBottom: '12px', background: 'rgba(255,255,255,0.6)', padding: '10px', borderRadius: '8px' }}>
+                    <strong>"Get a player to correct a movie quote"</strong><br/>
+                    <em>Say: "Luke, I am your father" and wait for someone to correct you with "No, I am your father"</em>
+                  </div>
+                  <div style={{ marginBottom: '12px', background: 'rgba(255,255,255,0.6)', padding: '10px', borderRadius: '8px' }}>
+                    <strong>"Get someone to take a group selfie"</strong><br/>
+                    <em>Suggest taking a photo without being obvious it's your task</em>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.6)', padding: '10px', borderRadius: '8px' }}>
+                    <strong>"Get a player to use air quotes"</strong><br/>
+                    <em>Bring up something that naturally makes them say "so-called" or similar</em>
+                  </div>
+                </div>
+              </div>
+
               <div style={{ 
                 background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
                 padding: '15px 20px',

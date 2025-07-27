@@ -229,6 +229,43 @@ export default function Lobby() {
               </div>
             </div>
 
+            {/* Example Tasks */}
+            <div style={{
+              padding: '1.2rem',
+              background: 'linear-gradient(135deg, #fff3e0 0%, #ffecb3 100%)',
+              borderRadius: '15px',
+              border: '2px solid #ff9800',
+              marginTop: '1rem'
+            }}>
+              <div style={{ 
+                fontSize: '1rem', 
+                fontWeight: '700',
+                color: '#e65100',
+                marginBottom: '0.8rem',
+                textAlign: 'center'
+              }}>
+                💡 Example Tasks
+              </div>
+              <div style={{ 
+                fontSize: '0.85rem',
+                color: '#bf360c',
+                lineHeight: '1.4'
+              }}>
+                <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
+                  <strong>"Get a player to correct a movie quote"</strong><br/>
+                  <em>Say: "Luke, I am your father" → Wait for correction</em>
+                </div>
+                <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
+                  <strong>"Get someone to take a group selfie"</strong><br/>
+                  <em>Naturally suggest a photo without being obvious</em>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
+                  <strong>"Get a player to use air quotes"</strong><br/>
+                  <em>Talk about something "so-called" or questionable</em>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
