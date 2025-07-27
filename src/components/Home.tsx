@@ -420,6 +420,26 @@ function Home() {
   // Game options screen - simplified without competitive mode
   return (
     <div className="container" style={{ padding: '20px', maxWidth: '500px', margin: '0 auto' }}>
+      {/* Install App Promotion Banner */}
+      {!window.matchMedia('(display-mode: standalone)').matches && (
+        <div style={{
+          background: 'linear-gradient(135deg, #667eea, #764ba2)',
+          color: 'white',
+          padding: '12px 20px',
+          borderRadius: '12px',
+          textAlign: 'center',
+          marginBottom: '20px',
+          boxShadow: '0 4px 15px rgba(102, 126, 234, 0.2)'
+        }}>
+          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>
+            📱 Install Who Got Who
+          </div>
+          <div style={{ fontSize: '14px', opacity: 0.9 }}>
+            Get the full app experience - works offline & faster loading!
+          </div>
+        </div>
+      )}
+      
       <header style={{ textAlign: 'center', marginBottom: '40px', paddingTop: '20px' }}>
         <h1 style={{ 
           fontSize: '2.8em', 

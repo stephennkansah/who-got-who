@@ -60,4 +60,22 @@ pids
 amplify/
 
 # AWS deployment
-.aws-amplify-console/ 
+.aws-amplify-console/
+
+# Android development files
+cmdline-tools.zip
+android-sdk/
+android.keystore
+local.properties
+create_icon.html
+store_icon.png
+twa-manifest.json
+manifest-checksum.txt
+gradlew
+gradlew.bat
+gradle/
+app/
+build/
+gradle.properties
+settings.gradle
+build.gradle 

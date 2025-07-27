@@ -5,6 +5,7 @@ import Home from './components/Home';
 import Lobby from './components/Lobby';
 import Game from './components/Game';
 import Recap from './components/Recap';
+import InstallPrompt from './components/InstallPrompt';
 import './serviceWorkerRegistration';
 
 function App() {
@@ -20,6 +21,9 @@ function App() {
           </Routes>
         </Router>
       </FirebaseGameProvider>
+      
+      {/* Install Prompt */}
+      <InstallPrompt />
       
       {/* Mode indicator */}
       <div style={{
