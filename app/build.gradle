@@ -24,7 +24,7 @@ def twaManifest = [
     applicationId: 'club.whogotwho.twa',
     hostName: 'whogotwho.club', // The domain being opened in the TWA.
     launchUrl: '/', // The start path for the TWA. Must be relative to the domain.
-    name: 'Who Got Who - Party Game', // The application name.
+    name: '(Who Got Who - Party Game)', // The application name.
     launcherName: 'Who Got Who', // The name shown on the Android Launcher.
     themeColor: '#667EEA', // The color used for the status bar.
     themeColorDark: '#000000', // The color used for the dark status bar.
