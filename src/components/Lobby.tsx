@@ -43,7 +43,7 @@ export default function Lobby() {
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
   const isHost = currentPlayer?.isHost || false;
-  const canStart = (currentGame?.players.length || 0) >= 1;
+  const canStart = (currentGame?.players.length || 0) >= 2;
 
   useEffect(() => {
     if (!gameId) {
@@ -569,7 +569,7 @@ export default function Lobby() {
               }}>
                 {canStart 
                   ? "Ready to start! Click below to reveal everyone's secret tasks"
-                  : "Ready to start solo for testing!"
+                  : "Need at least 2 players to start the game"
                 }
               </p>
               {canStart ? (
@@ -592,7 +592,7 @@ export default function Lobby() {
                   textAlign: 'center',
                   fontStyle: 'italic'
                 }}>
-                  You can start solo for testing!
+                  Waiting for more players to join...
                 </div>
               )}
             </div>
