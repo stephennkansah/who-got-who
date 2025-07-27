@@ -2,7 +2,7 @@ import { Socket } from 'socket.io-client';
 
 // Game Types
 export type GameStatus = 'draft' | 'live' | 'ended';
-export type GameMode = 'casual' | 'competitive';
+export type GameMode = 'casual';
 export type TaskStatus = 'pending' | 'completed' | 'failed' | 'disputed';
 export type DisputeResult = 'upheld' | 'overturned' | 'pending';
 
@@ -196,7 +196,7 @@ export interface GameSummary {
 
 export interface GameContextType {
   state: GameState;
-  createGame: (hostName: string, mode: 'casual' | 'competitive') => Promise<void>;
+  createGame: (hostName: string) => Promise<void>;
   joinGame: (gameId: string, playerName: string) => Promise<void>;
   startGame: () => Promise<void>;
   endGame: () => Promise<void>;

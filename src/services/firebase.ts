@@ -19,36 +19,43 @@ const database = getDatabase(app);
 
 export class FirebaseService {
   // Create a new game
-  static async createGame(hostPlayer: Player, mode: 'casual' | 'competitive'): Promise<string> {
-    const gameRef = push(ref(database, 'games'));
-    const gameId = gameRef.key!;
-    
-    const game: Game = {
-      id: gameId,
-      status: 'draft' as GameStatus,
-      mode,
-      players: [{ ...hostPlayer, isHost: true }],
-      createdAt: new Date(),
-      createdBy: hostPlayer.id,
-      hostId: hostPlayer.id,
-      currentPhase: 'draft',
-      packId: 'core-pack-a',
-      settings: {
-        maxPlayers: 8,
-        swapsAllowed: mode === 'casual' ? 2 : 1,
-        disputeTimeoutSeconds: 120,
-        hostDefaultOnTie: true,
-        enableNegativeScoring: mode === 'competitive',
-        targetScore: 4
-      }
-    };
+  static async createGame(hostPlayer: Player): Promise<string> {
+    try {
+      const gameId = hostPlayer.gameId;
+      
+      const gameData: Game = {
+        id: gameId,
+        status: 'draft',
+        mode: 'casual',
+        packId: 'core-a',
+        createdBy: hostPlayer.name,
+        createdAt: new Date(),
+        hostId: hostPlayer.id,
+        players: [hostPlayer],
+        settings: {
+          swapsAllowed: 2,
+          disputeTimeoutSeconds: 120,
+          hostDefaultOnTie: true,
+          enableNegativeScoring: false,
+          maxPlayers: 8,
+          targetScore: 4
+        },
+        currentPhase: 'draft'
+      };
 
-    await set(gameRef, {
-      ...game,
-      createdAt: game.createdAt.toISOString()
-    });
+      const gameRef = push(ref(database, 'games'));
+      const gameIdFromRef = gameRef.key!;
 
-    return gameId;
+      await set(gameRef, {
+        ...gameData,
+        createdAt: gameData.createdAt.toISOString()
+      });
+
+      return gameIdFromRef;
+    } catch (error) {
+      console.error('Error creating game:', error);
+      throw new Error('Failed to create game');
+    }
   }
 
   // Join an existing game

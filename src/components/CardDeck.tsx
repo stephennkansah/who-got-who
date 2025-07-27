@@ -29,6 +29,7 @@ export default function CardDeck({
 }: CardDeckProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [animatingDirection, setAnimatingDirection] = useState<'left' | 'right' | null>(null);
+  const [newCardDirection, setNewCardDirection] = useState<'from-left' | 'from-right' | null>(null);
 
   // For single card view, show navigation
   const isSingleCardView = maxVisible === 1;
@@ -46,7 +47,9 @@ export default function CardDeck({
       setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % cards.length);
         setAnimatingDirection(null);
-      }, 150);
+        setNewCardDirection('from-right');
+        setTimeout(() => setNewCardDirection(null), 350);
+      }, 180);
     }
   };
 
@@ -56,7 +59,9 @@ export default function CardDeck({
       setTimeout(() => {
         setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
         setAnimatingDirection(null);
-      }, 150);
+        setNewCardDirection('from-left');
+        setTimeout(() => setNewCardDirection(null), 350);
+      }, 180);
     }
   };
 
@@ -120,7 +125,7 @@ export default function CardDeck({
           return (
             <SwipeableCard
               key={card.id}
-              className={`deck-card ${isTop ? 'top-card' : 'stacked-card'} ${animatingDirection ? `animating-${animatingDirection}` : ''}`}
+              className={`deck-card ${isTop ? 'top-card' : 'stacked-card'} ${animatingDirection ? `animating-${animatingDirection}` : ''} ${isTop && newCardDirection ? `slide-in-${newCardDirection}` : ''}`}
               style={{
                 zIndex,
                 transform: `translateY(${yOffset}px) scale(${scale}) rotate(${rotation}deg)`,
@@ -129,12 +134,12 @@ export default function CardDeck({
                 left: 0,
                 right: 0,
               }}
-              onSwipeLeft={isTop && isSingleCardView ? prevCard : card.onSwipeLeft}
-              onSwipeRight={isTop && isSingleCardView ? nextCard : card.onSwipeRight}
+              onSwipeLeft={isTop && cards.length > 1 ? prevCard : card.onSwipeLeft}
+              onSwipeRight={isTop && cards.length > 1 ? nextCard : card.onSwipeRight}
               onSwipeUp={card.onSwipeUp}
               onSwipeDown={card.onSwipeDown}
-              leftAction={isSingleCardView ? 'Previous' : card.leftAction}
-              rightAction={isSingleCardView ? 'Next' : card.rightAction}
+              leftAction={cards.length > 1 ? 'Previous' : card.leftAction}
+              rightAction={cards.length > 1 ? 'Next' : card.rightAction}
               upAction={card.upAction}
               downAction={card.downAction}
               disabled={!isTop}

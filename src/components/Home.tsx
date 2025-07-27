@@ -59,7 +59,7 @@ function Home() {
     console.log('🔥 CREATE GAME BUTTON CLICKED!');
     console.log('Player name:', playerName);
     try {
-      await createGame(playerName.trim(), 'casual'); // Always use casual mode for now
+      await createGame(playerName.trim()); // Standard game mode
     } catch (error) {
       console.error('Create game error:', error);
     }
@@ -540,7 +540,7 @@ function Home() {
               type="text"
               placeholder="Game Code (e.g., ABC123)"
               value={gameId}
-              onChange={(e) => setGameId(e.target.value.toUpperCase())}
+              onChange={(e) => setGameId(e.target.value)}
               style={{ 
                 marginBottom: '25px',
                 fontSize: '1.2em',
@@ -554,7 +554,8 @@ function Home() {
                 boxSizing: 'border-box',
                 fontWeight: '700',
                 color: '#1f2937',
-                outline: 'none'
+                outline: 'none',
+                textTransform: 'uppercase'
               }}
               maxLength={10}
             />

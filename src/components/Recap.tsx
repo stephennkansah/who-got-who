@@ -91,7 +91,7 @@ export default function Recap() {
 
   const handleNewGame = async () => {
     if (currentGame && currentPlayer) {
-      await createGame(currentPlayer.name, currentGame.mode);
+      await createGame(currentPlayer.name);
     }
   };
 
@@ -221,8 +221,8 @@ export default function Recap() {
         <div className="text-small" style={{ lineHeight: '1.8' }}>
           <div className="flex flex-between" style={{ margin: '0.8rem 0' }}>
             <span>🎮 Game Mode:</span>
-            <strong style={{ color: currentGame.mode === 'casual' ? '#56ab2f' : '#ff416c' }}>
-              {currentGame.mode === 'casual' ? '🌟 Casual' : '⚔️ Competitive'}
+            <strong style={{ color: '#56ab2f' }}>
+              🌟 Standard Game
             </strong>
           </div>
           <div className="flex flex-between" style={{ margin: '0.8rem 0' }}>

@@ -121,34 +121,34 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
   };
 
   // Create game
-  const createGame = async (hostName: string, mode: 'casual' | 'competitive') => {
+  const createGame = async (hostName: string) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
 
     try {
-      console.log('Creating game for:', hostName, 'mode:', mode);
+      const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const playerId = Math.random().toString(36).substring(2, 15);
       
-      const playerId = generatePlayerId();
-      const rawTasks = getRandomTasks('core-pack-a', 7); // Fix: Add count parameter
-      const tasks = rawTasks.map(task => ({
+      // Get random tasks from core pack A
+      const rawTasks = getRandomTasks('core-pack-a', 7);
+      const tasks: TaskInstance[] = rawTasks.map(task => ({
         ...task,
-        gameId: '', // Will be set after game creation
-        playerId,
-        status: 'pending' as const
+        id: Math.random().toString(36).substring(2, 15),
+        gameId: gameId,
+        playerId: playerId,
+        status: 'pending'
       }));
       
-      console.log('Generated tasks:', tasks.length);
-      
-      const hostPlayer: Player = {
+      const player: Player = {
         id: playerId,
         name: hostName,
-        gameId: '', // Will be set after game creation
-        swapsLeft: mode === 'casual' ? 2 : 1,
+        gameId,
+        swapsLeft: 2,
         score: 0,
         lockedIn: false,
         isHost: true,
-        token: `token_${playerId}`,
-        tasks,
+        token: 'mock-token',
+        tasks: tasks,
         stats: {
           gothcas: 0,
           failed: 0,
@@ -158,19 +158,19 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         }
       };
 
-      console.log('Creating game with host player:', hostPlayer.name);
-      const gameId = await FirebaseService.createGame(hostPlayer, mode);
-      console.log('Game created with ID:', gameId);
+      console.log('Creating game with host player:', player.name);
+      const createdGameId = await FirebaseService.createGame(player); // Standard game mode
+      console.log('Game created with ID:', createdGameId);
       
       // Update player with correct gameId
-      const updatedPlayer = { ...hostPlayer, gameId };
+      const updatedPlayer = { ...player, gameId };
       updatedPlayer.tasks = updatedPlayer.tasks.map(task => ({ ...task, gameId }));
       
-      await FirebaseService.updatePlayer(gameId, updatedPlayer);
+      await FirebaseService.updatePlayer(createdGameId, updatedPlayer);
       console.log('Player updated with gameId');
 
       // Get the created game
-      const game = await FirebaseService.getGame(gameId);
+      const game = await FirebaseService.getGame(createdGameId);
       console.log('Retrieved game:', game);
       
       if (game) {
@@ -178,7 +178,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
         
         // Store in localStorage for rejoin functionality
-        localStorage.setItem('currentGameId', gameId);
+        localStorage.setItem('currentGameId', createdGameId);
         localStorage.setItem('currentPlayerId', playerId);
         
         console.log('Game creation successful');
@@ -236,7 +236,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         // Update swapsLeft based on game mode
         const updatedPlayer = { 
           ...newPlayer, 
-          swapsLeft: game.settings.swapsAllowed 
+          swapsLeft: 2 
         };
         
         dispatch({ type: 'SET_GAME', payload: game });

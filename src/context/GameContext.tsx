@@ -189,7 +189,7 @@ export function GameProvider({ children }: GameProviderProps) {
   }, []);
 
   // Game Actions
-  const createGame = async (hostName: string, mode: 'casual' | 'competitive') => {
+  const createGame = async (hostName: string) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
     
@@ -211,7 +211,7 @@ export function GameProvider({ children }: GameProviderProps) {
         id: playerId,
         name: hostName,
         gameId,
-        swapsLeft: mode === 'casual' ? 2 : 1,
+        swapsLeft: 2,
         score: 0,
         lockedIn: false,
         isHost: true,
@@ -229,17 +229,17 @@ export function GameProvider({ children }: GameProviderProps) {
       const mockGame: Game = {
         id: gameId,
         status: 'draft',
-        mode,
+        mode: 'casual',
         packId: 'core-a',
         createdBy: hostName,
         createdAt: new Date(),
         hostId: playerId,
         players: [player],
         settings: {
-          swapsAllowed: mode === 'casual' ? 2 : 1,
+          swapsAllowed: 2,
           disputeTimeoutSeconds: 120,
           hostDefaultOnTie: true,
-          enableNegativeScoring: mode === 'competitive',
+          enableNegativeScoring: false,
           maxPlayers: 8,
           targetScore: 4
         },
@@ -294,7 +294,7 @@ export function GameProvider({ children }: GameProviderProps) {
           id: playerId,
           name: playerName,
           gameId: gameId,
-          swapsLeft: game.settings.swapsAllowed,
+          swapsLeft: 2,
           score: 0,
           lockedIn: false,
           isHost: false,
