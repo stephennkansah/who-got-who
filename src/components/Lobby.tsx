@@ -490,29 +490,17 @@ export default function Lobby() {
 
       {/* Combined Players & Game Control */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          marginBottom: '1rem'
+        <h3 style={{ 
+          fontSize: '1.1rem', 
+          margin: '0 0 1rem 0',
+          color: '#333',
+          textAlign: 'center'
         }}>
-          <h3 style={{ 
-            fontSize: '1.1rem', 
-            margin: 0,
-            color: '#333'
-          }}>
-            Players ({currentGame.players.length})
-          </h3>
-          <button
-            className="btn btn-small"
-            onClick={() => setShowPlayerList(!showPlayerList)}
-            style={{ fontSize: '0.8rem' }}
-          >
-            {showPlayerList ? 'Hide' : 'Show'} All
-          </button>
-        </div>
+          👥 Players ({currentGame.players.length})
+        </h3>
         
-        {showPlayerList ? (
+        {/* Always show player list for host */}
+        <div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
             {currentGame.players.map((player: Player) => (
               <div key={player.id} style={{
@@ -546,11 +534,7 @@ export default function Lobby() {
               </div>
             ))}
           </div>
-        ) : (
-          <div style={{ textAlign: 'center', color: '#666', marginBottom: '1rem' }}>
-            ✅ All players connected and ready!
-          </div>
-        )}
+        </div>
 
         {/* Game Start Section */}
         <div style={{ 
