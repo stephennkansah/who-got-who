@@ -161,13 +161,25 @@ export default function Game() {
   }
 
   const handleEndGame = async () => {
-    await endGameContext();
-    navigate(`/recap/${gameId}`);
+    const confirmed = window.confirm(
+      '🏁 End Game?\n\nThis will end the game for ALL players and show final results.\n\nThis action cannot be undone.'
+    );
+    
+    if (confirmed) {
+      await endGameContext();
+      navigate(`/recap/${gameId}`);
+    }
   };
 
   const handleLeaveGame = async () => {
-    await leaveGame();
-    navigate('/');
+    const confirmed = window.confirm(
+      '🚪 Leave Game?\n\nYou will exit the current game and return to the home screen.\n\nOther players can continue without you.'
+    );
+    
+    if (confirmed) {
+      await leaveGame();
+      navigate('/');
+    }
   };
 
   // Removed taskCards - using TaskListView only

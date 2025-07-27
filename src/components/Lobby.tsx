@@ -70,8 +70,14 @@ export default function Lobby() {
   };
 
   const handleLeaveGame = async () => {
-    await leaveGame();
-    navigate('/');
+    const confirmed = window.confirm(
+      '🚪 Leave Game?\n\nYou will exit the lobby and return to the home screen.\n\nOther players will remain in the lobby.'
+    );
+    
+    if (confirmed) {
+      await leaveGame();
+      navigate('/');
+    }
   };
 
 

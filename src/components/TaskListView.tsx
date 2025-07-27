@@ -129,38 +129,36 @@ export default function TaskListView({ tasks, players, onTaskResult, onSwapTask,
               alignItems: 'center', 
               gap: '0.75rem'
             }}>
-              {/* Large Status Badge */}
-              <div style={{
-                background: taskFeedback[task.id] === 'passed'
-                  ? 'linear-gradient(135deg, #4caf50, #388e3c)'
-                  : taskFeedback[task.id] === 'failed'
-                    ? 'linear-gradient(135deg, #f44336, #d32f2f)'
-                    : task.status === 'pending' 
-                      ? 'linear-gradient(135deg, #ff9800, #f57c00)'
+              {/* Large Status Badge - Only show for completed/failed tasks */}
+              {(taskFeedback[task.id] || task.status !== 'pending') && (
+                <div style={{
+                  background: taskFeedback[task.id] === 'passed'
+                    ? 'linear-gradient(135deg, #4caf50, #388e3c)'
+                    : taskFeedback[task.id] === 'failed'
+                      ? 'linear-gradient(135deg, #f44336, #d32f2f)'
                       : task.status === 'completed'
                         ? 'linear-gradient(135deg, #4caf50, #388e3c)'
                         : 'linear-gradient(135deg, #f44336, #d32f2f)',
-                color: 'white',
-                padding: '0.5rem 0.75rem',
-                borderRadius: '20px',
-                fontSize: '0.8rem',
-                fontWeight: '800',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-                minWidth: '80px',
-                textAlign: 'center'
-              }}>
-                {taskFeedback[task.id] === 'passed'
-                  ? '✅ DONE'
-                  : taskFeedback[task.id] === 'failed'
-                    ? '❌ FAILED'
-                    : task.status === 'pending' 
-                      ? '⏳ TODO' 
+                  color: 'white',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '20px',
+                  fontSize: '0.8rem',
+                  fontWeight: '800',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                  minWidth: '80px',
+                  textAlign: 'center'
+                }}>
+                  {taskFeedback[task.id] === 'passed'
+                    ? '✅ DONE'
+                    : taskFeedback[task.id] === 'failed'
+                      ? '❌ FAILED'
                       : task.status === 'completed'
                         ? '✅ DONE'
                         : '❌ FAILED'}
-              </div>
+                </div>
+              )}
               
               {/* Task Number */}
               <div style={{ 
@@ -319,27 +317,7 @@ export default function TaskListView({ tasks, players, onTaskResult, onSwapTask,
             </div>
           )}
 
-          {/* Task Progress Indicator */}
-          <div style={{
-            marginTop: '0.75rem',
-            padding: '0.5rem',
-            background: 'rgba(0,0,0,0.03)',
-            borderRadius: '8px',
-            fontSize: '0.75rem',
-            fontWeight: '600',
-            textAlign: 'center',
-            color: task.status === 'pending' 
-              ? '#ff9800' 
-              : task.status === 'completed'
-                ? '#4caf50'
-                : '#f44336'
-          }}>
-            {task.status === 'pending' 
-              ? '🎯 Action Required: Complete this task!'
-              : task.status === 'completed'
-                ? '🎉 Task Successfully Completed'
-                : '💥 Task Failed - Better luck next time!'}
-          </div>
+
         </div>
       ))}
 
