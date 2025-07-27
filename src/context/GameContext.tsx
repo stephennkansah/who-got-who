@@ -2,11 +2,9 @@ import React, { createContext, useReducer, useContext, useEffect, ReactNode } fr
 import { Socket } from 'socket.io-client';
 import { 
   GameState, 
-  GameStatus, 
   Player,
   TaskInstance,
   Game,
-  Award,
   Task,
   GameContextType,
   Dispute
@@ -462,7 +460,6 @@ export function GameProvider({ children }: GameProviderProps) {
       );
       
       // Update player score and stats
-      const targetPlayer = state.currentGame.players.find(p => p.id === targetId);
       const isFirstTimeTarget = !state.currentPlayer.stats.uniqueTargets.includes(targetId);
       
       const updatedPlayer = {

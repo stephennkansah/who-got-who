@@ -4,6 +4,7 @@ import { getRandomTasks } from '../data/mockTasks';
 import FirebaseService from '../services/firebase';
 
 // Check if Firebase is properly configured
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const isFirebaseConfigured = () => {
   const requiredVars = [
     'REACT_APP_FIREBASE_API_KEY',
@@ -284,6 +285,35 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
   // Leave game - clears local state and returns to home
   const leaveGame = async () => {
     try {
+      if (state.currentPlayer && state.currentGame) {
+        const currentPlayer = state.currentPlayer;
+        const currentGame = state.currentGame;
+        
+        // If the leaving player is the host and game hasn't started yet
+        if (currentPlayer.isHost && currentGame.status === 'draft') {
+          const remainingPlayers = currentGame.players.filter(p => p.id !== currentPlayer.id);
+          
+          if (remainingPlayers.length > 0) {
+            // Promote the first remaining player to host
+            const newHost = remainingPlayers[0];
+            await FirebaseService.updateGame(currentGame.id, {
+              hostId: newHost.id,
+              players: currentGame.players
+                .filter(p => p.id !== currentPlayer.id)
+                .map(p => p.id === newHost.id ? { ...p, isHost: true } : { ...p, isHost: false })
+            });
+          } else {
+            // Last player leaving - delete the game
+            await FirebaseService.deleteGame(currentGame.id);
+          }
+        } else {
+          // Regular player leaving - just remove from players list
+          await FirebaseService.updateGame(currentGame.id, {
+            players: currentGame.players.filter(p => p.id !== currentPlayer.id)
+          });
+        }
+      }
+
       // Clear localStorage
       localStorage.removeItem('currentGameId');
       localStorage.removeItem('currentPlayerId');
@@ -295,6 +325,11 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
       console.log('🚪 Left game successfully');
     } catch (error) {
       console.error('Error leaving game:', error);
+      // Still clear local state even if server update fails
+      localStorage.removeItem('currentGameId');
+      localStorage.removeItem('currentPlayerId');
+      dispatch({ type: 'SET_GAME', payload: null });
+      dispatch({ type: 'SET_PLAYER', payload: null });
     }
   };
 

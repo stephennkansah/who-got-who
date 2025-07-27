@@ -220,7 +220,7 @@ function Home() {
                 type="text"
                 placeholder="Enter your name"
                 value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
+                onChange={(e) => setPlayerName(e.target.value.replace(/^\s+/, ''))}
                 style={{ 
                   marginBottom: '30px',
                   fontSize: '1.3em',

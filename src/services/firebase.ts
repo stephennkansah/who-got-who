@@ -82,10 +82,10 @@ export class FirebaseService {
     const playersSnapshot = await get(playersRef);
     const existingPlayers = playersSnapshot.val() || [];
     
-    // Check if player already exists
-    const existingPlayer = existingPlayers.find((p: Player) => p.id === player.id);
+    // Check if player already exists (by name, case-insensitive)
+    const existingPlayer = existingPlayers.find((p: Player) => p.name.toLowerCase() === player.name.toLowerCase());
     if (existingPlayer) {
-      return true; // Player already in game
+      throw new Error('A player with this name has already joined');
     }
 
     const updatedPlayers = [...existingPlayers, player];
@@ -179,6 +179,12 @@ export class FirebaseService {
     }
     
     return null;
+  }
+
+  // Update game data
+  static async updateGame(gameId: string, gameUpdate: Partial<Game>): Promise<void> {
+    const gameRef = ref(database, `games/${gameId}`);
+    await update(gameRef, gameUpdate);
   }
 
   // Delete game (cleanup)

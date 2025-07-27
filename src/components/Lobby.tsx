@@ -3,6 +3,36 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { Player } from '../types';
 
+// Helper function to copy text with fallback
+const copyToClipboard = async (text: string): Promise<boolean> => {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('Clipboard API failed:', err);
+    }
+  }
+  
+  // Fallback for older browsers or non-HTTPS
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const result = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return result;
+  } catch (err) {
+    console.error('Copy to clipboard failed:', err);
+    return false;
+  }
+};
+
 export default function Lobby() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
@@ -13,7 +43,7 @@ export default function Lobby() {
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
   const isHost = currentPlayer?.isHost || false;
-  const canStart = (currentGame?.players.length || 0) >= 2;
+  const canStart = (currentGame?.players.length || 0) >= 1;
 
   useEffect(() => {
     if (!gameId) {
@@ -416,9 +446,9 @@ export default function Lobby() {
           
           <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
             <button 
-              onClick={() => {
-                navigator.clipboard.writeText(currentGame.id);
-                alert('Game ID copied!');
+              onClick={async () => {
+                const success = await copyToClipboard(currentGame.id);
+                alert(success ? 'Game ID copied!' : 'Failed to copy. Game ID: ' + currentGame.id);
               }}
               style={{ 
                 flex: 1,
@@ -435,10 +465,10 @@ export default function Lobby() {
               📋 Copy ID
             </button>
             <button 
-              onClick={() => {
+              onClick={async () => {
                 const gameUrl = `${window.location.origin}/?join=${currentGame.id}`;
-                navigator.clipboard.writeText(gameUrl);
-                alert('Game link copied!');
+                const success = await copyToClipboard(gameUrl);
+                alert(success ? 'Game link copied!' : 'Failed to copy. Link: ' + gameUrl);
               }}
               style={{ 
                 flex: 1,
@@ -555,7 +585,7 @@ export default function Lobby() {
               }}>
                 {canStart 
                   ? "Ready to start! Click below to reveal everyone's secret tasks"
-                  : "Need at least 2 players to start the game"
+                  : "Ready to start solo for testing!"
                 }
               </p>
               {canStart ? (
@@ -578,7 +608,7 @@ export default function Lobby() {
                   textAlign: 'center',
                   fontStyle: 'italic'
                 }}>
-                  Waiting for more players to join...
+                  You can start solo for testing!
                 </div>
               )}
             </div>
