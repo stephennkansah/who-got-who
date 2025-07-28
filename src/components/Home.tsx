@@ -160,9 +160,18 @@ function Home() {
             fontSize: '1.2em',
             fontWeight: '500',
             textShadow: '0 2px 10px rgba(0,0,0,0.2)',
-            marginBottom: '30px'
+            marginBottom: '10px'
           }}>
             The ultimate party game
+          </p>
+
+          <p style={{
+            color: '#fffb',
+            fontSize: '1rem',
+            fontWeight: 600,
+            marginBottom: '25px'
+          }}>
+            👥 2-10 players • 🕐 5 mins to 5 hours • 📱 Works anywhere
           </p>
           
           {joinGameId ? (
@@ -209,7 +218,7 @@ function Home() {
                 lineHeight: '1.6',
                 margin: '0 0 15px 0'
               }}>
-                Complete secret missions on others without being caught. First to finish wins!
+                Complete secret missions on others without being caught. First to 4 points wins!
               </p>
               <p style={{ 
                 color: 'rgba(255,255,255,0.85)', 

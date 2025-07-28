@@ -4,8 +4,8 @@ import { useGame } from '../hooks/useGame';
 import { Player } from '../types';
 import NotificationPrompt from './NotificationPrompt';
 import ShareButton from './ShareButton';
-import QRCodeJoin from './QRCodeJoin';
 import PlayerAvatar from './PlayerAvatar';
+import QRCodeJoin from './QRCodeJoin';
 import ClarityService from '../services/clarityService';
 
 
