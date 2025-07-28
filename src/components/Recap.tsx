@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { Player, AwardType } from '../types';
 import ResultsShare from './ResultsShare';
+import PlayerAvatar from './PlayerAvatar';
 
 
 
@@ -193,12 +194,17 @@ export default function Recap() {
             border: '1px solid rgba(255, 255, 255, 0.2)',
             transition: 'all 0.3s ease'
           }}>
-            <div>
-              <span style={{ marginRight: '1rem', fontSize: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>
                 {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
               </span>
-              <strong style={{ fontSize: '1.1rem' }}>{player.name}</strong>
-              {player.id === currentPlayer?.id && <span className="text-small"> 👤 (You)</span>}
+              <PlayerAvatar player={player} size="medium" />
+              <div>
+                <strong style={{ fontSize: '1.1rem' }}>{player.name}</strong>
+                {player.id === currentPlayer?.id && <span className="text-small"> 👤 (You)</span>}
+              </div>
+            </div>
+            <div style={{ marginLeft: '4rem' }}>
               
               {/* Player awards */}
               <div style={{ marginTop: '0.8rem' }}>

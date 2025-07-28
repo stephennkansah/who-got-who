@@ -186,7 +186,8 @@ export default function Lobby() {
               }}>
                 ✅ Mark tasks as <strong>PASSED</strong> when completed<br/>
                 ❌ Mark as <strong>FAILED</strong> if caught<br/>
-                🏆 <strong>First to 4 points wins!</strong>
+                🏆 <strong>First to {currentGame?.settings.targetScore || 4} points wins!</strong><br/>
+                ⭐ <strong>+0.5 bonus</strong> for targeting someone new
               </div>
             </div>
 
@@ -275,6 +276,35 @@ export default function Lobby() {
               </div>
             </div>
 
+          </div>
+        </div>
+
+        {/* Scaling Info */}
+        <div style={{
+          padding: '1.2rem',
+          background: 'linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)',
+          borderRadius: '15px',
+          border: '2px solid #4caf50',
+          marginTop: '1rem'
+        }}>
+          <div style={{ 
+            fontSize: '1rem', 
+            fontWeight: '700',
+            color: '#2e7d32',
+            marginBottom: '0.5rem'
+          }}>
+            📊 Game Scales with Players
+          </div>
+          <div style={{ 
+            fontSize: '0.9rem',
+            color: '#2e7d32',
+            lineHeight: '1.5'
+          }}>
+            {currentGame && currentGame.players.length >= 7 ? (
+              <>🎯 <strong>Large game:</strong> {currentGame.players.length} players get <strong>8 tasks</strong> each, win at <strong>5 points</strong></>
+            ) : (
+              <>🎯 <strong>Small game:</strong> {currentGame?.players.length || 0} players get <strong>7 tasks</strong> each, win at <strong>4 points</strong></>
+            )}
           </div>
         </div>
 

@@ -10,6 +10,7 @@ import {
   Dispute
 } from '../types';
 import { getRandomTasks, getReplacementTask, isBonusTask } from '../data/mockTasks';
+import { getGameSettings } from '../services/firebase';
 
 // Initial State
 const initialState: GameState = {
@@ -195,8 +196,9 @@ export function GameProvider({ children }: GameProviderProps) {
       const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
       const playerId = Math.random().toString(36).substring(2, 15);
       
-      // Get random tasks from core pack A
-      const rawTasks = getRandomTasks('core-pack-a', 7);
+      // Get random tasks from core pack A (7 for host starting alone)
+      const { taskCount } = getGameSettings(1);
+      const rawTasks = getRandomTasks('core-pack-a', taskCount);
       const tasks: TaskInstance[] = rawTasks.map(task => ({
         ...task,
         id: Math.random().toString(36).substring(2, 15),
@@ -235,14 +237,7 @@ export function GameProvider({ children }: GameProviderProps) {
         createdAt: new Date(),
         hostId: playerId,
         players: [player],
-        settings: {
-          swapsAllowed: 2,
-          disputeTimeoutSeconds: 120,
-          hostDefaultOnTie: true,
-          enableNegativeScoring: false,
-          maxPlayers: 10,
-          targetScore: 4
-        },
+        settings: getGameSettings(1).settings,
         currentPhase: 'draft'
       };
       
@@ -288,7 +283,11 @@ export function GameProvider({ children }: GameProviderProps) {
       if (!existingPlayer) {
         // Create new player
         const playerId = Math.random().toString(36).substr(2, 9);
-        const playerTasks = getRandomTasks('core-a', 7);
+        
+        // Calculate new player count (including this joining player)
+        const newPlayerCount = game.players.length + 1;
+        const { taskCount } = getGameSettings(newPlayerCount);
+        const playerTasks = getRandomTasks('core-a', taskCount);
         
         const newPlayer: Player = {
           id: playerId,
@@ -320,6 +319,9 @@ export function GameProvider({ children }: GameProviderProps) {
         
         game.players.push(newPlayer);
         existingPlayer = newPlayer;
+        
+        // Update game settings for new player count
+        game.settings = getGameSettings(newPlayerCount).settings;
       }
       
       dispatch({ type: 'SET_GAME', payload: game });

@@ -4,6 +4,7 @@ import { useGame } from '../hooks/useGame';
 import { TaskInstance, Player } from '../types';
 import TaskListView from './TaskListView';
 import TargetSelectModal from './TargetSelectModal';
+import PlayerAvatar from './PlayerAvatar';
 import FirebaseService from '../services/firebase';
 import ClarityService from '../services/clarityService';
 
@@ -663,6 +664,7 @@ export default function Game() {
                               }}>
                                 {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                               </div>
+                              <PlayerAvatar player={player} size="medium" />
                               <div>
                                 <div style={{ 
                                   fontWeight: '700',
@@ -728,6 +730,7 @@ export default function Game() {
                               }}>
                                 {index + 4}.
                               </div>
+                              <PlayerAvatar player={player} size="small" />
                               <div>
                                 <div style={{ fontWeight: '600' }}>
                                   {player.name} {player.id === currentPlayer.id && '(You)'}

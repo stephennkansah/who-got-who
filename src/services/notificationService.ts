@@ -64,22 +64,28 @@ export class NotificationService {
   }
 
   // Show game-specific notifications
-  static showPlayerGotPlayer(playerName: string, targetName: string): void {
+  static showPlayerGotPlayer(playerName: string, targetName: string, playerAvatar?: string, targetAvatar?: string): void {
+    const playerDisplay = (playerAvatar && !playerAvatar.startsWith('data:')) ? `${playerAvatar} ${playerName}` : playerName;
+    const targetDisplay = (targetAvatar && !targetAvatar.startsWith('data:')) ? `${targetAvatar} ${targetName}` : targetName;
+    
     this.showNotification(
       '🎯 Gotcha!',
       {
-        body: `${playerName} got ${targetName}!`,
+        body: `${playerDisplay} got ${targetDisplay}!`,
         tag: 'gotcha',
         requireInteraction: false
       }
     );
   }
 
-  static showPlayerGotCaught(playerName: string, catcherName: string): void {
+  static showPlayerGotCaught(playerName: string, catcherName: string, playerAvatar?: string, catcherAvatar?: string): void {
+    const playerDisplay = (playerAvatar && !playerAvatar.startsWith('data:')) ? `${playerAvatar} ${playerName}` : playerName;
+    const catcherDisplay = (catcherAvatar && !catcherAvatar.startsWith('data:')) ? `${catcherAvatar} ${catcherName}` : catcherName;
+    
     this.showNotification(
       '😅 Caught!',
       {
-        body: `${catcherName} caught ${playerName}!`,
+        body: `${catcherDisplay} caught ${playerDisplay}!`,
         tag: 'caught',
         requireInteraction: false
       }
@@ -108,11 +114,13 @@ export class NotificationService {
     );
   }
 
-  static showGameEnded(winnerName: string): void {
+  static showGameEnded(winnerName: string, winnerAvatar?: string): void {
+    const winnerDisplay = (winnerAvatar && !winnerAvatar.startsWith('data:')) ? `${winnerAvatar} ${winnerName}` : winnerName;
+    
     this.showNotification(
       '🏆 Game Over!',
       {
-        body: `${winnerName} wins the game!`,
+        body: `${winnerDisplay} wins the game!`,
         tag: 'game-end',
         requireInteraction: true
       }

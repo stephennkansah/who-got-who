@@ -250,7 +250,7 @@ function Home() {
                 lineHeight: '1.6',
                 margin: '0 0 15px 0'
               }}>
-                Complete secret missions on others without being caught. First to 4 points wins!
+                Complete secret missions on others without being caught. Win by being first to reach the target score!
               </p>
               <p style={{ 
                 color: 'rgba(255,255,255,0.85)', 

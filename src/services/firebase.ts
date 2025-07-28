@@ -36,29 +36,40 @@ if (missingVars.length > 0) {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
+// Helper function to determine game settings based on player count
+export const getGameSettings = (playerCount: number) => {
+  const taskCount = playerCount >= 7 ? 8 : 7;
+  const targetScore = playerCount >= 7 ? 5 : 4;
+  
+  return {
+    taskCount,
+    settings: {
+      swapsAllowed: 2,
+      disputeTimeoutSeconds: 120,
+      hostDefaultOnTie: true,
+      enableNegativeScoring: false,
+      maxPlayers: 10,
+      targetScore
+    }
+  };
+};
+
 export class FirebaseService {
   // Create a new game
-  static async createGame(hostPlayer: Player): Promise<string> {
+  static async createGame(gameId: string, hostPlayer: Player): Promise<void> {
     try {
-      const gameId = hostPlayer.gameId;
+      // Get initial settings for 1 player (host)
+      const { settings } = getGameSettings(1);
       
-      const gameData: Game = {
-        id: gameId,
+      const gameData: Omit<Game, 'id'> = {
         status: 'draft',
         mode: 'casual',
-        packId: 'core-a',
+        packId: 'core-pack-a',
         createdBy: hostPlayer.name,
         createdAt: new Date(),
         hostId: hostPlayer.id,
         players: [hostPlayer],
-        settings: {
-          swapsAllowed: 2,
-          disputeTimeoutSeconds: 120,
-          hostDefaultOnTie: true,
-          enableNegativeScoring: false,
-          maxPlayers: 10,
-          targetScore: 4
-        },
+        settings,
         currentPhase: 'draft'
       };
 
@@ -70,10 +81,10 @@ export class FirebaseService {
         createdAt: gameData.createdAt.toISOString()
       });
 
-      return gameId;
+      console.log('✅ Game created with ID:', gameId);
     } catch (error) {
-      console.error('Error creating game:', error);
-      throw new Error('Failed to create game');
+      console.error('❌ Error creating game:', error);
+      throw error;
     }
   }
 
@@ -204,6 +215,19 @@ export class FirebaseService {
   static async updateGame(gameId: string, gameUpdate: Partial<Game>): Promise<void> {
     const gameRef = ref(database, `games/${gameId}`);
     await update(gameRef, gameUpdate);
+  }
+
+  // Update game settings when player count changes
+  static async updateGameSettings(gameId: string, playerCount: number): Promise<void> {
+    try {
+      const { settings } = getGameSettings(playerCount);
+      const gameRef = ref(database, `games/${gameId}/settings`);
+      await update(gameRef, settings);
+      console.log(`✅ Game settings updated for ${playerCount} players`);
+    } catch (error) {
+      console.error('❌ Error updating game settings:', error);
+      throw error;
+    }
   }
 
   // Delete game (cleanup)

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { Game, Player, TaskInstance, GameState, GameContextType } from '../types';
 import { getRandomTasks, getReplacementTask, isBonusTask } from '../data/mockTasks';
-import FirebaseService from '../services/firebase';
+import FirebaseService, { getGameSettings } from '../services/firebase';
 import NotificationService from '../services/notificationService';
 import ClarityService from '../services/clarityService';
 
@@ -118,7 +118,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
                 const winner = game.players.reduce((prev, current) => 
                   (prev.score > current.score) ? prev : current
                 );
-                NotificationService.showGameEnded(winner.name);
+                NotificationService.showGameEnded(winner.name, winner.avatar);
                 
                 // Track game end in Clarity
                 ClarityService.trackGameEvent('game_ended');
@@ -163,8 +163,9 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
       const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
       const playerId = Math.random().toString(36).substring(2, 15);
       
-      // Get random tasks from core pack A
-      const rawTasks = getRandomTasks('core-pack-a', 7);
+      // Get random tasks from core pack A (7 for host starting alone)
+      const { taskCount } = getGameSettings(1);
+      const rawTasks = getRandomTasks('core-pack-a', taskCount);
       const tasks: TaskInstance[] = rawTasks.map(task => ({
         ...task,
         id: Math.random().toString(36).substring(2, 15),
@@ -195,13 +196,8 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
       };
 
       console.log('Creating game with host player:', player.name);
-      const createdGameId = await FirebaseService.createGame(player); // Standard game mode
-      console.log('Game created with ID:', createdGameId);
-      
-      // The gameId should be the same as what we created
-      if (createdGameId !== gameId) {
-        console.error('Game ID mismatch!', { expected: gameId, actual: createdGameId });
-      }
+      await FirebaseService.createGame(gameId, player); // Standard game mode
+      console.log('Game created with ID:', gameId);
       console.log('Player updated with gameId');
 
       // Get the created game
@@ -240,14 +236,31 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     dispatch({ type: 'SET_ERROR', payload: null });
 
     try {
-           const playerId = generatePlayerId();
-     const rawTasks = getRandomTasks('core-pack-a', 7);
-     const tasks = rawTasks.map(task => ({
-       ...task,
-       gameId,
-       playerId,
-       status: 'pending' as const
-     }));
+      // If user is already in a game, leave it first
+      if (state.currentGame && state.currentGame.id !== gameId) {
+        console.log('🚪 Leaving current game to join new one');
+        await leaveGame();
+      }
+      const playerId = generatePlayerId();
+      
+      // First, get current game to check player count
+      const currentGame = await FirebaseService.getGame(gameId);
+      if (!currentGame) {
+        throw new Error('Game not found');
+      }
+      
+      // Calculate new player count (including this joining player)
+      const newPlayerCount = currentGame.players.length + 1;
+      const { taskCount } = getGameSettings(newPlayerCount);
+      
+      // Generate tasks based on player count
+      const rawTasks = getRandomTasks('core-pack-a', taskCount);
+      const tasks = rawTasks.map(task => ({
+        ...task,
+        gameId,
+        playerId,
+        status: 'pending' as const
+      }));
 
       const newPlayer: Player = {
         id: playerId,
@@ -271,6 +284,9 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
       };
 
       await FirebaseService.joinGame(gameId, newPlayer);
+      
+      // Update game settings for new player count
+      await FirebaseService.updateGameSettings(gameId, newPlayerCount);
       
       // Get updated game data
       const game = await FirebaseService.getGame(gameId);
@@ -478,7 +494,12 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         // Show notification that someone got caught
         const catcherPlayer = state.currentGame.players.find(p => p.id === catcherId);
         if (catcherPlayer) {
-          NotificationService.showPlayerGotCaught(state.currentPlayer.name, catcherPlayer.name);
+          NotificationService.showPlayerGotCaught(
+            state.currentPlayer.name, 
+            catcherPlayer.name,
+            state.currentPlayer.avatar,
+            catcherPlayer.avatar
+          );
         }
         
         // Track being caught in Clarity
@@ -529,12 +550,23 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         // Show notification for successful gotcha
         const targetPlayer = state.currentGame.players.find(p => p.id === targetId);
         if (targetPlayer) {
-          NotificationService.showPlayerGotPlayer(state.currentPlayer.name, targetPlayer.name);
+          NotificationService.showPlayerGotPlayer(
+            state.currentPlayer.name, 
+            targetPlayer.name,
+            state.currentPlayer.avatar,
+            targetPlayer.avatar
+          );
         }
         
         // Track successful task completion in Clarity
         ClarityService.trackGameEvent('task_completed');
         ClarityService.setTag('current_score', updatedPlayer.score.toString());
+        
+        // Check win condition
+        if (updatedPlayer.score >= state.currentGame.settings.targetScore) {
+          console.log('🏆 Player reached target score! Ending game...');
+          await endGame();
+        }
       }
     } catch (error) {
       console.error('Error claiming gotcha:', error);
