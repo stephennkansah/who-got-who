@@ -3,36 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { Player } from '../types';
 import NotificationPrompt from './NotificationPrompt';
+import ShareButton from './ShareButton';
 
-// Helper function to copy text with fallback
-const copyToClipboard = async (text: string): Promise<boolean> => {
-  if (navigator.clipboard && window.isSecureContext) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (err) {
-      console.warn('Clipboard API failed:', err);
-    }
-  }
-  
-  // Fallback for older browsers or non-HTTPS
-  try {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    const result = document.execCommand('copy');
-    document.body.removeChild(textArea);
-    return result;
-  } catch (err) {
-    console.error('Copy to clipboard failed:', err);
-    return false;
-  }
-};
+
 
 export default function Lobby() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -494,46 +467,15 @@ export default function Lobby() {
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
-            <button 
-              onClick={async () => {
-                const success = await copyToClipboard(currentGame.id);
-                alert(success ? 'Game ID copied!' : 'Failed to copy. Game ID: ' + currentGame.id);
-              }}
-              style={{ 
-                flex: 1,
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                border: 'none',
-                borderRadius: '8px',
-                color: 'white',
+          <div style={{ display: 'flex', justifyContent: 'center', flex: 1 }}>
+            <ShareButton 
+              gameId={currentGame.id}
+              size="small"
+              style={{
                 fontSize: '0.8rem',
-                fontWeight: '600',
-                padding: '0.6rem 0.8rem',
-                cursor: 'pointer'
+                padding: '0.6rem 1.2rem'
               }}
-            >
-              📋 Copy ID
-            </button>
-            <button 
-              onClick={async () => {
-                const gameUrl = `${window.location.origin}/?join=${currentGame.id}`;
-                const success = await copyToClipboard(gameUrl);
-                alert(success ? 'Game link copied!' : 'Failed to copy. Link: ' + gameUrl);
-              }}
-              style={{ 
-                flex: 1,
-                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                border: 'none',
-                borderRadius: '8px',
-                color: 'white',
-                fontSize: '0.8rem',
-                fontWeight: '600',
-                padding: '0.6rem 0.8rem',
-                cursor: 'pointer'
-              }}
-            >
-              🔗 Copy Link
-            </button>
+            />
           </div>
         </div>
       </div>
