@@ -134,12 +134,6 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
             if (state.currentPlayer) {
               const updatedPlayer = game.players.find(p => p.id === state.currentPlayer!.id);
               if (updatedPlayer) {
-                console.log('🔄 Syncing player from Firebase:', {
-                  playerId: updatedPlayer.id,
-                  playerName: updatedPlayer.name,
-                  score: updatedPlayer.score,
-                  tasks: updatedPlayer.tasks.filter(t => t.status === 'completed').length
-                });
                 dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
               }
             }
@@ -449,13 +443,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
   const claimGotcha = async (taskId: string, targetId: string) => {
     if (!state.currentPlayer || !state.currentGame) return;
 
-    console.log('🎯 claimGotcha called:', { 
-      taskId, 
-      targetId, 
-      currentScore: state.currentPlayer.score,
-      playerId: state.currentPlayer.id,
-      playerName: state.currentPlayer.name 
-    });
+
 
     try {
       if (targetId === 'failed') {
@@ -510,7 +498,8 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         );
 
         // Update player score and stats
-        const isFirstTimeTarget = !state.currentPlayer.stats.uniqueTargets.includes(targetId);
+        const uniqueTargets = state.currentPlayer.stats.uniqueTargets || [];
+        const isFirstTimeTarget = !uniqueTargets.includes(targetId);
         
         // Update tasks to reflect completion
         const updatedTasks = state.currentPlayer.tasks.map(task =>
@@ -525,26 +514,17 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
           score: state.currentPlayer.score + 1 + (isFirstTimeTarget ? 0.5 : 0),
           stats: {
             ...state.currentPlayer.stats,
-            gothcas: state.currentPlayer.stats.gothcas + 1,
+            gothcas: (state.currentPlayer.stats.gothcas || 0) + 1,
             uniqueTargets: isFirstTimeTarget
-              ? [...state.currentPlayer.stats.uniqueTargets, targetId]
-              : state.currentPlayer.stats.uniqueTargets,
+              ? [...uniqueTargets, targetId]
+              : uniqueTargets,
           }
         };
-
-        console.log('📊 Score update:', {
-          oldScore: state.currentPlayer.score,
-          newScore: updatedPlayer.score,
-          isFirstTimeTarget,
-          targetId
-        });
 
         await FirebaseService.updatePlayer(state.currentGame.id, updatedPlayer);
         
         // Update local state immediately for responsive UI
         dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
-        
-        console.log('✅ Player updated locally with new score:', updatedPlayer.score);
 
         // Show notification for successful gotcha
         const targetPlayer = state.currentGame.players.find(p => p.id === targetId);
