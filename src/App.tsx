@@ -6,6 +6,7 @@ import Lobby from './components/Lobby';
 import Game from './components/Game';
 import Recap from './components/Recap';
 import InstallPrompt from './components/InstallPrompt';
+import FeedbackButton from './components/FeedbackButton';
 import './serviceWorkerRegistration';
 
 function App() {
@@ -24,6 +25,9 @@ function App() {
       
       {/* Install Prompt */}
       <InstallPrompt />
+      
+      {/* Feedback Button */}
+      <FeedbackButton />
       
       {/* Mode indicator */}
       <div style={{

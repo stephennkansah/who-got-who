@@ -161,16 +161,82 @@ function Home() {
                 color: 'rgba(255,255,255,0.85)', 
                 fontSize: '1.3em',
                 fontWeight: '500',
-                textShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                marginBottom: '20px'
               }}>
                 The ultimate party game
               </p>
+              
+              {/* Enhanced Description */}
+              <div style={{ 
+                background: 'rgba(255,255,255,0.15)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: '15px',
+                padding: '20px',
+                marginTop: '20px',
+                border: '1px solid rgba(255,255,255,0.2)'
+              }}>
+                <p style={{ 
+                  color: 'rgba(255,255,255,0.9)', 
+                  fontSize: '1.1em',
+                  fontWeight: '500',
+                  lineHeight: '1.6',
+                  margin: '0 0 15px 0',
+                  textShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                }}>
+                  Who Got Who is a stealth challenge game you can play <strong>anytime, anywhere</strong> — at a party, at work, on a night out, or even at dinner.
+                </p>
+                <p style={{ 
+                  color: 'rgba(255,255,255,0.85)', 
+                  fontSize: '1em',
+                  lineHeight: '1.5',
+                  margin: '0 0 15px 0'
+                }}>
+                  Each player gets secret missions. Complete them on others without being caught. Say "Gotcha" to lock in your win.
+                </p>
+                <p style={{ 
+                  color: 'rgba(255,255,255,0.8)', 
+                  fontSize: '1em',
+                  fontStyle: 'italic',
+                  margin: '0',
+                  textAlign: 'center'
+                                 }}>
+                   <strong>"Play at work. Play at dinner. Just don't get caught."</strong>
+                 </p>
+                 
+                 {/* Quick Examples Teaser */}
+                 <div style={{ 
+                   marginTop: '20px',
+                   padding: '15px',
+                   background: 'rgba(255,255,255,0.1)',
+                   borderRadius: '12px',
+                   border: '1px solid rgba(255,255,255,0.15)'
+                 }}>
+                   <div style={{ 
+                     fontSize: '0.9em',
+                     color: 'rgba(255,255,255,0.8)',
+                     marginBottom: '8px',
+                     fontWeight: '600'
+                   }}>
+                     💡 Example missions:
+                   </div>
+                   <div style={{ 
+                     fontSize: '0.85em',
+                     color: 'rgba(255,255,255,0.75)',
+                     lineHeight: '1.4'
+                   }}>
+                     Get someone to correct a movie quote • Take a group selfie • Use air quotes
+                   </div>
+                 </div>
+               </div>
+              
               <div style={{ 
                 color: 'rgba(255,255,255,0.75)', 
                 fontSize: '0.95em',
                 fontWeight: '400',
                 marginTop: '15px',
-                lineHeight: '1.4'
+                lineHeight: '1.4',
+                textAlign: 'center'
               }}>
                 Perfect for parties • dinner guests • trips away • game nights • team building • family gatherings
               </div>
