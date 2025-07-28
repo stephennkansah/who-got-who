@@ -79,7 +79,7 @@ export class NotificationService {
     this.showNotification(
       '😅 Caught!',
       {
-        body: `${playerName} got caught by ${catcherName}!`,
+        body: `${catcherName} caught ${playerName}!`,
         tag: 'caught',
         requireInteraction: false
       }

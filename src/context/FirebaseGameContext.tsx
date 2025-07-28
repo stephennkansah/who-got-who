@@ -398,7 +398,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
 
     try {
       if (targetId === 'failed') {
-        // Mark task as failed
+        // Mark task as failed (no specific target)
         await FirebaseService.updatePlayerTask(
           state.currentGame.id, 
           state.currentPlayer.id, 
@@ -408,6 +408,26 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
 
         // Show notification for failed task
         NotificationService.showTaskFailed(state.currentPlayer.name);
+      } else if (targetId.startsWith('caught:')) {
+        // Task failed because someone caught you
+        const catcherId = targetId.replace('caught:', '');
+        
+        await FirebaseService.updatePlayerTask(
+          state.currentGame.id,
+          state.currentPlayer.id,
+          taskId,
+          { 
+            status: 'failed', 
+            targetId: catcherId, // Who caught you
+            gotAt: new Date() 
+          }
+        );
+
+        // Show notification that someone got caught
+        const catcherPlayer = state.currentGame.players.find(p => p.id === catcherId);
+        if (catcherPlayer) {
+          NotificationService.showPlayerGotCaught(state.currentPlayer.name, catcherPlayer.name);
+        }
       } else {
         // Mark task as completed and assign target
         await FirebaseService.updatePlayerTask(

@@ -20,9 +20,9 @@ export default function TargetSelectModal({
 }: TargetSelectModalProps) {
   if (!isOpen) return null;
 
-  const title = isReverse ? '🎯 Who Got You?' : '🎯 Who Did You Get?';
+  const title = isReverse ? '😅 Who Caught You?' : '🎯 Who Did You Get?';
   const instruction = isReverse
-    ? 'Select the player who completed this task on you:'
+    ? 'Select the player who caught you trying this task:'
     : 'Select the player you completed this task on:';
 
   return (
@@ -59,7 +59,7 @@ export default function TargetSelectModal({
                 gap: '0.5rem'
               }}
             >
-              <span style={{ fontSize: '1.2rem' }}>🎯</span>
+              <span style={{ fontSize: '1.2rem' }}>{isReverse ? '😅' : '🎯'}</span>
               <span>{player.name}</span>
               {player.isHost && <span style={{ fontSize: '0.8rem' }}>👑</span>}
             </button>

@@ -112,21 +112,8 @@ export default function Game() {
       const resultType = (selectedTask as any)?.resultType;
       
       if (resultType === 'failed') {
-        // Task failed - mark as failed and record who caught you
-        // We need to update the claimGotcha function to handle this case
-        // For now, let's create a custom update
-        if (state.currentPlayer && state.currentGame) {
-          await FirebaseService.updatePlayerTask(
-            state.currentGame.id,
-            state.currentPlayer.id,
-            selectedTask.id,
-            { 
-              status: 'failed', 
-              targetId, // Who caught you
-              gotAt: new Date() 
-            }
-          );
-        }
+        // Task failed - use special failure handling
+        await claimGotcha(selectedTask.id, `caught:${targetId}`);
       } else {
         // Task passed - mark as completed with target
         await claimGotcha(selectedTask.id, targetId);
