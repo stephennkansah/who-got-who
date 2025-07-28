@@ -201,18 +201,65 @@ function Home() {
                 fontSize: '1em',
                 fontWeight: '600',
                 lineHeight: '1.5',
-                margin: '0 0 15px 0'
+                margin: '0 0 20px 0'
               }}>
                 Plays in the background of whatever you're doing — dinner, parties, work events.
               </p>
-              <p style={{ 
-                color: 'rgba(255,255,255,0.8)', 
-                fontSize: '0.95em',
-                margin: '0',
-                fontStyle: 'italic'
+              
+              {/* Perfect For Grid */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '15px',
+                padding: '20px',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
               }}>
-                Perfect for parties • dinners • trips • team building
-              </p>
+                <h4 style={{ 
+                  color: 'rgba(255,255,255,0.95)', 
+                  fontSize: '1.1em',
+                  fontWeight: '700',
+                  textAlign: 'center',
+                  margin: '0 0 15px 0'
+                }}>
+                  🎯 Perfect For...
+                </h4>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '12px',
+                  fontSize: '0.85em'
+                }}>
+                  <div style={{ textAlign: 'center', padding: '10px 8px' }}>
+                    <div style={{ fontSize: '1.5em', marginBottom: '4px' }}>🎉</div>
+                    <div style={{ fontWeight: '700', color: 'rgba(255,255,255,0.9)', marginBottom: '2px' }}>House Parties</div>
+                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8em' }}>Break the ice & get everyone laughing</div>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '10px 8px' }}>
+                    <div style={{ fontSize: '1.5em', marginBottom: '4px' }}>🍽️</div>
+                    <div style={{ fontWeight: '700', color: 'rgba(255,255,255,0.9)', marginBottom: '2px' }}>Dinner Guests</div>
+                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8em' }}>Perfect conversation starter</div>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '10px 8px' }}>
+                    <div style={{ fontSize: '1.5em', marginBottom: '4px' }}>✈️</div>
+                    <div style={{ fontWeight: '700', color: 'rgba(255,255,255,0.9)', marginBottom: '2px' }}>Trips Away</div>
+                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8em' }}>Hotels, cabins, road trips</div>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '10px 8px' }}>
+                    <div style={{ fontSize: '1.5em', marginBottom: '4px' }}>🏢</div>
+                    <div style={{ fontWeight: '700', color: 'rgba(255,255,255,0.9)', marginBottom: '2px' }}>Team Building</div>
+                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8em' }}>Office events & retreats</div>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '10px 8px' }}>
+                    <div style={{ fontSize: '1.5em', marginBottom: '4px' }}>👨‍👩‍👧‍👦</div>
+                    <div style={{ fontWeight: '700', color: 'rgba(255,255,255,0.9)', marginBottom: '2px' }}>Family Time</div>
+                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8em' }}>Holidays & reunions</div>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '10px 8px' }}>
+                    <div style={{ fontSize: '1.5em', marginBottom: '4px' }}>🎲</div>
+                    <div style={{ fontWeight: '700', color: 'rgba(255,255,255,0.9)', marginBottom: '2px' }}>Game Nights</div>
+                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8em' }}>Replace boring board games</div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </header>

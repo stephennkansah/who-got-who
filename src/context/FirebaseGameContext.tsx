@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { Game, Player, TaskInstance, GameState, GameContextType } from '../types';
 import { getRandomTasks } from '../data/mockTasks';
 import FirebaseService from '../services/firebase';
+import NotificationService from '../services/notificationService';
 
 // Check if Firebase is properly configured
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -93,9 +94,15 @@ interface FirebaseGameProviderProps {
 export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
   const [state, dispatch] = useReducer(firebaseGameReducer, initialState);
 
-  // Real-time subscriptions cleanup
+  // Initialize notifications on mount
+  useEffect(() => {
+    NotificationService.initialize();
+  }, []);
+
+  // Real-time subscriptions cleanup and game state watching
   useEffect(() => {
     let gameUnsubscribe: (() => void) | null = null;
+    let previousGameStatus: string | null = null;
 
     if (state.currentGame?.id) {
       // Subscribe to real-time game updates
@@ -103,6 +110,18 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         state.currentGame.id,
         (game) => {
           if (game) {
+            // Check for game status changes to show notifications
+            if (previousGameStatus && previousGameStatus !== game.status) {
+              if (game.status === 'ended') {
+                // Find the winner (player with highest score)
+                const winner = game.players.reduce((prev, current) => 
+                  (prev.score > current.score) ? prev : current
+                );
+                NotificationService.showGameEnded(winner.name);
+              }
+            }
+            previousGameStatus = game.status;
+            
             dispatch({ type: 'UPDATE_GAME', payload: game });
           }
         }
@@ -263,6 +282,9 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     
     try {
       await FirebaseService.startGame(state.currentGame.id, state.currentGame.players);
+      
+      // Show notification that game has started
+      NotificationService.showGameStarted();
     } catch (error) {
       console.error('Error starting game:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to start game.' });
@@ -383,6 +405,9 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
           taskId, 
           { status: 'failed' }
         );
+
+        // Show notification for failed task
+        NotificationService.showTaskFailed(state.currentPlayer.name);
       } else {
         // Mark task as completed and assign target
         await FirebaseService.updatePlayerTask(
@@ -411,6 +436,12 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         };
 
         await FirebaseService.updatePlayer(state.currentGame.id, updatedPlayer);
+
+        // Show notification for successful gotcha
+        const targetPlayer = state.currentGame.players.find(p => p.id === targetId);
+        if (targetPlayer) {
+          NotificationService.showPlayerGotPlayer(state.currentPlayer.name, targetPlayer.name);
+        }
       }
     } catch (error) {
       console.error('Error claiming gotcha:', error);

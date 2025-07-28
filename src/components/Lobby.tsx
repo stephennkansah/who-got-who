@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { Player } from '../types';
+import NotificationPrompt from './NotificationPrompt';
 
 // Helper function to copy text with fallback
 const copyToClipboard = async (text: string): Promise<boolean> => {
@@ -269,6 +270,9 @@ export default function Lobby() {
           </div>
         </div>
 
+        {/* Notification Prompt */}
+        <NotificationPrompt />
+
         {/* Next Button */}
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <div style={{ textAlign: 'center' }}>
@@ -399,6 +403,9 @@ export default function Lobby() {
             Host <strong>{currentGame.players.find(p => p.isHost)?.name}</strong> 👑 will start when ready
           </p>
         </div>
+
+        {/* Notification Prompt */}
+        <NotificationPrompt />
 
         {/* Leave Game */}
         <div className="card" style={{ marginBottom: '1rem' }}>
