@@ -9,6 +9,7 @@ function Home() {
   const [playerName, setPlayerName] = useState('');
   const [gameId, setGameId] = useState('');
   const [showGameOptions, setShowGameOptions] = useState(false);
+  const [showNameEntry, setShowNameEntry] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
 
   // Clear any existing game state only on first load from other pages
@@ -20,6 +21,10 @@ function Home() {
       if (!joinGameId && state.currentGame) {
         console.log('🧹 Clearing stale game state on Home initial load');
         leaveGame();
+      }
+      // If joining via link, skip straight to name entry
+      if (joinGameId) {
+        setShowNameEntry(true);
       }
     }
   }, [hasInitialized, searchParams, state.currentGame, leaveGame]);
@@ -102,144 +107,215 @@ function Home() {
   // Show join-specific welcome if game ID is in URL
   const joinGameId = searchParams.get('join');
   
-  // Welcome screen - name entry
-  if (!showGameOptions) {
+  // Welcome screen - main intro
+  if (!showNameEntry && !showGameOptions) {
     return (
-      <div className="container" style={{ padding: '20px', maxWidth: '500px', margin: '0 auto' }}>
-        <header style={{ textAlign: 'center', marginBottom: '60px', paddingTop: '40px' }}>
+      <div className="container" style={{ 
+        padding: '20px', 
+        maxWidth: '500px', 
+        margin: '0 auto',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
+      }}>
+        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
           <h1 style={{ 
-            fontSize: '4em', 
+            fontSize: '3.5em', 
             fontWeight: '900', 
             color: '#fff',
             textShadow: '0 6px 30px rgba(0,0,0,0.4)',
-            marginBottom: '25px',
+            marginBottom: '20px',
             letterSpacing: '-2px',
             lineHeight: '0.9'
           }}>
             WHO GOT WHO
           </h1>
+          <p style={{ 
+            color: 'rgba(255,255,255,0.95)', 
+            fontSize: '1.5em',
+            fontWeight: '600',
+            marginBottom: '15px',
+            textShadow: '0 3px 15px rgba(0,0,0,0.3)'
+          }}>
+            Secret tasks. Stealth claims.
+          </p>
+          <p style={{ 
+            color: 'rgba(255,255,255,0.85)', 
+            fontSize: '1.2em',
+            fontWeight: '500',
+            textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+            marginBottom: '30px'
+          }}>
+            The ultimate party game
+          </p>
+          
           {joinGameId ? (
-            <div style={{ marginTop: '30px' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.15))',
+              backdropFilter: 'blur(15px)',
+              padding: '20px',
+              borderRadius: '20px',
+              border: '2px solid rgba(255,255,255,0.4)',
+              boxShadow: '0 15px 50px rgba(0,0,0,0.3)',
+              marginBottom: '30px'
+            }}>
               <p style={{ 
-                color: 'rgba(255,255,255,0.95)', 
-                fontSize: '1.5em',
-                fontWeight: '600',
-                marginBottom: '20px',
-                textShadow: '0 3px 15px rgba(0,0,0,0.3)'
+                color: '#fff', 
+                fontSize: '1.3em',
+                fontWeight: '700',
+                marginBottom: '10px'
               }}>
-                🎉 You've been invited!
+                🎉 You've been invited to join
               </p>
               <div style={{ 
                 color: '#fff', 
-                fontSize: '2.2em',
+                fontSize: '2em',
                 fontWeight: '800',
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.15))',
-                backdropFilter: 'blur(15px)',
-                padding: '20px 35px',
-                borderRadius: '25px',
-                display: 'inline-block',
-                letterSpacing: '4px',
-                border: '3px solid rgba(255,255,255,0.4)',
-                boxShadow: '0 15px 50px rgba(0,0,0,0.3)',
+                letterSpacing: '3px',
                 textShadow: '0 2px 10px rgba(0,0,0,0.2)'
               }}>
                 GAME {joinGameId}
               </div>
             </div>
           ) : (
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.15)',
+              backdropFilter: 'blur(15px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '20px',
+              padding: '25px',
+              marginBottom: '30px'
+            }}>
+              <p style={{ 
+                color: 'rgba(255,255,255,0.9)', 
+                fontSize: '1.1em',
+                fontWeight: '600',
+                lineHeight: '1.6',
+                margin: '0 0 15px 0'
+              }}>
+                Complete secret missions on others without being caught. First to finish wins!
+              </p>
+              <p style={{ 
+                color: 'rgba(255,255,255,0.8)', 
+                fontSize: '0.95em',
+                margin: '0',
+                fontStyle: 'italic'
+              }}>
+                Perfect for parties • dinners • trips • team building
+              </p>
+            </div>
+          )}
+        </header>
+
+        <div style={{ textAlign: 'center' }}>
+          <button 
+            onClick={() => setShowNameEntry(true)}
+            style={{ 
+              fontSize: '1.4em',
+              fontWeight: '700',
+              padding: '20px 40px',
+              borderRadius: '25px',
+              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              border: 'none',
+              color: 'white',
+              boxShadow: '0 15px 45px rgba(59, 130, 246, 0.4)',
+              transition: 'all 0.3s ease',
+              cursor: 'pointer',
+              textTransform: 'none',
+              letterSpacing: '0.5px',
+              minWidth: '200px'
+            }}
+            onMouseEnter={(e) => {
+              const target = e.target as HTMLButtonElement;
+              target.style.transform = 'translateY(-3px)';
+              target.style.boxShadow = '0 20px 55px rgba(59, 130, 246, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              const target = e.target as HTMLButtonElement;
+              target.style.transform = 'translateY(0)';
+              target.style.boxShadow = '0 15px 45px rgba(59, 130, 246, 0.4)';
+            }}
+          >
+            {joinGameId ? '🚀 Join Game' : '🎮 Start Playing'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Name entry screen
+  if (showNameEntry && !showGameOptions) {
+    return (
+      <div className="container" style={{ 
+        padding: '20px', 
+        maxWidth: '500px', 
+        margin: '0 auto',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
+      }}>
+        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <h1 style={{ 
+            fontSize: '2.8em', 
+            fontWeight: '900', 
+            color: '#fff',
+            textShadow: '0 6px 30px rgba(0,0,0,0.4)',
+            marginBottom: '15px',
+            letterSpacing: '-2px',
+            lineHeight: '0.9'
+          }}>
+            WHO GOT WHO
+          </h1>
+          {joinGameId ? (
             <div style={{ marginTop: '20px' }}>
               <p style={{ 
                 color: 'rgba(255,255,255,0.95)', 
-                fontSize: '1.6em',
+                fontSize: '1.3em',
                 fontWeight: '600',
-                marginBottom: '10px',
+                marginBottom: '15px',
+                textShadow: '0 3px 15px rgba(0,0,0,0.3)'
+              }}>
+                🎉 You've been invited!
+              </p>
+              <div style={{ 
+                color: '#fff', 
+                fontSize: '1.8em',
+                fontWeight: '800',
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.15))',
+                backdropFilter: 'blur(15px)',
+                padding: '15px 25px',
+                borderRadius: '20px',
+                display: 'inline-block',
+                letterSpacing: '3px',
+                border: '2px solid rgba(255,255,255,0.4)',
+                boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+                textShadow: '0 2px 10px rgba(0,0,0,0.2)'
+              }}>
+                GAME {joinGameId}
+              </div>
+            </div>
+          ) : (
+            <div style={{ marginTop: '15px' }}>
+              <p style={{ 
+                color: 'rgba(255,255,255,0.95)', 
+                fontSize: '1.4em',
+                fontWeight: '600',
+                marginBottom: '8px',
                 textShadow: '0 3px 15px rgba(0,0,0,0.3)'
               }}>
                 Secret tasks. Stealth claims.
               </p>
               <p style={{ 
                 color: 'rgba(255,255,255,0.85)', 
-                fontSize: '1.3em',
+                fontSize: '1.1em',
                 fontWeight: '500',
                 textShadow: '0 2px 10px rgba(0,0,0,0.2)',
-                marginBottom: '20px'
+                marginBottom: '15px'
               }}>
                 The ultimate party game
               </p>
-              
-              {/* Enhanced Description */}
-              <div style={{ 
-                background: 'rgba(255,255,255,0.15)',
-                backdropFilter: 'blur(10px)',
-                borderRadius: '15px',
-                padding: '20px',
-                marginTop: '20px',
-                border: '1px solid rgba(255,255,255,0.2)'
-              }}>
-                <p style={{ 
-                  color: 'rgba(255,255,255,0.9)', 
-                  fontSize: '1.1em',
-                  fontWeight: '500',
-                  lineHeight: '1.6',
-                  margin: '0 0 15px 0',
-                  textShadow: '0 2px 8px rgba(0,0,0,0.2)'
-                }}>
-                  Who Got Who is a stealth challenge game you can play <strong>anytime, anywhere</strong> — at a party, at work, on a night out, or even at dinner.
-                </p>
-                <p style={{ 
-                  color: 'rgba(255,255,255,0.85)', 
-                  fontSize: '1em',
-                  lineHeight: '1.5',
-                  margin: '0 0 15px 0'
-                }}>
-                  Each player gets secret missions. Complete them on others without being caught. Say "Gotcha" to lock in your win.
-                </p>
-                <p style={{ 
-                  color: 'rgba(255,255,255,0.8)', 
-                  fontSize: '1em',
-                  fontStyle: 'italic',
-                  margin: '0',
-                  textAlign: 'center'
-                                 }}>
-                   <strong>"Play at work. Play at dinner. Just don't get caught."</strong>
-                 </p>
-                 
-                 {/* Quick Examples Teaser */}
-                 <div style={{ 
-                   marginTop: '20px',
-                   padding: '15px',
-                   background: 'rgba(255,255,255,0.1)',
-                   borderRadius: '12px',
-                   border: '1px solid rgba(255,255,255,0.15)'
-                 }}>
-                   <div style={{ 
-                     fontSize: '0.9em',
-                     color: 'rgba(255,255,255,0.8)',
-                     marginBottom: '8px',
-                     fontWeight: '600'
-                   }}>
-                     💡 Example missions:
-                   </div>
-                   <div style={{ 
-                     fontSize: '0.85em',
-                     color: 'rgba(255,255,255,0.75)',
-                     lineHeight: '1.4'
-                   }}>
-                     Get someone to correct a movie quote • Take a group selfie • Use air quotes
-                   </div>
-                 </div>
-               </div>
-              
-              <div style={{ 
-                color: 'rgba(255,255,255,0.75)', 
-                fontSize: '0.95em',
-                fontWeight: '400',
-                marginTop: '15px',
-                lineHeight: '1.4',
-                textAlign: 'center'
-              }}>
-                Perfect for parties • dinner guests • trips away • game nights • team building • family gatherings
-              </div>
             </div>
           )}
         </header>
@@ -251,8 +327,8 @@ function Home() {
           border: '2px solid rgba(255, 255, 255, 0.4)',
           boxShadow: '0 25px 80px rgba(0, 0, 0, 0.2)',
           borderRadius: '30px',
-          padding: '50px 40px',
-          marginBottom: '30px',
+          padding: '40px 35px',
+          marginBottom: '20px',
           position: 'relative',
           overflow: 'hidden'
         }}>
@@ -268,12 +344,12 @@ function Home() {
           }} />
           
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '3em', marginBottom: '20px' }}>
+            <div style={{ fontSize: '2.5em', marginBottom: '15px' }}>
               {joinGameId ? '🎮' : '👋'}
             </div>
             <h2 style={{ 
-              marginBottom: '35px',
-              fontSize: '2em',
+              marginBottom: '25px',
+              fontSize: '1.8em',
               fontWeight: '800',
               color: '#1f2937',
               letterSpacing: '-1px'
@@ -283,11 +359,11 @@ function Home() {
             {joinGameId && (
               <p style={{
                 color: '#666',
-                fontSize: '1rem',
-                marginBottom: '20px',
+                fontSize: '0.95rem',
+                marginBottom: '15px',
                 textAlign: 'center'
               }}>
-                Enter your name to see who's playing and wait for the game to start
+                Enter your name to see who's playing
               </p>
             )}
             <form onSubmit={handleNameSubmit}>
@@ -297,11 +373,11 @@ function Home() {
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value.replace(/^\s+/, ''))}
                 style={{ 
-                  marginBottom: '30px',
-                  fontSize: '1.3em',
+                  marginBottom: '25px',
+                  fontSize: '1.2em',
                   textAlign: 'center',
-                  padding: '20px 30px',
-                  borderRadius: '20px',
+                  padding: '18px 25px',
+                  borderRadius: '18px',
                   border: '3px solid #e2e8f0',
                   background: '#ffffff',
                   width: '100%',
@@ -331,10 +407,10 @@ function Home() {
                 type="submit" 
                 disabled={!playerName.trim()}
                 style={{ 
-                  fontSize: '1.3em',
+                  fontSize: '1.2em',
                   fontWeight: '700',
-                  padding: '20px 40px',
-                  borderRadius: '20px',
+                  padding: '18px 35px',
+                  borderRadius: '18px',
                   background: playerName.trim() 
                     ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' 
                     : 'linear-gradient(135deg, #94a3b8, #64748b)',
@@ -371,140 +447,67 @@ function Home() {
           </div>
         </div>
 
-        {/* Quick How to Play - only show if not joining */}
+        {/* Quick Game Info - only show if not joining */}
         {!joinGameId && (
           <div style={{
-            background: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.1)',
-            borderRadius: '25px',
-            padding: '35px 30px'
+            background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(15px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '20px',
+            padding: '20px',
+            textAlign: 'center',
+            marginBottom: '20px'
           }}>
-            <h2 style={{
-              fontSize: '1.8em',
-              fontWeight: '700',
-              color: '#1f2937',
-              marginBottom: '25px',
-              letterSpacing: '-0.5px',
-              textAlign: 'center'
+            <p style={{ 
+              color: 'rgba(255,255,255,0.9)', 
+              fontSize: '0.95em',
+              fontWeight: '600',
+              lineHeight: '1.5',
+              margin: '0 0 12px 0'
             }}>
-              🎯 How to Play
-            </h2>
-            <div style={{ 
-              textAlign: 'left', 
-              lineHeight: '1.9',
-              fontSize: '1.1em',
-              color: '#4b5563'
+              Complete secret missions on others without being caught
+            </p>
+            <p style={{ 
+              color: 'rgba(255,255,255,0.8)', 
+              fontSize: '0.85em',
+              margin: '0',
+              fontStyle: 'italic'
             }}>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                marginBottom: '15px', 
-                fontWeight: '600' 
-              }}>
-                <span style={{ 
-                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: '15px',
-                  fontSize: '0.8em',
-                  fontWeight: '700'
-                }}>1</span>
-                Complete secret tasks on other players
-              </div>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                marginBottom: '15px', 
-                fontWeight: '600' 
-              }}>
-                <span style={{ 
-                  background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: '15px',
-                  fontSize: '0.8em',
-                  fontWeight: '700'
-                }}>2</span>
-                Say "Gotcha!" when done & claim in app
-              </div>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                marginBottom: '15px', 
-                fontWeight: '600' 
-              }}>
-                <span style={{ 
-                  background: 'linear-gradient(135deg, #ec4899, #db2777)',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: '15px',
-                  fontSize: '0.8em',
-                  fontWeight: '700'
-                }}>3</span>
-                First to 4 completed tasks wins!
-              </div>
-              
-              {/* Example Tasks */}
-              <div style={{ 
-                background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-                padding: '20px',
-                borderRadius: '15px',
-                marginTop: '25px',
-                border: '2px solid #f59e0b'
-              }}>
-                <h4 style={{ 
-                  color: '#92400e', 
-                  marginBottom: '15px', 
-                  fontSize: '1.1em',
-                  fontWeight: '700',
-                  textAlign: 'center'
-                }}>
-                  💡 Example Tasks
-                </h4>
-                <div style={{ color: '#78350f', fontSize: '0.95em', lineHeight: '1.6' }}>
-                  <div style={{ marginBottom: '12px', background: 'rgba(255,255,255,0.6)', padding: '10px', borderRadius: '8px' }}>
-                    <strong>"Get a player to correct a movie quote"</strong><br/>
-                    <em>Say: "Luke, I am your father" and wait for someone to correct you with "No, I am your father"</em>
-                  </div>
-                  <div style={{ marginBottom: '12px', background: 'rgba(255,255,255,0.6)', padding: '10px', borderRadius: '8px' }}>
-                    <strong>"Get someone to take a group selfie"</strong><br/>
-                    <em>Suggest taking a photo without being obvious it's your task</em>
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.6)', padding: '10px', borderRadius: '8px' }}>
-                    <strong>"Get a player to use air quotes"</strong><br/>
-                    <em>Bring up something that naturally makes them say "so-called" or similar</em>
-                  </div>
-                </div>
-              </div>
+              Perfect for parties • dinners • trips • team building
+            </p>
+          </div>
+        )}
 
-              <div style={{ 
-                background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
-                padding: '15px 20px',
-                borderRadius: '15px',
-                marginTop: '20px',
-                border: '2px solid #bae6fd',
-                textAlign: 'center'
-              }}>
-                <strong style={{ color: '#0369a1' }}>👥 2+ players needed to start</strong>
-              </div>
-            </div>
+        {/* Back button - only show if not joining via link */}
+        {!joinGameId && (
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <button 
+              onClick={() => setShowNameEntry(false)}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: '2px solid rgba(255,255,255,0.3)',
+                color: 'rgba(255,255,255,0.9)',
+                padding: '12px 25px',
+                borderRadius: '25px',
+                cursor: 'pointer',
+                fontSize: '1em',
+                fontWeight: '600',
+                backdropFilter: 'blur(10px)',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                const target = e.target as HTMLButtonElement;
+                target.style.background = 'rgba(255,255,255,0.3)';
+                target.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                const target = e.target as HTMLButtonElement;
+                target.style.background = 'rgba(255,255,255,0.2)';
+                target.style.transform = 'translateY(0)';
+              }}
+            >
+              ← Back to Welcome
+            </button>
           </div>
         )}
 
@@ -512,10 +515,10 @@ function Home() {
           <div style={{ 
             backgroundColor: '#fef2f2', 
             border: '2px solid #f87171',
-            borderRadius: '20px',
-            boxShadow: '0 10px 30px rgba(248, 113, 113, 0.2)',
-            padding: '20px',
-            marginTop: '20px'
+            borderRadius: '15px',
+            boxShadow: '0 8px 25px rgba(248, 113, 113, 0.2)',
+            padding: '15px',
+            marginTop: '15px'
           }}>
             <p style={{ color: '#dc2626', margin: 0, fontWeight: '600', textAlign: 'center' }}>
               ⚠️ {state.error}
@@ -750,7 +753,7 @@ function Home() {
             target.style.transform = 'translateY(0)';
           }}
         >
-          ← Change Name
+          ← Back
         </button>
       </div>
 
