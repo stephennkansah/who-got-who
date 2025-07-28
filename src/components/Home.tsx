@@ -658,15 +658,15 @@ function Home() {
                 <div style={{ color: '#78350f', fontSize: '0.9em', lineHeight: '1.5' }}>
                   <div style={{ marginBottom: '10px', background: 'rgba(255,255,255,0.6)', padding: '8px 10px', borderRadius: '6px' }}>
                     <strong>"Get someone to correct a movie quote"</strong><br/>
-                    <em style={{ fontSize: '0.85em' }}>Say: "Luke, I am your father" and wait for correction</em>
+                    <em style={{ fontSize: '0.85em' }}>Say: "Peter, I am your father" and wait for correction</em>
                   </div>
                   <div style={{ marginBottom: '10px', background: 'rgba(255,255,255,0.6)', padding: '8px 10px', borderRadius: '6px' }}>
                     <strong>"Get someone to take a group selfie"</strong><br/>
                     <em style={{ fontSize: '0.85em' }}>Suggest taking a photo naturally</em>
                   </div>
                   <div style={{ background: 'rgba(255,255,255,0.6)', padding: '8px 10px', borderRadius: '6px' }}>
-                    <strong>"Get a player to use air quotes"</strong><br/>
-                    <em style={{ fontSize: '0.85em' }}>Bring up something "controversial"</em>
+                    <strong>"Get someone to scratch your back for 10 secs"</strong><br/>
+                    <em style={{ fontSize: '0.85em' }}>Ask casually - "My back is killing me..."</em>
                   </div>
                 </div>
               </div>

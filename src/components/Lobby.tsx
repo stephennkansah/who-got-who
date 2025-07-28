@@ -240,15 +240,15 @@ export default function Lobby() {
               }}>
                 <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
                   <strong>"Get a player to correct a movie quote"</strong><br/>
-                  <em>Say: "Luke, I am your father" → Wait for correction</em>
+                  <em>Say: "Peter, I am your father" → Wait for correction</em>
                 </div>
                 <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
                   <strong>"Get someone to take a group selfie"</strong><br/>
                   <em>Naturally suggest a photo without being obvious</em>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
-                  <strong>"Get a player to use air quotes"</strong><br/>
-                  <em>Talk about something "so-called" or questionable</em>
+                  <strong>"Get someone to scratch your back for 10 secs"</strong><br/>
+                  <em>Ask casually - "My back is killing me..."</em>
                 </div>
               </div>
             </div>
