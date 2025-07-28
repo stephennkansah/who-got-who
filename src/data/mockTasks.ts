@@ -534,6 +534,57 @@ export function getRandomTasks(packId: string, count: number): Task[] {
   return finalTasks.sort(() => Math.random() - 0.5);
 }
 
+// Helper function to get a replacement task for swapping (respects bonus task limit)
+export function getReplacementTask(currentTasks: Task[], isSwappingBonusTask: boolean): Task | null {
+  // Separate regular tasks from bonus tasks
+  const regularTasks = [
+    ...correctionTasks,
+    ...verbalTasks,
+    ...physicalTasks,
+    ...performativeTasks,
+    ...technologyTasks
+  ];
+
+  // Check if player currently has a bonus task
+  const hasBonusTask = currentTasks.some(task => connectionTasks.some(bonus => bonus.id === task.id));
+  
+  // Get tasks the player doesn't already have
+  const usedTaskIds = currentTasks.map(task => task.id);
+  
+  if (isSwappingBonusTask) {
+    // Swapping away a bonus task - can get any type as replacement
+    const availableRegular = regularTasks.filter(task => !usedTaskIds.includes(task.id));
+    const availableBonus = connectionTasks.filter(task => !usedTaskIds.includes(task.id));
+    const allAvailable = [...availableRegular, ...availableBonus];
+    
+    if (allAvailable.length === 0) return null;
+    return allAvailable[Math.floor(Math.random() * allAvailable.length)];
+  } else {
+    // Swapping a regular task
+    if (hasBonusTask) {
+      // Already has bonus task - only give regular tasks
+      const availableRegular = regularTasks.filter(task => !usedTaskIds.includes(task.id));
+      if (availableRegular.length === 0) return null;
+      return availableRegular[Math.floor(Math.random() * availableRegular.length)];
+    } else {
+      // No bonus task yet - can give any type (but prefer regular to maintain 1 bonus rule)
+      const availableRegular = regularTasks.filter(task => !usedTaskIds.includes(task.id));
+      if (availableRegular.length === 0) {
+        // Only bonus tasks left
+        const availableBonus = connectionTasks.filter(task => !usedTaskIds.includes(task.id));
+        if (availableBonus.length === 0) return null;
+        return availableBonus[Math.floor(Math.random() * availableBonus.length)];
+      }
+      return availableRegular[Math.floor(Math.random() * availableRegular.length)];
+    }
+  }
+}
+
+// Helper function to check if a task is a bonus/connection task
+export function isBonusTask(task: Task): boolean {
+  return connectionTasks.some(bonus => bonus.id === task.id);
+}
+
 // Helper function to get all packs
 export function getAllPacks(): TaskPack[] {
   return Object.values(taskPacks);

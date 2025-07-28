@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { Game, Player, TaskInstance, GameState, GameContextType } from '../types';
-import { getRandomTasks } from '../data/mockTasks';
+import { getRandomTasks, getReplacementTask, isBonusTask } from '../data/mockTasks';
 import FirebaseService from '../services/firebase';
 import NotificationService from '../services/notificationService';
 import ClarityService from '../services/clarityService';
@@ -396,10 +396,22 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
   const swapTask = async (taskId: string) => {
     if (!state.currentPlayer || !state.currentGame || state.currentPlayer.swapsLeft <= 0) return;
 
-              const newTask = getRandomTasks('core-pack-a', 1)[0];
-     const updatedTasks = state.currentPlayer.tasks.map(task => 
-       task.id === taskId ? { ...newTask, id: task.id, playerId: task.playerId, gameId: task.gameId, status: task.status } : task
-     );
+    // Find the task being swapped and check if it's a bonus task
+    const taskBeingSwapped = state.currentPlayer.tasks.find(task => task.id === taskId);
+    if (!taskBeingSwapped) return;
+    
+    const isSwappingBonusTask = isBonusTask(taskBeingSwapped);
+    
+    // Get a replacement task that respects the bonus task limit
+    const newTask = getReplacementTask(state.currentPlayer.tasks, isSwappingBonusTask);
+    if (!newTask) {
+      console.error('No replacement tasks available');
+      return;
+    }
+    
+    const updatedTasks = state.currentPlayer.tasks.map(task => 
+      task.id === taskId ? { ...newTask, id: task.id, playerId: task.playerId, gameId: task.gameId, status: task.status } : task
+    );
     
     const updatedPlayer = {
       ...state.currentPlayer,

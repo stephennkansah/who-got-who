@@ -9,7 +9,7 @@ import {
   GameContextType,
   Dispute
 } from '../types';
-import { getRandomTasks } from '../data/mockTasks';
+import { getRandomTasks, getReplacementTask, isBonusTask } from '../data/mockTasks';
 
 // Initial State
 const initialState: GameState = {
@@ -401,9 +401,17 @@ export function GameProvider({ children }: GameProviderProps) {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      // Get one new random task
-      const newTasks = getRandomTasks('core-pack-a', 1);
-      const newTask = newTasks[0];
+      // Find the task being swapped and check if it's a bonus task
+      const taskBeingSwapped = currentPlayer.tasks.find(task => task.id === taskId);
+      if (!taskBeingSwapped) {
+        dispatch({ type: 'SET_ERROR', payload: 'Task not found' });
+        return;
+      }
+      
+      const isSwappingBonusTask = isBonusTask(taskBeingSwapped);
+      
+      // Get a replacement task that respects the bonus task limit
+      const newTask = getReplacementTask(currentPlayer.tasks, isSwappingBonusTask);
       
       if (!newTask) {
         dispatch({ type: 'SET_ERROR', payload: 'No more tasks available for swapping' });
