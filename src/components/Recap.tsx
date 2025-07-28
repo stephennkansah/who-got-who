@@ -345,6 +345,88 @@ export default function Recap() {
               <p>⏰ {new Date(currentGame.createdAt).toLocaleString()}</p>
             </div>
             
+            {/* Gotcha Timeline */}
+            {(() => {
+              // Collect all completed tasks from all players
+              const allGotchas: Array<{
+                playerName: string;
+                playerAvatar?: string;
+                targetName: string;
+                targetAvatar?: string;
+                gotAt: Date;
+                isCaught: boolean;
+              }> = [];
+
+              currentGame.players.forEach(player => {
+                player.tasks.forEach(task => {
+                  if (task.status === 'completed' && task.gotAt && task.targetId) {
+                    const targetPlayer = currentGame.players.find(p => p.id === task.targetId);
+                    if (targetPlayer) {
+                      allGotchas.push({
+                        playerName: player.name,
+                        playerAvatar: player.avatar,
+                        targetName: targetPlayer.name,
+                        targetAvatar: targetPlayer.avatar,
+                        gotAt: new Date(task.gotAt),
+                        isCaught: false
+                      });
+                    }
+                  } else if (task.status === 'failed' && task.gotAt && task.targetId) {
+                    // This is when someone got caught
+                    const catcherPlayer = currentGame.players.find(p => p.id === task.targetId);
+                    if (catcherPlayer) {
+                      allGotchas.push({
+                        playerName: player.name,
+                        playerAvatar: player.avatar,
+                        targetName: catcherPlayer.name,
+                        targetAvatar: catcherPlayer.avatar,
+                        gotAt: new Date(task.gotAt),
+                        isCaught: true
+                      });
+                    }
+                  }
+                });
+              });
+
+              // Sort by time
+              allGotchas.sort((a, b) => a.gotAt.getTime() - b.gotAt.getTime());
+
+              return allGotchas.map((gotcha, index) => (
+                <div key={index} style={{ 
+                  padding: '0.8rem', 
+                  borderLeft: gotcha.isCaught ? '4px solid #e74c3c' : '4px solid #f39c12', 
+                  marginLeft: '1rem',
+                  background: gotcha.isCaught ? 'rgba(231, 76, 60, 0.1)' : 'rgba(243, 156, 18, 0.1)',
+                  borderRadius: '0 8px 8px 0',
+                  marginBottom: '0.8rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                    <span style={{ fontSize: '1.2em' }}>
+                      {gotcha.isCaught ? '🚨' : '🎯'}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <PlayerAvatar 
+                        player={{ name: gotcha.playerName, avatar: gotcha.playerAvatar, avatarType: gotcha.playerAvatar?.startsWith('data:') ? 'photo' : 'emoji' } as any} 
+                        size="small" 
+                      />
+                      <span style={{ fontWeight: 'bold' }}>{gotcha.playerName}</span>
+                    </div>
+                    <span>{gotcha.isCaught ? 'got caught by' : 'got'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <PlayerAvatar 
+                        player={{ name: gotcha.targetName, avatar: gotcha.targetAvatar, avatarType: gotcha.targetAvatar?.startsWith('data:') ? 'photo' : 'emoji' } as any} 
+                        size="small" 
+                      />
+                      <span style={{ fontWeight: 'bold' }}>{gotcha.targetName}</span>
+                    </div>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.85em', color: '#666' }}>
+                    ⏰ {gotcha.gotAt.toLocaleTimeString()}
+                  </p>
+                </div>
+              ));
+            })()}
+            
             <div style={{ 
               padding: '1rem', 
               borderLeft: '4px solid #56ab2f', 
