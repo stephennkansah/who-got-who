@@ -56,7 +56,7 @@ export class FirebaseService {
           disputeTimeoutSeconds: 120,
           hostDefaultOnTie: true,
           enableNegativeScoring: false,
-          maxPlayers: 8,
+          maxPlayers: 10,
           targetScore: 4
         },
         currentPhase: 'draft'

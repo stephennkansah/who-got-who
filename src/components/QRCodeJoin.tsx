@@ -8,8 +8,22 @@ interface QRCodeJoinProps {
 
 const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, style }) => {
   const [showQR, setShowQR] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   
   const gameUrl = `${window.location.origin}/?join=${gameId}`;
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setShowQR(false);
+    // Prevent immediate reopening
+    setTimeout(() => setIsClosing(false), 300);
+  };
+
+  const handleOpen = () => {
+    if (!isClosing) {
+      setShowQR(true);
+    }
+  };
 
   if (showQR) {
     return (
@@ -29,7 +43,10 @@ const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, style }) => {
             justifyContent: 'center',
             padding: '20px'
           }}
-          onClick={() => setShowQR(false)}
+          onClick={(e) => {
+            e.preventDefault();
+            handleClose();
+          }}
         >
           {/* QR Modal */}
           <div 
@@ -54,7 +71,11 @@ const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, style }) => {
                 📱 Scan to Join
               </h3>
               <button
-                onClick={() => setShowQR(false)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleClose();
+                }}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -120,7 +141,11 @@ const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, style }) => {
             </p>
             
             <button
-              onClick={() => setShowQR(false)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleClose();
+              }}
               style={{
                 background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
                 color: 'white',
@@ -143,7 +168,7 @@ const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, style }) => {
 
   return (
     <button
-      onClick={() => setShowQR(true)}
+      onClick={handleOpen}
       style={{
         background: 'linear-gradient(135deg, #ec4899, #db2777)',
         color: 'white',

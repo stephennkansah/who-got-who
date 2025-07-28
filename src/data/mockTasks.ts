@@ -4,7 +4,7 @@ import { Task, TaskPack } from '../types';
 const correctionTasks: Task[] = [
   {
     id: 'c001',
-    text: 'Get a player to correct a \'fact\' you stated. (e.g., "The capital of Australia is Sydney.")'
+    text: 'Get a player to correct a \'fact\' you stated. '
   },
   {
     id: 'c002',
@@ -12,7 +12,7 @@ const correctionTasks: Task[] = [
   },
   {
     id: 'c003',
-    text: 'Get a player to correct your movie quote. (e.g., "Luke, I am your father...")'
+    text: 'Get a player to correct your movie quote. '
   },
   {
     id: 'c004',
@@ -208,7 +208,7 @@ const physicalTasks: Task[] = [
   },
   {
     id: 'p010',
-    text: 'Get a player to shiver and say they\'re cold.'
+    text: 'Get a player take off their shoes.'
   },
   {
     id: 'p011',
@@ -340,7 +340,7 @@ const performativeTasks: Task[] = [
   },
   {
     id: 'f012',
-    text: 'Get a player to blame an inanimate object for something. (e.g., "Stupid table!").'
+    text: 'Get a player mention 3 ex presidents'
   },
   {
     id: 'f013',
@@ -500,7 +500,7 @@ const taskPacks: { [key: string]: TaskPack } = {
     tasks: allTasks,
     difficulty: 'medium',
     minPlayers: 1,
-    maxPlayers: 8
+    maxPlayers: 10
   }
 };
 

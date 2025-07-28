@@ -707,7 +707,7 @@ function Home() {
                  textAlign: 'center'
                }}>
                  <div style={{ color: '#0277bd', fontWeight: '700', marginBottom: '8px' }}>
-                   👥 2+ players needed • 🕐 5 mins to 5 hours • 📱 Works anywhere
+                   👥 2-10 players • 🕐 5 mins to 5 hours • 📱 Works anywhere
                  </div>
                  <div style={{ color: '#0288d1', fontSize: '0.9em', fontStyle: 'italic' }}>
                    Plays in the background of whatever you're doing!

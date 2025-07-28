@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import imageCompression from 'browser-image-compression';
 
 interface AvatarPickerProps {
@@ -14,7 +14,11 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const emojiAvatars = [
     '🧑‍💼', '👩‍🎓', '🧑‍🎨', '👨‍🍳', '👩‍⚕️', '🦸‍♀️', 
@@ -25,9 +29,104 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
     '😎', '🤓', '😇', '😈', '🤠', '🥳'
   ];
 
+  // Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
   const handleEmojiSelect = (emoji: string) => {
     onAvatarChange(emoji, false);
     setShowPicker(false);
+  };
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        } 
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        setShowCamera(true);
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      alert('Unable to access camera. Please check permissions or try uploading a photo instead.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+  };
+
+  const capturePhoto = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    if (!context) return;
+
+    // Set canvas size to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw current video frame to canvas
+    context.drawImage(video, 0, 0);
+
+    // Convert to blob for compression
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+
+      setIsUploading(true);
+      stopCamera();
+
+      try {
+        // Create file from blob for compression
+        const file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
+
+        // Compression options
+        const options = {
+          maxSizeMB: 0.1, // 100KB max
+          maxWidthOrHeight: 200, // 200px max dimension
+          useWebWorker: true,
+          fileType: 'image/jpeg' as const,
+          quality: 0.8
+        };
+
+        // Compress the image
+        const compressedFile = await imageCompression(file, options);
+        
+        // Convert to base64 for storage
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64 = e.target?.result as string;
+          onAvatarChange(base64, true);
+          setShowPicker(false);
+        };
+        reader.readAsDataURL(compressedFile);
+
+      } catch (error) {
+        console.error('Error processing photo:', error);
+        alert('Error processing photo. Please try again.');
+      } finally {
+        setIsUploading(false);
+      }
+    }, 'image/jpeg', 0.8);
   };
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,7 +239,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
               </button>
             </div>
 
-            {/* Photo Upload Section */}
+            {/* Photo Capture Section */}
             <div style={{
               background: 'linear-gradient(135deg, #e0f2fe, #b3e5fc)',
               borderRadius: '15px',
@@ -149,39 +248,120 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
               textAlign: 'center'
             }}>
               <h4 style={{ margin: '0 0 15px 0', color: '#0277bd' }}>
-                📷 Upload Your Selfie
+                📷 Take a Selfie
               </h4>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoUpload}
-                style={{ display: 'none' }}
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                style={{
-                  background: isUploading ? '#6b7280' : 'linear-gradient(135deg, #10b981, #059669)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '12px 24px',
-                  fontSize: '1em',
-                  fontWeight: '600',
-                  cursor: isUploading ? 'not-allowed' : 'pointer',
-                  width: '100%',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                {isUploading ? '📤 Uploading...' : '📷 Choose Photo'}
-              </button>
+              
+              {showCamera ? (
+                <div style={{ marginBottom: '15px' }}>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    style={{
+                      width: '100%',
+                      maxWidth: '300px',
+                      borderRadius: '12px',
+                      transform: 'scaleX(-1)' // Mirror effect for selfie
+                    }}
+                  />
+                  <canvas ref={canvasRef} style={{ display: 'none' }} />
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '10px', 
+                    justifyContent: 'center',
+                    marginTop: '15px'
+                  }}>
+                    <button
+                      onClick={capturePhoto}
+                      disabled={isUploading}
+                      style={{
+                        background: isUploading ? '#6b7280' : 'linear-gradient(135deg, #10b981, #059669)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        padding: '12px 20px',
+                        fontSize: '1em',
+                        fontWeight: '600',
+                        cursor: isUploading ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      {isUploading ? '📤 Processing...' : '📸 Capture'}
+                    </button>
+                    <button
+                      onClick={stopCamera}
+                      style={{
+                        background: '#6b7280',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        padding: '12px 20px',
+                        fontSize: '1em',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      ❌ Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <button
+                    onClick={startCamera}
+                    disabled={isUploading}
+                    style={{
+                      background: isUploading ? '#6b7280' : 'linear-gradient(135deg, #10b981, #059669)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '12px 24px',
+                      fontSize: '1em',
+                      fontWeight: '600',
+                      cursor: isUploading ? 'not-allowed' : 'pointer',
+                      width: '100%',
+                      marginBottom: '10px',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    📸 Take Photo
+                  </button>
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    style={{
+                      background: isUploading ? '#6b7280' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '10px 20px',
+                      fontSize: '0.9em',
+                      fontWeight: '600',
+                      cursor: isUploading ? 'not-allowed' : 'pointer',
+                      width: '100%',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    📁 Or Upload Photo
+                  </button>
+                </div>
+              )}
+              
               <p style={{ 
                 margin: '10px 0 0 0', 
                 fontSize: '0.8em', 
                 color: '#0288d1' 
               }}>
-                Max 10MB • Auto-compressed to 100KB
+                Auto-compressed to 100KB for fast loading
               </p>
             </div>
 
