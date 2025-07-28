@@ -129,6 +129,14 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
             previousGameStatus = game.status;
             
             dispatch({ type: 'UPDATE_GAME', payload: game });
+            
+            // Also update current player if they exist in the game
+            if (state.currentPlayer) {
+              const updatedPlayer = game.players.find(p => p.id === state.currentPlayer!.id);
+              if (updatedPlayer) {
+                dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
+              }
+            }
           }
         }
       );
@@ -489,8 +497,17 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
 
         // Update player score and stats
         const isFirstTimeTarget = !state.currentPlayer.stats.uniqueTargets.includes(targetId);
+        
+        // Update tasks to reflect completion
+        const updatedTasks = state.currentPlayer.tasks.map(task =>
+          task.id === taskId
+            ? { ...task, status: 'completed' as const, targetId, gotAt: new Date() }
+            : task
+        );
+        
         const updatedPlayer = {
           ...state.currentPlayer,
+          tasks: updatedTasks,
           score: state.currentPlayer.score + 1 + (isFirstTimeTarget ? 0.5 : 0),
           stats: {
             ...state.currentPlayer.stats,
@@ -502,6 +519,9 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         };
 
         await FirebaseService.updatePlayer(state.currentGame.id, updatedPlayer);
+        
+        // Update local state immediately for responsive UI
+        dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
 
         // Show notification for successful gotcha
         const targetPlayer = state.currentGame.players.find(p => p.id === targetId);
