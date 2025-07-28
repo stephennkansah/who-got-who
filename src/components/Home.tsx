@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
-import ClarityService from '../services/clarityService';
+
 import AvatarPicker from './AvatarPicker';
 
 function Home() {
@@ -16,16 +16,7 @@ function Home() {
   const [selectedAvatar, setSelectedAvatar] = useState('🎮');
   const [avatarType, setAvatarType] = useState<'emoji' | 'photo'>('emoji');
 
-  // Track page views in Clarity
-  useEffect(() => {
-    if (!showNameEntry && !showGameOptions) {
-      ClarityService.trackPageView('welcome');
-    } else if (showNameEntry && !showGameOptions) {
-      ClarityService.trackPageView('name_entry');
-    } else if (showGameOptions) {
-      ClarityService.trackPageView('game_options');
-    }
-  }, [showNameEntry, showGameOptions]);
+  // Microsoft Clarity tracking now handled via script tag in index.html
 
   // Clear any existing game state only on first load from other pages
   useEffect(() => {

@@ -6,7 +6,7 @@ import NotificationPrompt from './NotificationPrompt';
 import ShareButton from './ShareButton';
 import PlayerAvatar from './PlayerAvatar';
 import QRCodeJoin from './QRCodeJoin';
-import ClarityService from '../services/clarityService';
+
 
 
 
@@ -22,17 +22,7 @@ export default function Lobby() {
   const isHost = currentPlayer?.isHost || false;
   const canStart = (currentGame?.players.length || 0) >= 2;
 
-  // Track page view in Clarity
-  useEffect(() => {
-    if (showRules) {
-      ClarityService.trackPageView('lobby_rules');
-    } else {
-      ClarityService.trackPageView('lobby');
-      if (currentGame?.id) {
-        ClarityService.setTag('lobby_player_count', currentGame.players.length.toString());
-      }
-    }
-  }, [showRules, currentGame?.players.length]);
+  // Microsoft Clarity tracking now handled via script tag in index.html
 
   useEffect(() => {
     if (!gameId) {

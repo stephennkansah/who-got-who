@@ -7,14 +7,11 @@ import Game from './components/Game';
 import Recap from './components/Recap';
 import InstallPrompt from './components/InstallPrompt';
 import FeedbackButton from './components/FeedbackButton';
-import ClarityService from './services/clarityService';
+
 import './serviceWorkerRegistration';
 
 function App() {
-  // Initialize Microsoft Clarity analytics
-  useEffect(() => {
-    ClarityService.initialize();
-  }, []);
+  // Microsoft Clarity is now loaded via script tag in index.html
 
   return (
     <div className="container">

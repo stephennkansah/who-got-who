@@ -3,7 +3,7 @@ import { Game, Player, TaskInstance, GameState, GameContextType } from '../types
 import { getRandomTasks, getReplacementTask, isBonusTask } from '../data/mockTasks';
 import FirebaseService, { getGameSettings } from '../services/firebase';
 import NotificationService from '../services/notificationService';
-import ClarityService from '../services/clarityService';
+
 
 // Check if Firebase is properly configured
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -120,10 +120,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
                 );
                 NotificationService.showGameEnded(winner.name, winner.avatar);
                 
-                // Track game end in Clarity
-                ClarityService.trackGameEvent('game_ended');
-                ClarityService.setTag('winner_score', winner.score.toString());
-                ClarityService.setTag('final_player_count', game.players.length.toString());
+                // Microsoft Clarity tracking now handled via script tag in index.html
               }
             }
             previousGameStatus = game.status;
@@ -213,11 +210,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         localStorage.setItem('currentGameId', gameId);
         localStorage.setItem('currentPlayerId', playerId);
         
-        // Track game creation in Clarity
-        ClarityService.identifyUser(playerId, gameId, hostName);
-        ClarityService.trackGameEvent('game_created');
-        ClarityService.setTag('player_role', 'host');
-        ClarityService.setTag('game_id', gameId);
+        // Microsoft Clarity tracking now handled via script tag in index.html
         
         console.log('Game creation successful');
       } else {
@@ -239,83 +232,64 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     try {
       // If user is already in a game, leave it first
       if (state.currentGame && state.currentGame.id !== gameId) {
-        console.log('🚪 Leaving current game to join new one');
+        console.log('Leaving current game before joining new one');
         await leaveGame();
       }
-      const playerId = generatePlayerId();
+
+      const playerId = Math.random().toString(36).substring(2, 15);
       
-      // First, get current game to check player count
-      const currentGame = await FirebaseService.getGame(gameId);
-      if (!currentGame) {
+      // Get tasks for the current settings
+      const game = await FirebaseService.getGame(gameId);
+      if (!game) {
         throw new Error('Game not found');
       }
       
-      // Calculate new player count (including this joining player)
-      const newPlayerCount = currentGame.players.length + 1;
-      const { taskCount } = getGameSettings(newPlayerCount);
-      
-      // Generate tasks based on player count
-      const rawTasks = getRandomTasks('core-pack-a', taskCount);
-      const tasks = rawTasks.map(task => ({
+      const { taskCount } = getGameSettings(game.players.length + 1);
+      const rawTasks = getRandomTasks(game.packId, taskCount);
+      const tasks: TaskInstance[] = rawTasks.map(task => ({
         ...task,
-        gameId,
-        playerId,
-        status: 'pending' as const
+        id: Math.random().toString(36).substring(2, 15),
+        gameId: gameId,
+        playerId: playerId,
+        status: 'pending'
       }));
 
-      const newPlayer: Player = {
+      const player: Player = {
         id: playerId,
         name: playerName,
         gameId,
-        swapsLeft: 2, // Will be updated based on game mode
+        swapsLeft: 2,
         score: 0,
         lockedIn: false,
         isHost: false,
-        token: `token_${playerId}`,
-        tasks,
-                 stats: {
-           gothcas: 0,
-           failed: 0,
-           disputesLost: 0,
-           uniqueTargets: [],
-           firstTimeTargets: 0
-         },
-         avatar: avatar || '🎮',
-         avatarType: avatarType || 'emoji'
+        token: 'mock-token',
+        tasks: tasks,
+        stats: {
+          gothcas: 0,
+          failed: 0,
+          disputesLost: 0,
+          uniqueTargets: [],
+          firstTimeTargets: 0
+        },
+        avatar: avatar || '🎮',
+        avatarType: avatarType || 'emoji'
       };
 
-      await FirebaseService.joinGame(gameId, newPlayer);
+      await FirebaseService.joinGame(gameId, player);
+
+      dispatch({ type: 'SET_GAME', payload: game });
+      dispatch({ type: 'SET_PLAYER', payload: player });
       
-      // Update game settings for new player count
-      await FirebaseService.updateGameSettings(gameId, newPlayerCount);
+      // Store in localStorage for rejoin functionality
+      localStorage.setItem('currentGameId', gameId);
+      localStorage.setItem('currentPlayerId', playerId);
       
-      // Get updated game data
-      const game = await FirebaseService.getGame(gameId);
+      // Microsoft Clarity tracking now handled via script tag in index.html
       
-      if (game) {
-        // Update swapsLeft based on game mode
-        const updatedPlayer = { 
-          ...newPlayer, 
-          swapsLeft: 2 
-        };
-        
-        dispatch({ type: 'SET_GAME', payload: game });
-        dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
-        
-        // Store in localStorage for rejoin functionality
-        localStorage.setItem('currentGameId', gameId);
-        localStorage.setItem('currentPlayerId', playerId);
-        
-        // Track game joining in Clarity
-        ClarityService.identifyUser(playerId, gameId, playerName);
-        ClarityService.trackGameEvent('game_joined');
-        ClarityService.setTag('player_role', 'guest');
-        ClarityService.setTag('game_id', gameId);
-      }
+      console.log('Successfully joined game:', gameId);
     } catch (error) {
       console.error('Error joining game:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to join game';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      dispatch({ type: 'SET_ERROR', payload: `Failed to join game: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -324,22 +298,18 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
   // Start game
   const startGame = async () => {
     if (!state.currentGame || !state.currentPlayer) return;
-
+    
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
       await FirebaseService.startGame(state.currentGame.id, state.currentGame.players);
       
-      // Track game start in Clarity
-      ClarityService.trackGameEvent('game_started');
-      ClarityService.setTag('player_count', state.currentGame.players.length.toString());
-      ClarityService.upgradeSession('game_started'); // Priority recording for game sessions
+      // Microsoft Clarity tracking now handled via script tag in index.html
       
-      // Show notification that game has started
-      NotificationService.showGameStarted();
+      console.log('Game started!');
     } catch (error) {
       console.error('Error starting game:', error);
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to start game.' });
+      dispatch({ type: 'SET_ERROR', payload: `Failed to start game: ${error instanceof Error ? error.message : 'Unknown error'}` });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -458,112 +428,124 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
 
   // Claim gotcha
   const claimGotcha = async (taskId: string, targetId: string) => {
-    if (!state.currentPlayer || !state.currentGame) return;
-
-
+    if (!state.currentGame || !state.currentPlayer) return;
 
     try {
+      const task = state.currentPlayer.tasks.find(t => t.id === taskId);
+      if (!task) return;
+
       if (targetId === 'failed') {
-        // Mark task as failed (no specific target)
-        await FirebaseService.updatePlayerTask(
-          state.currentGame.id, 
-          state.currentPlayer.id, 
-          taskId, 
-          { status: 'failed' }
-        );
-
-        // Show notification for failed task
-        NotificationService.showTaskFailed(state.currentPlayer.name);
-        
-        // Track task failure in Clarity
-        ClarityService.trackGameEvent('task_failed');
-      } else if (targetId.startsWith('caught:')) {
-        // Task failed because someone caught you
-        const catcherId = targetId.replace('caught:', '');
-        
-        await FirebaseService.updatePlayerTask(
-          state.currentGame.id,
-          state.currentPlayer.id,
-          taskId,
-          { 
-            status: 'failed', 
-            targetId: catcherId, // Who caught you
-            gotAt: new Date() 
-          }
-        );
-
-        // Show notification that someone got caught
-        const catcherPlayer = state.currentGame.players.find(p => p.id === catcherId);
-        if (catcherPlayer) {
-          NotificationService.showPlayerGotCaught(
-            state.currentPlayer.name, 
-            catcherPlayer.name,
-            state.currentPlayer.avatar,
-            catcherPlayer.avatar
-          );
-        }
-        
-        // Track being caught in Clarity
-        ClarityService.trackGameEvent('task_failed');
-        ClarityService.setTag('failure_reason', 'caught_by_player');
-      } else {
-        // Mark task as completed and assign target
-        await FirebaseService.updatePlayerTask(
-          state.currentGame.id,
-          state.currentPlayer.id,
-          taskId,
-          { 
-            status: 'completed', 
-            targetId, 
-            gotAt: new Date() 
-          }
-        );
-
-        // Update player score and stats
-        const uniqueTargets = state.currentPlayer.stats.uniqueTargets || [];
-        const isFirstTimeTarget = !uniqueTargets.includes(targetId);
-        
-        // Update tasks to reflect completion
-        const updatedTasks = state.currentPlayer.tasks.map(task =>
-          task.id === taskId
-            ? { ...task, status: 'completed' as const, targetId, gotAt: new Date() }
-            : task
-        );
+        // Handle failed task (no one got)
+        const updatedTask = { 
+          ...task, 
+          status: 'failed' as const, 
+          gotAt: new Date()
+        };
         
         const updatedPlayer = {
           ...state.currentPlayer,
-          tasks: updatedTasks,
-          score: state.currentPlayer.score + 1 + (isFirstTimeTarget ? 0.5 : 0),
+          tasks: state.currentPlayer.tasks.map(t => 
+            t.id === taskId ? updatedTask : t
+          ),
           stats: {
             ...state.currentPlayer.stats,
-            gothcas: (state.currentPlayer.stats.gothcas || 0) + 1,
-            uniqueTargets: isFirstTimeTarget
-              ? [...uniqueTargets, targetId]
-              : uniqueTargets,
+            failed: (state.currentPlayer.stats.failed || 0) + 1
           }
         };
 
         await FirebaseService.updatePlayer(state.currentGame.id, updatedPlayer);
         
-        // Update local state immediately for responsive UI
+        // Microsoft Clarity tracking now handled via script tag in index.html
+        
+                 NotificationService.showTaskFailed(state.currentPlayer.name);
+        
         dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
+        
+      } else if (targetId.startsWith('caught:')) {
+        // Handle getting caught
+        const catcherId = targetId.replace('caught:', '');
+        
+        const updatedTask = { 
+          ...task, 
+          status: 'failed' as const,
+          targetId: catcherId, // Who caught you
+          gotAt: new Date()
+        };
+        
+        const updatedPlayer = {
+          ...state.currentPlayer,
+          tasks: state.currentPlayer.tasks.map(t => 
+            t.id === taskId ? updatedTask : t
+          ),
+          stats: {
+            ...state.currentPlayer.stats,
+            failed: (state.currentPlayer.stats.failed || 0) + 1
+          }
+        };
 
-        // Show notification for successful gotcha
-        const targetPlayer = state.currentGame.players.find(p => p.id === targetId);
-        if (targetPlayer) {
-          NotificationService.showPlayerGotPlayer(
-            state.currentPlayer.name, 
-            targetPlayer.name,
-            state.currentPlayer.avatar,
-            targetPlayer.avatar
-          );
+        await FirebaseService.updatePlayer(state.currentGame.id, updatedPlayer);
+        
+        // Microsoft Clarity tracking now handled via script tag in index.html
+        
+        const catcherPlayer = state.currentGame.players.find(p => p.id === catcherId);
+        if (catcherPlayer) {
+          NotificationService.showPlayerGotCaught(state.currentPlayer.name, catcherPlayer.name, state.currentPlayer.avatar, catcherPlayer.avatar);
         }
         
-        // Track successful task completion in Clarity
-        ClarityService.trackGameEvent('task_completed');
-        ClarityService.setTag('current_score', updatedPlayer.score.toString());
+        dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
         
-        // Check win condition
+      } else {
+        // Handle successful gotcha
+        const uniqueTargets = state.currentPlayer.stats.uniqueTargets || [];
+        const gothcas = state.currentPlayer.stats.gothcas || 0;
+        
+        const updatedTask = { 
+          ...task, 
+          status: 'completed' as const,
+          targetId,
+          gotAt: new Date()
+        };
+        
+        const isFirstTimeTarget = !uniqueTargets.includes(targetId);
+        const bonusPoints = isFirstTimeTarget ? 0.5 : 0;
+        const newScore = state.currentPlayer.score + 1 + bonusPoints;
+
+        // Update local tasks immediately
+        const updatedTasks = state.currentPlayer.tasks.map(t => 
+          t.id === taskId 
+            ? { ...task, status: 'completed' as const, targetId, gotAt: new Date() }
+            : t
+        );
+
+        const updatedPlayer = {
+          ...state.currentPlayer,
+          score: newScore,
+          tasks: updatedTasks,
+          stats: {
+            ...state.currentPlayer.stats,
+            gothcas: gothcas + 1,
+            uniqueTargets: isFirstTimeTarget 
+              ? [...uniqueTargets, targetId]
+              : uniqueTargets,
+            firstTimeTargets: isFirstTimeTarget 
+              ? (state.currentPlayer.stats.firstTimeTargets || 0) + 1 
+              : (state.currentPlayer.stats.firstTimeTargets || 0)
+          }
+        };
+
+        const targetPlayer = state.currentGame.players.find(p => p.id === targetId);
+        if (targetPlayer) {
+          NotificationService.showPlayerGotPlayer(state.currentPlayer.name, targetPlayer.name, state.currentPlayer.avatar, targetPlayer.avatar);
+        }
+
+        // Microsoft Clarity tracking now handled via script tag in index.html
+        
+        await FirebaseService.updatePlayer(state.currentGame.id, updatedPlayer);
+        
+        // Immediately update local state
+        dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
+        
+        // Check if player won
         if (updatedPlayer.score >= state.currentGame.settings.targetScore) {
           console.log('🏆 Player reached target score! Ending game...');
           await endGame();
@@ -571,7 +553,6 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
       }
     } catch (error) {
       console.error('Error claiming gotcha:', error);
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to claim Gotcha.' });
     }
   };
 
