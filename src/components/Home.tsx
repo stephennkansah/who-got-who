@@ -256,7 +256,7 @@ function Home() {
                   <div style={{ textAlign: 'center', padding: '10px 8px' }}>
                     <div style={{ fontSize: '1.5em', marginBottom: '4px' }}>🎲</div>
                     <div style={{ fontWeight: '700', color: 'rgba(255,255,255,0.9)', marginBottom: '2px' }}>Game Nights</div>
-                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8em' }}>Replace boring board games</div>
+                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8em' }}>Play alongside board games</div>
                   </div>
                 </div>
               </div>
