@@ -78,6 +78,7 @@ export class FirebaseService {
 
       await set(gameRef, {
         ...gameData,
+        id: gameId,
         createdAt: gameData.createdAt.toISOString()
       });
 
@@ -202,6 +203,7 @@ export class FirebaseService {
       const gameData = snapshot.val();
       return {
         ...gameData,
+        id: gameId, // Ensure id is always present
         createdAt: new Date(gameData.createdAt),
         startedAt: gameData.startedAt ? new Date(gameData.startedAt) : undefined,
         endedAt: gameData.endedAt ? new Date(gameData.endedAt) : undefined

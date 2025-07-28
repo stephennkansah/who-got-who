@@ -200,7 +200,8 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
       console.log('Game created with ID:', gameId);
       console.log('Player updated with gameId');
 
-      // Get the created game
+      // Get the created game (with a small delay to ensure Firebase consistency)
+      await new Promise(resolve => setTimeout(resolve, 100));
       const game = await FirebaseService.getGame(gameId);
       console.log('Retrieved game:', game);
       
