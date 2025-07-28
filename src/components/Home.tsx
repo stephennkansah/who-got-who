@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
+import ClarityService from '../services/clarityService';
 
 function Home() {
   const navigate = useNavigate();
@@ -11,6 +12,17 @@ function Home() {
   const [showGameOptions, setShowGameOptions] = useState(false);
   const [showNameEntry, setShowNameEntry] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Track page views in Clarity
+  useEffect(() => {
+    if (!showNameEntry && !showGameOptions) {
+      ClarityService.trackPageView('welcome');
+    } else if (showNameEntry && !showGameOptions) {
+      ClarityService.trackPageView('name_entry');
+    } else if (showGameOptions) {
+      ClarityService.trackPageView('game_options');
+    }
+  }, [showNameEntry, showGameOptions]);
 
   // Clear any existing game state only on first load from other pages
   useEffect(() => {

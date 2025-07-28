@@ -119,6 +119,11 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
                   (prev.score > current.score) ? prev : current
                 );
                 NotificationService.showGameEnded(winner.name);
+                
+                // Track game end in Clarity
+                ClarityService.trackGameEvent('game_ended');
+                ClarityService.setTag('winner_score', winner.score.toString());
+                ClarityService.setTag('final_player_count', game.players.length.toString());
               }
             }
             previousGameStatus = game.status;
@@ -271,6 +276,12 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         // Store in localStorage for rejoin functionality
         localStorage.setItem('currentGameId', gameId);
         localStorage.setItem('currentPlayerId', playerId);
+        
+        // Track game joining in Clarity
+        ClarityService.identifyUser(playerId, gameId, playerName);
+        ClarityService.trackGameEvent('game_joined');
+        ClarityService.setTag('player_role', 'guest');
+        ClarityService.setTag('game_id', gameId);
       }
     } catch (error) {
       console.error('Error joining game:', error);
@@ -289,6 +300,11 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     
     try {
       await FirebaseService.startGame(state.currentGame.id, state.currentGame.players);
+      
+      // Track game start in Clarity
+      ClarityService.trackGameEvent('game_started');
+      ClarityService.setTag('player_count', state.currentGame.players.length.toString());
+      ClarityService.upgradeSession('game_started'); // Priority recording for game sessions
       
       // Show notification that game has started
       NotificationService.showGameStarted();
@@ -415,6 +431,9 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
 
         // Show notification for failed task
         NotificationService.showTaskFailed(state.currentPlayer.name);
+        
+        // Track task failure in Clarity
+        ClarityService.trackGameEvent('task_failed');
       } else if (targetId.startsWith('caught:')) {
         // Task failed because someone caught you
         const catcherId = targetId.replace('caught:', '');
@@ -435,6 +454,10 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         if (catcherPlayer) {
           NotificationService.showPlayerGotCaught(state.currentPlayer.name, catcherPlayer.name);
         }
+        
+        // Track being caught in Clarity
+        ClarityService.trackGameEvent('task_failed');
+        ClarityService.setTag('failure_reason', 'caught_by_player');
       } else {
         // Mark task as completed and assign target
         await FirebaseService.updatePlayerTask(
@@ -469,6 +492,10 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         if (targetPlayer) {
           NotificationService.showPlayerGotPlayer(state.currentPlayer.name, targetPlayer.name);
         }
+        
+        // Track successful task completion in Clarity
+        ClarityService.trackGameEvent('task_completed');
+        ClarityService.setTag('current_score', updatedPlayer.score.toString());
       }
     } catch (error) {
       console.error('Error claiming gotcha:', error);

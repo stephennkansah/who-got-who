@@ -5,6 +5,7 @@ import { TaskInstance, Player } from '../types';
 import TaskListView from './TaskListView';
 import TargetSelectModal from './TargetSelectModal';
 import FirebaseService from '../services/firebase';
+import ClarityService from '../services/clarityService';
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -18,6 +19,15 @@ export default function Game() {
 
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
+
+  // Track page view in Clarity
+  useEffect(() => {
+    ClarityService.trackPageView('game');
+    if (currentPlayer && currentGame) {
+      ClarityService.setTag('tasks_completed', currentPlayer.tasks.filter(t => t.status === 'completed').length.toString());
+      ClarityService.setTag('tasks_failed', currentPlayer.tasks.filter(t => t.status === 'failed').length.toString());
+    }
+  }, [currentPlayer?.tasks]);
 
   useEffect(() => {
     if (!gameId) {

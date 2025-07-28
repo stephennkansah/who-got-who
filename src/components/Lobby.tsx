@@ -4,6 +4,7 @@ import { useGame } from '../hooks/useGame';
 import { Player } from '../types';
 import NotificationPrompt from './NotificationPrompt';
 import ShareButton from './ShareButton';
+import ClarityService from '../services/clarityService';
 
 
 
@@ -18,6 +19,18 @@ export default function Lobby() {
   const currentGame = state.currentGame;
   const isHost = currentPlayer?.isHost || false;
   const canStart = (currentGame?.players.length || 0) >= 2;
+
+  // Track page view in Clarity
+  useEffect(() => {
+    if (showRules) {
+      ClarityService.trackPageView('lobby_rules');
+    } else {
+      ClarityService.trackPageView('lobby');
+      if (currentGame?.id) {
+        ClarityService.setTag('lobby_player_count', currentGame.players.length.toString());
+      }
+    }
+  }, [showRules, currentGame?.players.length]);
 
   useEffect(() => {
     if (!gameId) {
