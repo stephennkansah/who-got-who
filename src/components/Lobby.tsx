@@ -640,13 +640,52 @@ export default function Lobby() {
                   🚀 Start Game
                 </button>
               ) : (
-                <div style={{ 
-                  fontSize: '0.8rem', 
-                  color: '#a16207',
-                  textAlign: 'center',
-                  fontStyle: 'italic'
-                }}>
-                  Waiting for more players to join...
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ 
+                    fontSize: '0.9rem', 
+                    color: '#a16207',
+                    fontStyle: 'italic',
+                    marginBottom: '1rem'
+                  }}>
+                    Waiting for more players to join...
+                  </div>
+                  
+                  {/* Show guidance when only host is present */}
+                  {currentGame.players.length === 1 && (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                      border: '2px solid #f59e0b',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      marginTop: '0.5rem'
+                    }}>
+                      <div style={{ 
+                        fontSize: '1rem', 
+                        fontWeight: '600',
+                        color: '#92400e',
+                        marginBottom: '0.5rem'
+                      }}>
+                        👋 You're the host! Get others to join:
+                      </div>
+                      <div style={{ 
+                        fontSize: '0.85rem',
+                        color: '#a16207',
+                        lineHeight: '1.4',
+                        marginBottom: '0.8rem'
+                      }}>
+                        Share your game link or QR code with friends to start playing!
+                      </div>
+                      <div style={{ 
+                        display: 'flex', 
+                        gap: '0.5rem', 
+                        justifyContent: 'center',
+                        flexWrap: 'wrap'
+                      }}>
+                        <ShareButton gameId={currentGame.id} />
+                        <QRCodeJoin gameId={currentGame.id} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
