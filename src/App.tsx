@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { FirebaseGameProvider } from './context/FirebaseGameContext';
 import Home from './components/Home';
@@ -7,9 +7,15 @@ import Game from './components/Game';
 import Recap from './components/Recap';
 import InstallPrompt from './components/InstallPrompt';
 import FeedbackButton from './components/FeedbackButton';
+import ClarityService from './services/clarityService';
 import './serviceWorkerRegistration';
 
 function App() {
+  // Initialize Microsoft Clarity analytics
+  useEffect(() => {
+    ClarityService.initialize();
+  }, []);
+
   return (
     <div className="container">
       <FirebaseGameProvider>

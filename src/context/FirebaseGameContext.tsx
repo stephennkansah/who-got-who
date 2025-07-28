@@ -3,6 +3,7 @@ import { Game, Player, TaskInstance, GameState, GameContextType } from '../types
 import { getRandomTasks } from '../data/mockTasks';
 import FirebaseService from '../services/firebase';
 import NotificationService from '../services/notificationService';
+import ClarityService from '../services/clarityService';
 
 // Check if Firebase is properly configured
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -199,6 +200,12 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         // Store in localStorage for rejoin functionality
         localStorage.setItem('currentGameId', gameId);
         localStorage.setItem('currentPlayerId', playerId);
+        
+        // Track game creation in Clarity
+        ClarityService.identifyUser(playerId, gameId, hostName);
+        ClarityService.trackGameEvent('game_created');
+        ClarityService.setTag('player_role', 'host');
+        ClarityService.setTag('game_id', gameId);
         
         console.log('Game creation successful');
       } else {
