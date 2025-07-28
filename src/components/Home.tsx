@@ -113,7 +113,39 @@ function Home() {
         }}>
           <div style={{ fontSize: '2em', marginBottom: '20px' }}>🎮</div>
           <h2 style={{ color: '#333', marginBottom: '15px' }}>Loading...</h2>
-          <p style={{ color: '#666' }}>Connecting to game...</p>
+          <p style={{ color: '#666', marginBottom: '20px' }}>Connecting to game...</p>
+          <p style={{ color: '#999', fontSize: '0.9em', marginBottom: '30px' }}>
+            Taking too long? Try the button below
+          </p>
+          
+          <button
+            onClick={() => {
+              // Clear any ongoing operations and return to home
+              leaveGame();
+              setShowNameEntry(false);
+              setShowGameOptions(false);
+              setPlayerName('');
+              setGameId('');
+              // Clear URL parameters
+              navigate('/', { replace: true });
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '12px 24px',
+              fontSize: '1em',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              margin: '0 auto'
+            }}
+          >
+            🏠 Back to Home
+          </button>
         </div>
       </div>
     );

@@ -149,9 +149,29 @@ export default function Game() {
   if (!currentGame || !currentPlayer) {
     return (
       <div className="flex flex-center" style={{ minHeight: '100vh' }}>
-        <div className="card">
+        <div className="card" style={{ textAlign: 'center' }}>
           <h2>Loading...</h2>
-          <p>Loading game...</p>
+          <p style={{ marginBottom: '30px' }}>Loading game...</p>
+          
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '12px 24px',
+              fontSize: '1em',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              margin: '0 auto'
+            }}
+          >
+            🏠 Back to Home
+          </button>
         </div>
       </div>
     );
