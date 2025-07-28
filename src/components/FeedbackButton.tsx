@@ -57,23 +57,35 @@ ${formData.message}
         onClick={() => setShowModal(true)}
         style={{
           position: 'fixed',
-          bottom: '80px', // Above the install button
+          top: '20px',
           right: '20px',
           background: 'linear-gradient(135deg, #10b981, #059669)',
           color: 'white',
           border: 'none',
-          borderRadius: '25px',
-          padding: '12px 20px',
-          fontSize: '14px',
+          borderRadius: '20px',
+          padding: '8px 12px',
+          fontSize: '12px',
           fontWeight: '600',
           cursor: 'pointer',
-          boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
+          boxShadow: '0 2px 10px rgba(16, 185, 129, 0.3)',
           zIndex: 999,
           display: 'flex',
           alignItems: 'center',
-          gap: '8px'
+          gap: '6px',
+          opacity: '0.8',
+          transition: 'all 0.3s ease'
         }}
         title="Send Feedback"
+        onMouseEnter={(e) => {
+          const target = e.target as HTMLButtonElement;
+          target.style.opacity = '1';
+          target.style.transform = 'scale(1.05)';
+        }}
+        onMouseLeave={(e) => {
+          const target = e.target as HTMLButtonElement;
+          target.style.opacity = '0.8';
+          target.style.transform = 'scale(1)';
+        }}
       >
         💬 Feedback
       </button>

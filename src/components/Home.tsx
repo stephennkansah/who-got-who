@@ -197,6 +197,15 @@ function Home() {
                 Complete secret missions on others without being caught. First to finish wins!
               </p>
               <p style={{ 
+                color: 'rgba(255,255,255,0.85)', 
+                fontSize: '1em',
+                fontWeight: '600',
+                lineHeight: '1.5',
+                margin: '0 0 15px 0'
+              }}>
+                Plays in the background of whatever you're doing — dinner, parties, work events.
+              </p>
+              <p style={{ 
                 color: 'rgba(255,255,255,0.8)', 
                 fontSize: '0.95em',
                 margin: '0',
@@ -450,31 +459,175 @@ function Home() {
         {/* Quick Game Info - only show if not joining */}
         {!joinGameId && (
           <div style={{
-            background: 'rgba(255, 255, 255, 0.15)',
-            backdropFilter: 'blur(15px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
             borderRadius: '20px',
-            padding: '20px',
-            textAlign: 'center',
-            marginBottom: '20px'
+            padding: '25px',
+            marginBottom: '20px',
+            boxShadow: '0 15px 40px rgba(0, 0, 0, 0.1)'
           }}>
-            <p style={{ 
-              color: 'rgba(255,255,255,0.9)', 
-              fontSize: '0.95em',
-              fontWeight: '600',
-              lineHeight: '1.5',
-              margin: '0 0 12px 0'
+            <h3 style={{
+              fontSize: '1.4em',
+              fontWeight: '700',
+              color: '#1f2937',
+              marginBottom: '20px',
+              textAlign: 'center',
+              letterSpacing: '-0.5px'
             }}>
-              Complete secret missions on others without being caught
-            </p>
-            <p style={{ 
-              color: 'rgba(255,255,255,0.8)', 
-              fontSize: '0.85em',
-              margin: '0',
-              fontStyle: 'italic'
+              🎯 How to Play
+            </h3>
+            
+            <div style={{ 
+              color: '#4b5563',
+              fontSize: '1em',
+              lineHeight: '1.6'
             }}>
-              Perfect for parties • dinners • trips • team building
-            </p>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'flex-start', 
+                marginBottom: '15px', 
+                fontWeight: '600' 
+              }}>
+                <span style={{ 
+                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: '12px',
+                  fontSize: '0.8em',
+                  fontWeight: '700',
+                  flexShrink: 0,
+                  marginTop: '2px'
+                }}>1</span>
+                <span>Each player gets secret tasks to complete on others</span>
+              </div>
+              
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'flex-start', 
+                marginBottom: '15px', 
+                fontWeight: '600' 
+              }}>
+                <span style={{ 
+                  background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: '12px',
+                  fontSize: '0.8em',
+                  fontWeight: '700',
+                  flexShrink: 0,
+                  marginTop: '2px'
+                }}>2</span>
+                <span>Complete tasks without being obvious it's your mission</span>
+              </div>
+              
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'flex-start', 
+                marginBottom: '15px', 
+                fontWeight: '600' 
+              }}>
+                <span style={{ 
+                  background: 'linear-gradient(135deg, #ec4899, #db2777)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: '12px',
+                  fontSize: '0.8em',
+                  fontWeight: '700',
+                  flexShrink: 0,
+                  marginTop: '2px'
+                }}>3</span>
+                <span>Say "Gotcha!" and claim your win in the app</span>
+              </div>
+              
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'flex-start', 
+                marginBottom: '20px', 
+                fontWeight: '600' 
+              }}>
+                <span style={{ 
+                  background: 'linear-gradient(135deg, #f59e0b, #f97316)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: '12px',
+                  fontSize: '0.8em',
+                  fontWeight: '700',
+                  flexShrink: 0,
+                  marginTop: '2px'
+                }}>4</span>
+                <span>First to complete 4 tasks wins!</span>
+              </div>
+
+              {/* Example Tasks */}
+              <div style={{ 
+                background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                padding: '18px',
+                borderRadius: '12px',
+                marginBottom: '18px',
+                border: '2px solid #f59e0b'
+              }}>
+                <h4 style={{ 
+                  color: '#92400e', 
+                  marginBottom: '12px', 
+                  fontSize: '1em',
+                  fontWeight: '700',
+                  textAlign: 'center'
+                }}>
+                  💡 Example Tasks
+                </h4>
+                <div style={{ color: '#78350f', fontSize: '0.9em', lineHeight: '1.5' }}>
+                  <div style={{ marginBottom: '10px', background: 'rgba(255,255,255,0.6)', padding: '8px 10px', borderRadius: '6px' }}>
+                    <strong>"Get someone to correct a movie quote"</strong><br/>
+                    <em style={{ fontSize: '0.85em' }}>Say: "Luke, I am your father" and wait for correction</em>
+                  </div>
+                  <div style={{ marginBottom: '10px', background: 'rgba(255,255,255,0.6)', padding: '8px 10px', borderRadius: '6px' }}>
+                    <strong>"Get someone to take a group selfie"</strong><br/>
+                    <em style={{ fontSize: '0.85em' }}>Suggest taking a photo naturally</em>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.6)', padding: '8px 10px', borderRadius: '6px' }}>
+                    <strong>"Get a player to use air quotes"</strong><br/>
+                    <em style={{ fontSize: '0.85em' }}>Bring up something "controversial"</em>
+                  </div>
+                </div>
+              </div>
+
+                             {/* Key Info */}
+               <div style={{ 
+                 background: 'linear-gradient(135deg, #e0f2fe, #b3e5fc)',
+                 padding: '15px',
+                 borderRadius: '12px',
+                 border: '2px solid #29b6f6',
+                 textAlign: 'center'
+               }}>
+                 <div style={{ color: '#0277bd', fontWeight: '700', marginBottom: '8px' }}>
+                   👥 2+ players needed • 🕐 5 mins to 5 hours • 📱 Works anywhere
+                 </div>
+                 <div style={{ color: '#0288d1', fontSize: '0.9em', fontStyle: 'italic' }}>
+                   Plays in the background of whatever you're doing!
+                 </div>
+               </div>
+            </div>
           </div>
         )}
 
