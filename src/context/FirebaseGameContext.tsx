@@ -147,7 +147,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
   };
 
   // Create game
-  const createGame = async (hostName: string) => {
+  const createGame = async (hostName: string, avatar?: string, avatarType?: 'emoji' | 'photo') => {
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
 
@@ -181,7 +181,9 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
           disputesLost: 0,
           uniqueTargets: [],
           firstTimeTargets: 0
-        }
+        },
+        avatar: avatar || '🎮',
+        avatarType: avatarType || 'emoji'
       };
 
       console.log('Creating game with host player:', player.name);
@@ -225,7 +227,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
   };
 
   // Join game
-  const joinGame = async (gameId: string, playerName: string) => {
+  const joinGame = async (gameId: string, playerName: string, avatar?: string, avatarType?: 'emoji' | 'photo') => {
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
 
@@ -255,7 +257,9 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
            disputesLost: 0,
            uniqueTargets: [],
            firstTimeTargets: 0
-         }
+         },
+         avatar: avatar || '🎮',
+         avatarType: avatarType || 'emoji'
       };
 
       await FirebaseService.joinGame(gameId, newPlayer);

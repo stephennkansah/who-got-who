@@ -2,36 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { Player, AwardType } from '../types';
+import ResultsShare from './ResultsShare';
 
-// Helper function to copy text with fallback
-const copyToClipboard = async (text: string): Promise<boolean> => {
-  if (navigator.clipboard && window.isSecureContext) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (err) {
-      console.warn('Clipboard API failed:', err);
-    }
-  }
-  
-  // Fallback for older browsers or non-HTTPS
-  try {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    const result = document.execCommand('copy');
-    document.body.removeChild(textArea);
-    return result;
-  } catch (err) {
-    console.error('Copy to clipboard failed:', err);
-    return false;
-  }
-};
+
 
 export default function Recap() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -382,29 +355,10 @@ export default function Recap() {
             👥 Play with New Group
           </button>
           
-          <button 
-            className="btn"
-            onClick={async () => {
-              const results = `🎉 Who Got Who Results 🎉\n\nWinner: ${winner?.name} (${winner?.score} points)\n\nFinal Standings:\n${finalRankings.map((p, i) => `${i + 1}. ${p.name}: ${p.score} points`).join('\n')}`;
-              
-              // Try native sharing first
-              if (navigator.share) {
-                try {
-                  await navigator.share({ text: results });
-                  return;
-                } catch (err) {
-                  console.warn('Native sharing failed:', err);
-                }
-              }
-              
-              // Fallback to clipboard
-              const success = await copyToClipboard(results);
-              alert(success ? 'Results copied to clipboard!' : 'Unable to copy. Please share manually.');
-            }}
-            style={{ background: 'linear-gradient(135deg, #ff6b6b, #ee5a6f)' }}
-          >
-            📤 Share Results
-          </button>
+          <ResultsShare 
+            game={currentGame}
+            style={{ width: '100%' }}
+          />
         </div>
       </div>
 

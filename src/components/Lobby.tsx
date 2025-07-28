@@ -4,6 +4,8 @@ import { useGame } from '../hooks/useGame';
 import { Player } from '../types';
 import NotificationPrompt from './NotificationPrompt';
 import ShareButton from './ShareButton';
+import QRCodeJoin from './QRCodeJoin';
+import PlayerAvatar from './PlayerAvatar';
 import ClarityService from '../services/clarityService';
 
 
@@ -335,12 +337,15 @@ export default function Lobby() {
                 borderRadius: '12px',
                 border: player.id === currentPlayer.id ? '2px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(0,0,0,0.1)'
               }}>
-                <div>
-                  <div style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '0.2rem' }}>
-                    {player.name} {player.isHost && '👑'} {player.id === currentPlayer.id && '(You)'}
-                  </div>
-                  <div style={{ fontSize: '0.8rem', color: '#666' }}>
-                    {player.isHost ? 'Host - Will start the game' : 'Ready to play'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <PlayerAvatar player={player} size="medium" />
+                  <div>
+                    <div style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '0.2rem' }}>
+                      {player.name} {player.id === currentPlayer.id && '(You)'}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                      {player.isHost ? 'Host - Will start the game' : 'Ready to play'}
+                    </div>
                   </div>
                 </div>
                 <div style={{
@@ -480,7 +485,7 @@ export default function Lobby() {
             </div>
           </div>
           
-          <div style={{ display: 'flex', justifyContent: 'center', flex: 1 }}>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flex: 1 }}>
             <ShareButton 
               gameId={currentGame.id}
               size="small"
@@ -489,6 +494,7 @@ export default function Lobby() {
                 padding: '0.6rem 1.2rem'
               }}
             />
+            <QRCodeJoin gameId={currentGame.id} />
           </div>
         </div>
       </div>
@@ -517,13 +523,16 @@ export default function Lobby() {
                 borderRadius: '8px',
                 border: player.id === currentPlayer.id ? '2px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(0,0,0,0.1)'
               }}>
-                <div>
-                  <div style={{ fontWeight: '600' }}>
-                    {player.name} {player.isHost && '👑'} {player.id === currentPlayer.id && '(You)'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <PlayerAvatar player={player} size="small" />
+                  <div>
+                    <div style={{ fontWeight: '600' }}>
+                      {player.name} {player.id === currentPlayer.id && '(You)'}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                      Ready to play
+                    </div>
                   </div>
-                                     <div style={{ fontSize: '0.8rem', color: '#666' }}>
-                     Ready to play
-                   </div>
                 </div>
                 <div style={{
                   padding: '0.25rem 0.75rem',

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Player } from '../types';
+import PlayerAvatar from './PlayerAvatar';
 
 interface TargetSelectModalProps {
   isOpen: boolean;
@@ -56,12 +57,13 @@ export default function TargetSelectModal({
                 textAlign: 'left',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem'
+                gap: '12px',
+                padding: '12px 16px'
               }}
             >
               <span style={{ fontSize: '1.2rem' }}>{isReverse ? '😅' : '🎯'}</span>
-              <span>{player.name}</span>
-              {player.isHost && <span style={{ fontSize: '0.8rem' }}>👑</span>}
+              <PlayerAvatar player={player} size="small" showBorder={false} />
+              <span style={{ fontWeight: '600' }}>{player.name}</span>
             </button>
           ))}
         </div>

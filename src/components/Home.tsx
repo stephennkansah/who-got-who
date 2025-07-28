@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import ClarityService from '../services/clarityService';
+import AvatarPicker from './AvatarPicker';
 
 function Home() {
   const navigate = useNavigate();
@@ -12,6 +13,8 @@ function Home() {
   const [showGameOptions, setShowGameOptions] = useState(false);
   const [showNameEntry, setShowNameEntry] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState('🎮');
+  const [avatarType, setAvatarType] = useState<'emoji' | 'photo'>('emoji');
 
   // Track page views in Clarity
   useEffect(() => {
@@ -69,7 +72,7 @@ function Home() {
     // If joining via link, go directly to that game
     const joinGameId = searchParams.get('join');
     if (joinGameId) {
-      await joinGame(joinGameId.toUpperCase(), playerName.trim());
+      await joinGame(joinGameId.toUpperCase(), playerName.trim(), selectedAvatar, avatarType);
     } else {
       setShowGameOptions(true);
     }
@@ -79,7 +82,7 @@ function Home() {
     console.log('🔥 CREATE GAME BUTTON CLICKED!');
     console.log('Player name:', playerName);
     try {
-      await createGame(playerName.trim()); // Standard game mode
+      await createGame(playerName.trim(), selectedAvatar, avatarType); // Standard game mode
     } catch (error) {
       console.error('Create game error:', error);
     }
@@ -435,6 +438,30 @@ function Home() {
               </p>
             )}
             <form onSubmit={handleNameSubmit}>
+              {/* Avatar Selection */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                marginBottom: '25px'
+              }}>
+                <p style={{
+                  color: '#666',
+                  fontSize: '0.9rem',
+                  marginBottom: '15px',
+                  textAlign: 'center'
+                }}>
+                  Choose your avatar
+                </p>
+                <AvatarPicker
+                  selectedAvatar={selectedAvatar}
+                  onAvatarChange={(avatar, isPhoto) => {
+                    setSelectedAvatar(avatar);
+                    setAvatarType(isPhoto ? 'photo' : 'emoji');
+                  }}
+                />
+              </div>
+              
               <input
                 type="text"
                 placeholder="Enter your name"

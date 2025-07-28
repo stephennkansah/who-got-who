@@ -1,119 +1,116 @@
 import React, { useState } from 'react';
+import { Game, Player } from '../types';
 
-interface ShareButtonProps {
-  gameId?: string;
+interface ResultsShareProps {
+  game: Game;
   style?: React.CSSProperties;
-  size?: 'small' | 'medium' | 'large';
 }
 
-const ShareButton: React.FC<ShareButtonProps> = ({ 
-  gameId, 
-  style,
-  size = 'medium' 
-}) => {
+const ResultsShare: React.FC<ResultsShareProps> = ({ game, style }) => {
   const [showShareOptions, setShowShareOptions] = useState(false);
 
-  const baseUrl = window.location.origin;
-  const shareUrl = gameId ? `${baseUrl}/?join=${gameId}` : baseUrl;
-  
-  const shareText = gameId 
-    ? `🎮 Join my Who Got Who game!\n\nGame Code: ${gameId}\n\nSecret missions, stealth gameplay - perfect for parties, dinners & hangouts!\n\n${shareUrl}`
-    : `🎮 Check out Who Got Who!\n\nSecret missions game perfect for parties, dinners & social events. Play in the background of whatever you're doing!\n\n${shareUrl}`;
+  // Generate results summary
+  const generateResultsText = (): string => {
+    const winner = game.players.reduce((prev, current) => 
+      (prev.score > current.score) ? prev : current
+    );
+    
+    const playerCount = game.players.length;
+    const totalTasks = game.players.reduce((sum, player) => 
+      sum + player.tasks.filter(task => task.status === 'completed').length, 0
+    );
 
-  const shareTitle = gameId 
-    ? `Join Who Got Who Game ${gameId}!`
-    : 'Who Got Who - The Ultimate Party Game';
+    const gameUrl = `${window.location.origin}`;
+    
+    return `🎮 Just finished an epic game of Who Got Who!
 
-  // Try native Web Share API first (mobile)
-  const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: shareTitle,
-          text: shareText,
-          url: shareUrl,
-        });
-        return { success: true, cancelled: false };
-      } catch (error) {
-        // Check if it was cancelled by user (AbortError) vs actual failure
-        if (error instanceof Error && error.name === 'AbortError') {
-          console.log('Native share cancelled by user');
-          return { success: false, cancelled: true };
-        }
-        console.log('Native share failed:', error);
-        return { success: false, cancelled: false };
-      }
-    }
-    return { success: false, cancelled: false };
+🏆 Winner: ${winner.name} (${winner.score} points)
+👥 ${playerCount} players battled it out
+✅ ${totalTasks} secret missions completed
+🎯 Stealth level: LEGENDARY
+
+Who Got Who - the ultimate party game where you complete secret missions on your friends without getting caught!
+
+Play it yourself: ${gameUrl}
+
+#WhoGotWho #PartyGame #SecretMissions #GameNight`;
   };
 
-  const handleShare = async () => {
-    // Try native share first
-    const result = await handleNativeShare();
+  const generateResultsSummary = (): string => {
+    const winner = game.players.reduce((prev, current) => 
+      (prev.score > current.score) ? prev : current
+    );
     
-    // Only show fallback if native share failed (not if cancelled)
-    if (!result.success && !result.cancelled) {
-      setShowShareOptions(true);
-    }
+    const sortedPlayers = [...game.players].sort((a, b) => b.score - a.score);
+    
+    let leaderboard = "🏆 FINAL RESULTS:\n";
+    sortedPlayers.forEach((player, index) => {
+      const emoji = index === 0 ? "👑" : index === 1 ? "🥈" : index === 2 ? "🥉" : "🎯";
+      leaderboard += `${emoji} ${player.name}: ${player.score} points\n`;
+    });
+
+    return `🎮 Who Got Who - Game Complete!
+
+${leaderboard}
+🎉 Congrats ${winner.name}! Master of stealth missions!
+
+${game.players.length} players • ${game.players.reduce((sum, p) => sum + p.tasks.filter(t => t.status === 'completed').length, 0)} tasks completed
+
+The ultimate social party game! 
+Play: ${window.location.origin}`;
   };
 
   const shareOptions = [
     {
+      name: 'Twitter',
+      icon: '🐦',
+      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(generateResultsText())}`,
+      color: '#1DA1F2'
+    },
+    {
+      name: 'Facebook',
+      icon: '📘',
+      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodeURIComponent(generateResultsText())}`,
+      color: '#4267B2'
+    },
+    {
       name: 'WhatsApp',
       icon: '💬',
-      url: `https://wa.me/?text=${encodeURIComponent(shareText)}`,
+      url: `https://wa.me/?text=${encodeURIComponent(generateResultsSummary())}`,
       color: '#25D366'
     },
     {
-      name: 'SMS',
-      icon: '📱',
-      url: `sms:?body=${encodeURIComponent(shareText)}`,
-      color: '#007AFF'
-    },
-    {
-      name: 'Email',
-      icon: '📧',
-      url: `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareText)}`,
-      color: '#FF3B30'
-    },
-    {
-      name: 'Copy Link',
-      icon: '🔗',
+      name: 'Copy Results',
+      icon: '📋',
       action: 'copy',
       color: '#8E8E93'
     }
   ];
 
-  const copyToClipboard = async () => {
+  const copyResults = async () => {
     try {
-      await navigator.clipboard.writeText(shareText);
-      alert('✅ Copied to clipboard!');
+      await navigator.clipboard.writeText(generateResultsSummary());
+      alert('✅ Results copied to clipboard!');
     } catch (error) {
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
-      textArea.value = shareText;
+      textArea.value = generateResultsSummary();
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
-      alert('✅ Copied to clipboard!');
+      alert('✅ Results copied to clipboard!');
     }
     setShowShareOptions(false);
   };
 
   const handleOptionClick = (option: typeof shareOptions[0]) => {
     if (option.action === 'copy') {
-      copyToClipboard();
+      copyResults();
     } else {
-      window.open(option.url, '_blank');
+      window.open(option.url, '_blank', 'width=600,height=400');
       setShowShareOptions(false);
     }
-  };
-
-  const buttonSizes = {
-    small: { padding: '8px 16px', fontSize: '0.9em' },
-    medium: { padding: '12px 24px', fontSize: '1em' },
-    large: { padding: '16px 32px', fontSize: '1.1em' }
   };
 
   if (showShareOptions) {
@@ -142,8 +139,10 @@ const ShareButton: React.FC<ShareButtonProps> = ({
               background: 'white',
               borderRadius: '20px',
               padding: '30px',
-              maxWidth: '400px',
+              maxWidth: '500px',
               width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
               boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)'
             }}
             onClick={(e) => e.stopPropagation()}
@@ -155,7 +154,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
               marginBottom: '20px'
             }}>
               <h3 style={{ margin: 0, color: '#1f2937', fontSize: '1.3em' }}>
-                📤 Share Game
+                🎉 Share Your Victory!
               </h3>
               <button
                 onClick={() => setShowShareOptions(false)}
@@ -169,6 +168,21 @@ const ShareButton: React.FC<ShareButtonProps> = ({
               >
                 ✕
               </button>
+            </div>
+
+            {/* Results Preview */}
+            <div style={{
+              background: '#f9fafb',
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '20px',
+              fontSize: '0.9em',
+              lineHeight: '1.5',
+              color: '#374151',
+              whiteSpace: 'pre-line'
+            }}>
+              {generateResultsSummary()}
             </div>
             
             <div style={{
@@ -220,36 +234,37 @@ const ShareButton: React.FC<ShareButtonProps> = ({
 
   return (
     <button
-      onClick={handleShare}
+      onClick={() => setShowShareOptions(true)}
       style={{
-        background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+        background: 'linear-gradient(135deg, #f59e0b, #f97316)',
         color: 'white',
         border: 'none',
         borderRadius: '15px',
-        ...buttonSizes[size],
+        padding: '12px 24px',
+        fontSize: '1em',
         fontWeight: '600',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-        boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
+        boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
         transition: 'all 0.3s ease',
         ...style
       }}
       onMouseEnter={(e) => {
         const target = e.target as HTMLButtonElement;
         target.style.transform = 'translateY(-2px)';
-        target.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.4)';
+        target.style.boxShadow = '0 6px 20px rgba(245, 158, 11, 0.4)';
       }}
       onMouseLeave={(e) => {
         const target = e.target as HTMLButtonElement;
         target.style.transform = 'translateY(0)';
-        target.style.boxShadow = '0 4px 15px rgba(139, 92, 246, 0.3)';
+        target.style.boxShadow = '0 4px 15px rgba(245, 158, 11, 0.3)';
       }}
     >
-      📤 Share Game
+      🎉 Share Results
     </button>
   );
 };
 
-export default ShareButton; 
+export default ResultsShare; 

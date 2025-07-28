@@ -39,6 +39,8 @@ export interface Player {
   token: string;
   tasks: TaskInstance[];
   stats: PlayerStats;
+  avatar?: string;
+  avatarType?: 'emoji' | 'photo';
 }
 
 export interface PlayerStats {
@@ -196,8 +198,8 @@ export interface GameSummary {
 
 export interface GameContextType {
   state: GameState;
-  createGame: (hostName: string) => Promise<void>;
-  joinGame: (gameId: string, playerName: string) => Promise<void>;
+  createGame: (hostName: string, avatar?: string, avatarType?: 'emoji' | 'photo') => Promise<void>;
+  joinGame: (gameId: string, playerName: string, avatar?: string, avatarType?: 'emoji' | 'photo') => Promise<void>;
   startGame: () => Promise<void>;
   endGame: () => Promise<void>;
   leaveGame: () => Promise<void>;

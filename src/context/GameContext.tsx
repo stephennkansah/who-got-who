@@ -187,7 +187,7 @@ export function GameProvider({ children }: GameProviderProps) {
   }, []);
 
   // Game Actions
-  const createGame = async (hostName: string) => {
+  const createGame = async (hostName: string, avatar?: string, avatarType?: 'emoji' | 'photo') => {
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
     
@@ -221,7 +221,9 @@ export function GameProvider({ children }: GameProviderProps) {
           disputesLost: 0,
           uniqueTargets: [],
           firstTimeTargets: 0
-        }
+        },
+        avatar: avatar || '🎮',
+        avatarType: avatarType || 'emoji'
       };
 
       const mockGame: Game = {
@@ -260,7 +262,7 @@ export function GameProvider({ children }: GameProviderProps) {
     }
   };
 
-  const joinGame = async (gameId: string, playerName: string) => {
+  const joinGame = async (gameId: string, playerName: string, avatar?: string, avatarType?: 'emoji' | 'photo') => {
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
     
@@ -311,7 +313,9 @@ export function GameProvider({ children }: GameProviderProps) {
             disputesLost: 0,
             uniqueTargets: [],
             firstTimeTargets: 0
-          }
+          },
+          avatar: avatar || '🎮',
+          avatarType: avatarType || 'emoji'
         };
         
         game.players.push(newPlayer);
