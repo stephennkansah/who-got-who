@@ -134,6 +134,12 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
             if (state.currentPlayer) {
               const updatedPlayer = game.players.find(p => p.id === state.currentPlayer!.id);
               if (updatedPlayer) {
+                console.log('🔄 Syncing player from Firebase:', {
+                  playerId: updatedPlayer.id,
+                  playerName: updatedPlayer.name,
+                  score: updatedPlayer.score,
+                  tasks: updatedPlayer.tasks.filter(t => t.status === 'completed').length
+                });
                 dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
               }
             }
@@ -443,6 +449,14 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
   const claimGotcha = async (taskId: string, targetId: string) => {
     if (!state.currentPlayer || !state.currentGame) return;
 
+    console.log('🎯 claimGotcha called:', { 
+      taskId, 
+      targetId, 
+      currentScore: state.currentPlayer.score,
+      playerId: state.currentPlayer.id,
+      playerName: state.currentPlayer.name 
+    });
+
     try {
       if (targetId === 'failed') {
         // Mark task as failed (no specific target)
@@ -518,10 +532,19 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
           }
         };
 
+        console.log('📊 Score update:', {
+          oldScore: state.currentPlayer.score,
+          newScore: updatedPlayer.score,
+          isFirstTimeTarget,
+          targetId
+        });
+
         await FirebaseService.updatePlayer(state.currentGame.id, updatedPlayer);
         
         // Update local state immediately for responsive UI
         dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
+        
+        console.log('✅ Player updated locally with new score:', updatedPlayer.score);
 
         // Show notification for successful gotcha
         const targetPlayer = state.currentGame.players.find(p => p.id === targetId);
