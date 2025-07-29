@@ -47,18 +47,24 @@ function Home() {
   useEffect(() => {
     if (state.currentGame) {
       if (state.currentGame.status === 'draft') {
-        // Check if pack is already selected
+        // Check if pack is already selected and if user is host
         const packSelected = state.currentGame.settings?.selectedPack;
+        const isHost = state.currentPlayer?.isHost;
         console.log('🎮 Pack selection check:', {
           packSelected,
+          isHost,
+          playerName: state.currentPlayer?.name,
           gameSettings: state.currentGame.settings,
           gameId: state.currentGame.id
         });
-        if (packSelected) {
-          console.log('📦 Pack already selected, going to lobby');
+        
+        if (packSelected || !isHost) {
+          // Pack already selected OR user is not host -> go to lobby
+          console.log('📦 Going to lobby (pack selected or not host)');
           navigate(`/lobby/${state.currentGame.id}`);
         } else {
-          console.log('🎯 No pack selected, going to pack selection');
+          // No pack selected AND user is host -> go to pack selection
+          console.log('🎯 Host needs to select pack, going to pack selection');
           navigate(`/select-pack/${state.currentGame.id}`);
         }
       } else if (state.currentGame.status === 'live') {
