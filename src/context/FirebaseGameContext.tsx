@@ -229,21 +229,15 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
 
       const playerId = Math.random().toString(36).substring(2, 15);
       
-      // Get tasks for the current settings
+      // Get the game info
       const game = await FirebaseService.getGame(gameId);
       if (!game) {
         throw new Error('Game not found');
       }
       
-      const { taskCount } = getGameSettings(game.players.length + 1);
-      const rawTasks = getRandomTasks(game.packId, taskCount);
-      const tasks: TaskInstance[] = rawTasks.map(task => ({
-        ...task,
-        id: Math.random().toString(36).substring(2, 15),
-        gameId: gameId,
-        playerId: playerId,
-        status: 'pending'
-      }));
+      // Don't assign tasks yet if pack hasn't been selected
+      // Tasks will be assigned when the host starts the game
+      const tasks: TaskInstance[] = [];
 
       const player: Player = {
         id: playerId,
