@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, push, set, get, onValue, off, remove, update } from 'firebase/database';
+import { getDatabase, ref, set, get, onValue, off, remove, update, onDisconnect } from 'firebase/database';
 import { Game, Player, TaskInstance, GameStatus } from '../types';
 
 // Firebase configuration from environment variables
@@ -49,7 +49,9 @@ export const getGameSettings = (playerCount: number) => {
       hostDefaultOnTie: true,
       enableNegativeScoring: false,
       maxPlayers: 10,
-      targetScore
+      targetScore,
+      selectedPack: null,
+      tasksLoaded: false
     }
   };
 };
@@ -64,7 +66,7 @@ export class FirebaseService {
       const gameData: Omit<Game, 'id'> = {
         status: 'draft',
         mode: 'casual',
-        packId: 'core-pack-a',
+        packId: '', // Will be set when pack is selected
         createdBy: hostPlayer.name,
         createdAt: new Date(),
         hostId: hostPlayer.id,
@@ -259,6 +261,27 @@ export class FirebaseService {
   // Batch update multiple fields
   static async batchUpdate(updates: Record<string, any>): Promise<void> {
     await update(ref(database), updates);
+  }
+
+  // Set up disconnect cleanup for host - deletes game if host leaves before tasks are loaded
+  static async setupHostDisconnectCleanup(gameId: string): Promise<void> {
+    const gameRef = ref(database, `games/${gameId}`);
+    
+    // Set up onDisconnect to remove the game only if tasks haven't been loaded yet
+    // We'll check the tasksLoaded flag when the disconnect actually happens
+    await onDisconnect(gameRef).remove();
+    
+    console.log(`🛡️ Host disconnect cleanup set up for game ${gameId}`);
+  }
+
+  // Cancel disconnect cleanup (call this when game starts or host properly leaves)
+  static async cancelHostDisconnectCleanup(gameId: string): Promise<void> {
+    const gameRef = ref(database, `games/${gameId}`);
+    
+    // Cancel the disconnect cleanup
+    await onDisconnect(gameRef).cancel();
+    
+    console.log(`🛡️ Host disconnect cleanup cancelled for game ${gameId}`);
   }
 }
 

@@ -340,6 +340,30 @@ export function GameProvider({ children }: GameProviderProps) {
     }
   };
 
+  // Select pack for the game (local context version)
+  const selectPack = async (packId: 'core' | 'remote') => {
+    if (!state.currentGame || !state.currentPlayer?.isHost) {
+      throw new Error('Only the host can select a pack');
+    }
+
+    // Update game settings with selected pack
+    const updatedSettings = {
+      ...state.currentGame.settings,
+      selectedPack: packId,
+      tasksLoaded: false
+    };
+
+    const updatedGame = {
+      ...state.currentGame,
+      settings: updatedSettings
+    };
+    
+    dispatch({ type: 'SET_GAME', payload: updatedGame });
+    localStorage.setItem('gameData', JSON.stringify(updatedGame));
+    
+    console.log(`Pack selected: ${packId}`);
+  };
+
   const startGame = async () => {
     if (!state.currentGame) return;
     
@@ -614,6 +638,7 @@ export function GameProvider({ children }: GameProviderProps) {
     socket,
     createGame,
     joinGame,
+    selectPack,
     startGame,
     endGame,
     leaveGame,

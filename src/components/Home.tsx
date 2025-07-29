@@ -47,7 +47,20 @@ function Home() {
   useEffect(() => {
     if (state.currentGame) {
       if (state.currentGame.status === 'draft') {
-        navigate(`/lobby/${state.currentGame.id}`);
+        // Check if pack is already selected
+        const packSelected = state.currentGame.settings?.selectedPack;
+        console.log('🎮 Pack selection check:', {
+          packSelected,
+          gameSettings: state.currentGame.settings,
+          gameId: state.currentGame.id
+        });
+        if (packSelected) {
+          console.log('📦 Pack already selected, going to lobby');
+          navigate(`/lobby/${state.currentGame.id}`);
+        } else {
+          console.log('🎯 No pack selected, going to pack selection');
+          navigate(`/select-pack/${state.currentGame.id}`);
+        }
       } else if (state.currentGame.status === 'live') {
         navigate(`/game/${state.currentGame.id}`);
       } else if (state.currentGame.status === 'ended') {

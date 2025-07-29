@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { Game, Player, TaskInstance, GameState, GameContextType } from '../types';
-import { getRandomTasks, getReplacementTask, isBonusTask } from '../data/mockTasks';
+import { getRandomTasks, getReplacementTask, isBonusTask } from '../data/packs';
 import FirebaseService, { getGameSettings } from '../services/firebase';
 import NotificationService from '../services/notificationService';
 
@@ -144,12 +144,10 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         gameUnsubscribe();
       }
     };
-  }, [state.currentGame?.id]);
+  }, [state.currentGame?.id, state.currentPlayer?.id]);
 
   // Generate unique player ID
-  const generatePlayerId = (): string => {
-    return `player_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  };
+
 
   // Create game
   const createGame = async (hostName: string, avatar?: string, avatarType?: 'emoji' | 'photo') => {
@@ -160,16 +158,8 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
       const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
       const playerId = Math.random().toString(36).substring(2, 15);
       
-      // Get random tasks from core pack A (7 for host starting alone)
-      const { taskCount } = getGameSettings(1);
-      const rawTasks = getRandomTasks('core-pack-a', taskCount);
-      const tasks: TaskInstance[] = rawTasks.map(task => ({
-        ...task,
-        id: Math.random().toString(36).substring(2, 15),
-        gameId: gameId,
-        playerId: playerId,
-        status: 'pending'
-      }));
+      // No tasks loaded yet - pack selection comes first
+      const tasks: TaskInstance[] = [];
       
       const player: Player = {
         id: playerId,
@@ -210,7 +200,8 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         localStorage.setItem('currentGameId', gameId);
         localStorage.setItem('currentPlayerId', playerId);
         
-        // Microsoft Clarity tracking now handled via script tag in index.html
+        // Set up host disconnect cleanup to prevent content leakage
+        await FirebaseService.setupHostDisconnectCleanup(gameId);
         
         console.log('Game creation successful');
       } else {
@@ -295,18 +286,97 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     }
   };
 
+  // Select pack for the game
+  const selectPack = async (packId: 'core' | 'remote') => {
+    if (!state.currentGame || !state.currentPlayer?.isHost) {
+      throw new Error('Only the host can select a pack');
+    }
+
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
+    try {
+      // Update game settings with selected pack
+      const updatedSettings = {
+        ...state.currentGame.settings,
+        selectedPack: packId,
+        tasksLoaded: false
+      };
+
+      // Update both the packId and settings
+      await FirebaseService.updateGame(state.currentGame.id, { 
+        packId: packId,
+        settings: updatedSettings 
+      });
+      
+      // Update local state
+      const updatedGame = {
+        ...state.currentGame,
+        packId: packId,
+        settings: updatedSettings
+      };
+      
+      dispatch({ type: 'SET_GAME', payload: updatedGame });
+      
+      console.log(`Pack selected: ${packId}`);
+    } catch (error) {
+      console.error('Error selecting pack:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to select pack' });
+      throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
   // Start game
   const startGame = async () => {
     if (!state.currentGame || !state.currentPlayer) return;
     
+    const selectedPack = state.currentGame.settings?.selectedPack;
+    if (!selectedPack) {
+      dispatch({ type: 'SET_ERROR', payload: 'No pack selected. Please select a pack first.' });
+      return;
+    }
+    
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      await FirebaseService.startGame(state.currentGame.id, state.currentGame.players);
+      // Load tasks for all players from the selected pack
+      const { taskCount } = getGameSettings(state.currentGame.players.length);
+      const updatedPlayers = state.currentGame.players.map(player => {
+        const rawTasks = getRandomTasks(selectedPack, taskCount);
+        const tasks: TaskInstance[] = rawTasks.map(task => ({
+          ...task,
+          id: Math.random().toString(36).substring(2, 15),
+          gameId: state.currentGame!.id,
+          playerId: player.id,
+          status: 'pending' as const
+        }));
+        
+        return {
+          ...player,
+          tasks: tasks
+        };
+      });
+
+      // Update game settings to mark tasks as loaded
+      const updatedSettings = {
+        ...state.currentGame.settings,
+        tasksLoaded: true
+      };
+
+      // Update the game with loaded tasks and settings
+      await FirebaseService.updateGame(state.currentGame.id, {
+        players: updatedPlayers,
+        settings: updatedSettings
+      });
+
+      // Cancel host disconnect cleanup since game is now starting
+      await FirebaseService.cancelHostDisconnectCleanup(state.currentGame.id);
+
+      // Start the game
+      await FirebaseService.startGame(state.currentGame.id, updatedPlayers);
       
-      // Microsoft Clarity tracking now handled via script tag in index.html
-      
-      console.log('Game started!');
+      console.log(`Game started with ${selectedPack} pack! Tasks loaded for ${updatedPlayers.length} players.`);
     } catch (error) {
       console.error('Error starting game:', error);
       dispatch({ type: 'SET_ERROR', payload: `Failed to start game: ${error instanceof Error ? error.message : 'Unknown error'}` });
@@ -335,6 +405,9 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         
         // If the leaving player is the host and game hasn't started yet
         if (currentPlayer.isHost && currentGame.status === 'draft') {
+          // Cancel host disconnect cleanup since host is properly leaving
+          await FirebaseService.cancelHostDisconnectCleanup(currentGame.id);
+          
           const remainingPlayers = currentGame.players.filter(p => p.id !== currentPlayer.id);
           
           if (remainingPlayers.length > 0) {
@@ -346,6 +419,9 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
                 .filter(p => p.id !== currentPlayer.id)
                 .map(p => p.id === newHost.id ? { ...p, isHost: true } : { ...p, isHost: false })
             });
+            
+            // Set up disconnect cleanup for the new host
+            await FirebaseService.setupHostDisconnectCleanup(currentGame.id);
           } else {
             // Last player leaving - delete the game
             await FirebaseService.deleteGame(currentGame.id);
@@ -399,10 +475,11 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     const taskBeingSwapped = state.currentPlayer.tasks.find(task => task.id === taskId);
     if (!taskBeingSwapped) return;
     
-    const isSwappingBonusTask = isBonusTask(taskBeingSwapped);
+    const currentPackId = state.currentGame?.settings?.selectedPack || 'core';
+    const isSwappingBonusTask = isBonusTask(currentPackId, taskBeingSwapped);
     
     // Get a replacement task that respects the bonus task limit
-    const newTask = getReplacementTask(state.currentPlayer.tasks, isSwappingBonusTask);
+    const newTask = getReplacementTask(currentPackId, state.currentPlayer.tasks, isSwappingBonusTask);
     if (!newTask) {
       console.error('No replacement tasks available');
       return;
@@ -498,13 +575,6 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         // Handle successful gotcha
         const uniqueTargets = state.currentPlayer.stats.uniqueTargets || [];
         const gothcas = state.currentPlayer.stats.gothcas || 0;
-        
-        const updatedTask = { 
-          ...task, 
-          status: 'completed' as const,
-          targetId,
-          gotAt: new Date()
-        };
         
         const isFirstTimeTarget = !uniqueTargets.includes(targetId);
         const bonusPoints = isFirstTimeTarget ? 0.5 : 0;
@@ -627,6 +697,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     state,
     createGame,
     joinGame,
+    selectPack,
     startGame,
     endGame,
     leaveGame,

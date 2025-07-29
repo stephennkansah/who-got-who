@@ -26,6 +26,8 @@ export interface GameSettings {
   enableNegativeScoring: boolean;
   maxPlayers: number;
   targetScore: number;
+  selectedPack?: 'core' | 'remote' | null;
+  tasksLoaded?: boolean;
 }
 
 export interface Player {
@@ -200,6 +202,7 @@ export interface GameContextType {
   state: GameState;
   createGame: (hostName: string, avatar?: string, avatarType?: 'emoji' | 'photo') => Promise<void>;
   joinGame: (gameId: string, playerName: string, avatar?: string, avatarType?: 'emoji' | 'photo') => Promise<void>;
+  selectPack: (packId: 'core' | 'remote') => Promise<void>;
   startGame: () => Promise<void>;
   endGame: () => Promise<void>;
   leaveGame: () => Promise<void>;
