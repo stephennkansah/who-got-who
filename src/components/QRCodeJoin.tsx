@@ -4,15 +4,19 @@ import QRCode from 'react-qr-code';
 
 interface QRCodeJoinProps {
   gameId: string;
+  gameType?: 'traditional' | 'holiday-challenge';
   style?: React.CSSProperties;
 }
 
-const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, style }) => {
+const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, gameType, style }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout>();
   
-  const gameUrl = `${window.location.origin}/?join=${gameId}`;
+  // Include game type in URL for YOU GOT WHO? games
+  const gameUrl = gameType === 'holiday-challenge' 
+    ? `${window.location.origin}/?join=${gameId}&type=you-got-who`
+    : `${window.location.origin}/?join=${gameId}`;
 
   // Cleanup timeout on unmount
   useEffect(() => {

@@ -2,27 +2,42 @@ import React, { useState } from 'react';
 
 interface ShareButtonProps {
   gameId?: string;
+  gameType?: 'traditional' | 'holiday-challenge';
   style?: React.CSSProperties;
   size?: 'small' | 'medium' | 'large';
 }
 
 const ShareButton: React.FC<ShareButtonProps> = ({ 
   gameId, 
+  gameType,
   style,
   size = 'medium' 
 }) => {
   const [showShareOptions, setShowShareOptions] = useState(false);
 
   const baseUrl = window.location.origin;
-  const shareUrl = gameId ? `${baseUrl}/?join=${gameId}` : baseUrl;
+  
+  // Include game type in URL for YOU GOT WHO? games
+  const shareUrl = gameId 
+    ? gameType === 'holiday-challenge' 
+      ? `${baseUrl}/?join=${gameId}&type=you-got-who`
+      : `${baseUrl}/?join=${gameId}`
+    : baseUrl;
+  
+  // Different messages for different game types
+  const isYouGotWho = gameType === 'holiday-challenge';
   
   const shareText = gameId 
-    ? `🎮 Join my Who Got Who game!\n\nGame Code: ${gameId}\n\nSecret missions, stealth gameplay - perfect for parties, dinners & hangouts!\n\n${shareUrl}`
-    : `🎮 Check out Who Got Who!\n\nSecret missions game perfect for parties, dinners & social events. Play in the background of whatever you're doing!\n\n${shareUrl}`;
+    ? isYouGotWho
+      ? `🏖️ Join my YOU GOT WHO? game!\n\nGame Code: ${gameId}\n\nSocial holiday challenges - race to complete the same challenges! Perfect for vacations!\n\n${shareUrl}`
+      : `🎮 Join my WHO GOT WHO? game!\n\nGame Code: ${gameId}\n\nSecret missions, stealth gameplay - perfect for parties, dinners & hangouts!\n\n${shareUrl}`
+    : `🎮 Check out WHO GOT WHO?\n\nSecret missions game perfect for parties, dinners & social events. Play in the background of whatever you're doing!\n\n${shareUrl}`;
 
   const shareTitle = gameId 
-    ? `Join Who Got Who Game ${gameId}!`
-    : 'Who Got Who - The Ultimate Party Game';
+    ? isYouGotWho
+      ? `Join YOU GOT WHO? Game ${gameId}!`
+      : `Join WHO GOT WHO? Game ${gameId}!`
+    : 'WHO GOT WHO? - The Ultimate Party Game';
 
   // Try native Web Share API first (mobile)
   const handleNativeShare = async () => {

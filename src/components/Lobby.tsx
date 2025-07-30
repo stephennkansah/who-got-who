@@ -22,6 +22,17 @@ export default function Lobby() {
   const isHost = currentPlayer?.isHost || false;
   const canStart = (currentGame?.players?.length || 0) >= 2;
 
+  // Debug logging for game type
+  useEffect(() => {
+    console.log('🏛️ Lobby loaded with game:', {
+      gameId: currentGame?.id,
+      gameType: currentGame?.gameType,
+      selectedPack: currentGame?.settings?.selectedPack,
+      isHost,
+      playerName: currentPlayer?.name
+    });
+  }, [currentGame, currentPlayer, isHost]);
+
   // Microsoft Clarity tracking now handled via script tag in index.html
 
   useEffect(() => {
@@ -657,7 +668,7 @@ export default function Lobby() {
                 padding: '0.6rem 1.2rem'
               }}
             />
-            <QRCodeJoin gameId={currentGame.id} />
+            <QRCodeJoin gameId={currentGame.id} gameType={currentGame.gameType} />
           </div>
         </div>
       </div>
@@ -804,8 +815,8 @@ export default function Lobby() {
                         justifyContent: 'center',
                         flexWrap: 'wrap'
                       }}>
-                        <ShareButton gameId={currentGame.id} />
-                        <QRCodeJoin gameId={currentGame.id} />
+                        <ShareButton gameId={currentGame.id} gameType={currentGame.gameType} />
+                        <QRCodeJoin gameId={currentGame.id} gameType={currentGame.gameType} />
                       </div>
                     </div>
                   )}

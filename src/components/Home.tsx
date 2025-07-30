@@ -39,8 +39,15 @@ function Home() {
   // Check for join parameter in URL
   useEffect(() => {
     const joinGameId = searchParams.get('join');
+    const gameType = searchParams.get('type');
     if (joinGameId) {
       setGameId(joinGameId.toUpperCase());
+      // Log the game type for debugging
+      console.log('🔗 Joining via URL:', { 
+        gameId: joinGameId.toUpperCase(), 
+        gameType,
+        isYouGotWho: gameType === 'you-got-who'
+      });
     }
   }, [searchParams]);
 
@@ -65,7 +72,9 @@ function Home() {
           gameSettings: state.currentGame.settings,
           gameId: state.currentGame.id,
           gameStatus: state.currentGame.status,
-          currentPhase: state.currentGame.currentPhase
+          currentPhase: state.currentGame.currentPhase,
+          gameType: state.currentGame.gameType,
+          fullGame: state.currentGame
         });
         
         if (packSelected || !isHost) {
@@ -272,17 +281,28 @@ function Home() {
                 fontWeight: '700',
                 marginBottom: '10px'
               }}>
-                🎉 You've been invited to join
+                {searchParams.get('type') === 'you-got-who' ? '🏖️' : '🎉'} You've been invited to join
               </p>
               <div style={{ 
                 color: '#fff', 
                 fontSize: '2em',
                 fontWeight: '800',
                 letterSpacing: '3px',
-                textShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                marginBottom: '10px'
               }}>
                 GAME {joinGameId}
               </div>
+              {searchParams.get('type') === 'you-got-who' && (
+                <p style={{ 
+                  color: '#fbbf24', 
+                  fontSize: '1.1em',
+                  fontWeight: '600',
+                  margin: 0
+                }}>
+                  🏁 YOU GOT WHO? - Holiday Challenge Racing Game
+                </p>
+              )}
             </div>
           ) : (
             <div style={{
