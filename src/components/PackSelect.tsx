@@ -60,8 +60,64 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
 
   if (!currentGame) {
     return (
-      <div style={{ textAlign: 'center', padding: '2rem' }}>
-        <div>Game not found</div>
+      <div style={{ 
+        padding: '2rem',
+        maxWidth: '800px', 
+        margin: '0 auto',
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{
+          background: 'white',
+          borderRadius: '20px',
+          padding: '3rem',
+          textAlign: 'center',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🚫</div>
+          <h2 style={{ 
+            fontSize: '1.5rem', 
+            fontWeight: '600',
+            color: '#1e293b',
+            marginBottom: '1rem'
+          }}>
+            Game Not Found
+          </h2>
+          <p style={{ 
+            color: '#64748b', 
+            fontSize: '1rem',
+            marginBottom: '2rem'
+          }}>
+            This game doesn't exist or has been deleted.
+          </p>
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '0.75rem 2rem',
+              color: 'white',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(59, 130, 246, 0.5)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            🏠 Back to Home
+          </button>
+        </div>
       </div>
     );
   }

@@ -8,6 +8,7 @@ import Game from './components/Game';
 import Recap from './components/Recap';
 import InstallPrompt from './components/InstallPrompt';
 import FeedbackButton from './components/FeedbackButton';
+import ErrorBoundary from './components/ErrorBoundary';
 import './serviceWorkerRegistration';
 
 // Wrapper component to extract gameId from URL params
@@ -20,18 +21,19 @@ function App() {
   // Microsoft Clarity is now loaded via script tag in index.html
 
   return (
-    <div className="container">
-      <FirebaseGameProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/select-pack/:gameId" element={<PackSelectWrapper />} />
-            <Route path="/lobby/:gameId" element={<Lobby />} />
-            <Route path="/game/:gameId" element={<Game />} />
-            <Route path="/recap/:gameId" element={<Recap />} />
-          </Routes>
-        </Router>
-      </FirebaseGameProvider>
+    <ErrorBoundary>
+      <div className="container">
+        <FirebaseGameProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/select-pack/:gameId" element={<PackSelectWrapper />} />
+              <Route path="/lobby/:gameId" element={<Lobby />} />
+              <Route path="/game/:gameId" element={<Game />} />
+              <Route path="/recap/:gameId" element={<Recap />} />
+            </Routes>
+          </Router>
+        </FirebaseGameProvider>
       
       {/* Install Prompt */}
       <InstallPrompt />
@@ -54,6 +56,7 @@ function App() {
         🔥 Firebase
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
 
