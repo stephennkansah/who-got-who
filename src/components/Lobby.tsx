@@ -20,7 +20,7 @@ export default function Lobby() {
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
   const isHost = currentPlayer?.isHost || false;
-  const canStart = (currentGame?.players.length || 0) >= 2;
+  const canStart = (currentGame?.players?.length || 0) >= 2;
 
   // Microsoft Clarity tracking now handled via script tag in index.html
 
@@ -113,7 +113,7 @@ export default function Lobby() {
             Who Got Who
           </h1>
           <div style={{ color: '#666', fontSize: '1rem', fontWeight: '600' }}>
-            Game Rules • {currentGame.players.length} player{currentGame.players.length !== 1 ? 's' : ''} waiting
+            Game Rules • {currentGame?.players?.length || 0} player{(currentGame?.players?.length || 0) !== 1 ? 's' : ''} waiting
           </div>
         </div>
 
@@ -125,178 +125,301 @@ export default function Lobby() {
             textAlign: 'center',
             color: '#333'
           }}>
-            📋 How to Play
+            📋 How to Play {currentGame?.gameType === 'holiday-challenge' ? 'YOU GOT WHO?' : 'WHO GOT WHO?'}
           </h3>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-            
-            {/* Rule 1: Stealth */}
-            <div style={{
-              padding: '1.2rem',
-              background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-              borderRadius: '15px',
-              border: '2px solid #ff6b9d'
-            }}>
-              <div style={{ 
-                fontSize: '1rem', 
-                fontWeight: '700',
-                color: '#8b2635',
-                marginBottom: '0.5rem'
+          {currentGame?.gameType === 'holiday-challenge' ? (
+            // YOU GOT WHO? Rules
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+              
+              {/* Rule 1: Everyone Gets Same Challenges */}
+              <div style={{
+                padding: '1.2rem',
+                background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                borderRadius: '15px',
+                border: '2px solid #ff6b9d'
               }}>
-                🕵️ Stay Stealthy!
-              </div>
-              <div style={{ 
-                fontSize: '0.9rem',
-                color: '#8b2635',
-                lineHeight: '1.5'
-              }}>
-                Complete tasks <strong>without getting caught</strong>. If someone notices you attempting a task, it's an automatic fail!
-              </div>
-            </div>
-
-            {/* Rule 2: Tasks & Scoring */}
-            <div style={{
-              padding: '1.2rem',
-              background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-              borderRadius: '15px',
-              border: '2px solid #48cae4'
-            }}>
-              <div style={{ 
-                fontSize: '1rem', 
-                fontWeight: '700',
-                color: '#006466',
-                marginBottom: '0.5rem'
-              }}>
-                🎯 Complete Tasks & Score
-              </div>
-              <div style={{ 
-                fontSize: '0.9rem',
-                color: '#006466',
-                lineHeight: '1.5'
-              }}>
-                ✅ Mark tasks as <strong>PASSED</strong> when completed<br/>
-                ❌ Mark as <strong>FAILED</strong> if caught<br/>
-                🏆 <strong>First to {currentGame?.settings.targetScore || 4} points wins!</strong><br/>
-                ⭐ <strong>+0.5 bonus</strong> for targeting someone new
-              </div>
-            </div>
-
-            {/* Rule 3: Gotcha System */}
-            <div style={{
-              padding: '1.2rem',
-              background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-              borderRadius: '15px',
-              border: '2px solid #ff8a65'
-            }}>
-              <div style={{ 
-                fontSize: '1rem', 
-                fontWeight: '700',
-                color: '#d84315',
-                marginBottom: '0.5rem'
-              }}>
-                📢 Say "Gotcha!" 
-              </div>
-              <div style={{ 
-                fontSize: '0.9rem',
-                color: '#d84315',
-                lineHeight: '1.5'
-              }}>
-                When you pass a task, choose who to target and say <strong>"Gotcha [Name]!"</strong> out loud. They can dispute if they disagree.
-              </div>
-            </div>
-
-            {/* Rule 4: Swaps */}
-            <div style={{
-              padding: '1.2rem',
-              background: 'linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)',
-              borderRadius: '15px',
-              border: '2px solid #9c27b0'
-            }}>
-              <div style={{ 
-                fontSize: '1rem', 
-                fontWeight: '700',
-                color: '#4a148c',
-                marginBottom: '0.5rem'
-              }}>
-                🔄 Task Swaps (2 per player)
-              </div>
-              <div style={{ 
-                fontSize: '0.9rem',
-                color: '#4a148c',
-                lineHeight: '1.5'
-              }}>
-                Don't like a task? Use the <strong>"Swap Task"</strong> button to get a new random one. Use them wisely!
-              </div>
-            </div>
-
-            {/* Example Tasks */}
-            <div style={{
-              padding: '1.2rem',
-              background: 'linear-gradient(135deg, #fff3e0 0%, #ffecb3 100%)',
-              borderRadius: '15px',
-              border: '2px solid #ff9800',
-              marginTop: '1rem'
-            }}>
-              <div style={{ 
-                fontSize: '1rem', 
-                fontWeight: '700',
-                color: '#e65100',
-                marginBottom: '0.8rem',
-                textAlign: 'center'
-              }}>
-                💡 Example Tasks
-              </div>
-              <div style={{ 
-                fontSize: '0.85rem',
-                color: '#bf360c',
-                lineHeight: '1.4'
-              }}>
-                <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
-                  <strong>"Get a player to correct a movie quote"</strong><br/>
-                  <em>Say: "Peter, I am your father" → Wait for correction</em>
+                <div style={{ 
+                  fontSize: '1rem', 
+                  fontWeight: '700',
+                  color: '#8b2635',
+                  marginBottom: '0.5rem'
+                }}>
+                  🏖️ Everyone Gets the Same 10 Challenges!
                 </div>
-                <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
-                  <strong>"Get someone to take a group selfie"</strong><br/>
-                  <em>Naturally suggest a photo without being obvious</em>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
-                  <strong>"Get someone to scratch your back for 10 secs"</strong><br/>
-                  <em>Ask casually - "My back is killing me..."</em>
+                <div style={{ 
+                  fontSize: '0.9rem',
+                  color: '#8b2635',
+                  lineHeight: '1.5'
+                }}>
+                  Unlike regular WHO GOT WHO?, <strong>everyone sees the same challenges</strong>. Race to complete them!
                 </div>
               </div>
-            </div>
 
-          </div>
+              {/* Rule 2: Scoring */}
+              <div style={{
+                padding: '1.2rem',
+                background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                borderRadius: '15px',
+                border: '2px solid #48cae4'
+              }}>
+                <div style={{ 
+                  fontSize: '1rem', 
+                  fontWeight: '700',
+                  color: '#006466',
+                  marginBottom: '0.5rem'
+                }}>
+                  🏆 Scoring System
+                </div>
+                <div style={{ 
+                  fontSize: '0.9rem',
+                  color: '#006466',
+                  lineHeight: '1.5'
+                }}>
+                  🥇 <strong>First to complete a challenge:</strong> 3 Gold Points<br/>
+                  🥈 <strong>Next 2 players:</strong> 1 Silver Point each<br/>
+                  🎯 <strong>First to {currentGame?.settings?.holidayChallengeWinCondition || 18} points wins!</strong><br/>
+                  📸 Some challenges require photo proof<br/>
+                  ⚖️ <em>Win target scales with group size - more players = lower target!</em>
+                </div>
+              </div>
+
+              {/* Rule 3: Social Challenges */}
+              <div style={{
+                padding: '1.2rem',
+                background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                borderRadius: '15px',
+                border: '2px solid #ff8a65'
+              }}>
+                <div style={{ 
+                  fontSize: '1rem', 
+                  fontWeight: '700',
+                  color: '#d84315',
+                  marginBottom: '0.5rem'
+                }}>
+                  👥 Social Holiday Challenges
+                </div>
+                <div style={{ 
+                  fontSize: '0.9rem',
+                  color: '#d84315',
+                  lineHeight: '1.5'
+                }}>
+                  Interact with other holiday-goers, get photos, make friends! Perfect for vacation socializing.
+                </div>
+              </div>
+
+              {/* Example Challenges */}
+              <div style={{
+                padding: '1.2rem',
+                background: 'linear-gradient(135deg, #fff3e0 0%, #ffecb3 100%)',
+                borderRadius: '15px',
+                border: '2px solid #ff9800',
+                marginTop: '1rem'
+              }}>
+                <div style={{ 
+                  fontSize: '1rem', 
+                  fontWeight: '700',
+                  color: '#e65100',
+                  marginBottom: '0.8rem',
+                  textAlign: 'center'
+                }}>
+                  💡 Example Challenges
+                </div>
+                <div style={{ 
+                  fontSize: '0.85rem',
+                  color: '#bf360c',
+                  lineHeight: '1.4'
+                }}>
+                  <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
+                    <strong>"Get someone to take a group photo of your team"</strong> 📸<br/>
+                    <em>Requires photo proof</em>
+                  </div>
+                  <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
+                    <strong>"Borrow sunscreen from another group"</strong><br/>
+                    <em>Simple social interaction</em>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
+                    <strong>"Make a new friend and learn their name"</strong><br/>
+                    <em>Holiday networking!</em>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          ) : (
+            // Traditional Who Got Who Rules
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+              
+              {/* Rule 1: Stealth */}
+              <div style={{
+                padding: '1.2rem',
+                background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                borderRadius: '15px',
+                border: '2px solid #ff6b9d'
+              }}>
+                <div style={{ 
+                  fontSize: '1rem', 
+                  fontWeight: '700',
+                  color: '#8b2635',
+                  marginBottom: '0.5rem'
+                }}>
+                  🕵️ Stay Stealthy!
+                </div>
+                <div style={{ 
+                  fontSize: '0.9rem',
+                  color: '#8b2635',
+                  lineHeight: '1.5'
+                }}>
+                  Complete tasks <strong>without getting caught</strong>. If someone notices you attempting a task, it's an automatic fail!
+                </div>
+              </div>
+
+              {/* Rule 2: Tasks & Scoring */}
+              <div style={{
+                padding: '1.2rem',
+                background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                borderRadius: '15px',
+                border: '2px solid #48cae4'
+              }}>
+                <div style={{ 
+                  fontSize: '1rem', 
+                  fontWeight: '700',
+                  color: '#006466',
+                  marginBottom: '0.5rem'
+                }}>
+                  🎯 Complete Tasks & Score
+                </div>
+                <div style={{ 
+                  fontSize: '0.9rem',
+                  color: '#006466',
+                  lineHeight: '1.5'
+                }}>
+                  ✅ Mark tasks as <strong>PASSED</strong> when completed<br/>
+                  ❌ Mark as <strong>FAILED</strong> if caught<br/>
+                  🏆 <strong>First to {currentGame?.settings.targetScore || 4} points wins!</strong><br/>
+                  ⭐ <strong>+0.5 bonus</strong> for targeting someone new
+                </div>
+              </div>
+
+              {/* Rule 3: Gotcha System */}
+              <div style={{
+                padding: '1.2rem',
+                background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                borderRadius: '15px',
+                border: '2px solid #ff8a65'
+              }}>
+                <div style={{ 
+                  fontSize: '1rem', 
+                  fontWeight: '700',
+                  color: '#d84315',
+                  marginBottom: '0.5rem'
+                }}>
+                  📢 Say "Gotcha!" 
+                </div>
+                <div style={{ 
+                  fontSize: '0.9rem',
+                  color: '#d84315',
+                  lineHeight: '1.5'
+                }}>
+                  When you pass a task, choose who to target and say <strong>"Gotcha [Name]!"</strong> out loud. They can dispute if they disagree.
+                </div>
+              </div>
+
+              {/* Rule 4: Swaps */}
+              <div style={{
+                padding: '1.2rem',
+                background: 'linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)',
+                borderRadius: '15px',
+                border: '2px solid #9c27b0'
+              }}>
+                <div style={{ 
+                  fontSize: '1rem', 
+                  fontWeight: '700',
+                  color: '#4a148c',
+                  marginBottom: '0.5rem'
+                }}>
+                  🔄 Task Swaps (2 per player)
+                </div>
+                <div style={{ 
+                  fontSize: '0.9rem',
+                  color: '#4a148c',
+                  lineHeight: '1.5'
+                }}>
+                  Don't like a task? Use the <strong>"Swap Task"</strong> button to get a new random one. Use them wisely!
+                </div>
+              </div>
+
+              {/* Example Tasks */}
+              <div style={{
+                padding: '1.2rem',
+                background: 'linear-gradient(135deg, #fff3e0 0%, #ffecb3 100%)',
+                borderRadius: '15px',
+                border: '2px solid #ff9800',
+                marginTop: '1rem'
+              }}>
+                <div style={{ 
+                  fontSize: '1rem', 
+                  fontWeight: '700',
+                  color: '#e65100',
+                  marginBottom: '0.8rem',
+                  textAlign: 'center'
+                }}>
+                  💡 Example Tasks
+                </div>
+                <div style={{ 
+                  fontSize: '0.85rem',
+                  color: '#bf360c',
+                  lineHeight: '1.4'
+                }}>
+                  <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
+                    <strong>"Get a player to correct a movie quote"</strong><br/>
+                    <em>Say: "Peter, I am your father" → Wait for correction</em>
+                  </div>
+                  <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
+                    <strong>"Get someone to take a group selfie"</strong><br/>
+                    <em>Naturally suggest a photo without being obvious</em>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
+                    <strong>"Get someone to scratch your back for 10 secs"</strong><br/>
+                    <em>Ask casually - "My back is killing me..."</em>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
         </div>
 
-        {/* Scaling Info */}
-        <div style={{
-          padding: '1.2rem',
-          background: 'linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)',
-          borderRadius: '15px',
-          border: '2px solid #4caf50',
-          marginTop: '1rem'
-        }}>
-          <div style={{ 
-            fontSize: '1rem', 
-            fontWeight: '700',
-            color: '#2e7d32',
-            marginBottom: '0.5rem'
+        {/* Scaling Info - Only for Traditional Games */}
+        {currentGame?.gameType !== 'holiday-challenge' && (
+          <div style={{
+            padding: '1.2rem',
+            background: 'linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)',
+            borderRadius: '15px',
+            border: '2px solid #4caf50',
+            marginTop: '1rem'
           }}>
-            📊 Game Scales with Players
+            <div style={{ 
+              fontSize: '1rem', 
+              fontWeight: '700',
+              color: '#2e7d32',
+              marginBottom: '0.5rem'
+            }}>
+              📊 Game Scales with Players
+            </div>
+            <div style={{ 
+              fontSize: '0.9rem',
+              color: '#2e7d32',
+              lineHeight: '1.5'
+            }}>
+              {currentGame && (currentGame.players?.length || 0) >= 7 ? (
+                <>🎯 <strong>Large game:</strong> {currentGame.players?.length || 0} players get <strong>8 tasks</strong> each, win at <strong>5 points</strong></>
+              ) : (
+                <>🎯 <strong>Small game:</strong> {currentGame?.players?.length || 0} players get <strong>7 tasks</strong> each, win at <strong>4 points</strong></>
+              )}
+            </div>
           </div>
-          <div style={{ 
-            fontSize: '0.9rem',
-            color: '#2e7d32',
-            lineHeight: '1.5'
-          }}>
-            {currentGame && currentGame.players.length >= 7 ? (
-              <>🎯 <strong>Large game:</strong> {currentGame.players.length} players get <strong>8 tasks</strong> each, win at <strong>5 points</strong></>
-            ) : (
-              <>🎯 <strong>Small game:</strong> {currentGame?.players.length || 0} players get <strong>7 tasks</strong> each, win at <strong>4 points</strong></>
-            )}
-          </div>
-        </div>
+        )}
 
         {/* Notification Prompt */}
         <NotificationPrompt />
@@ -351,7 +474,7 @@ export default function Lobby() {
             Who Got Who
           </h1>
           <div style={{ color: '#666', fontSize: '0.9rem', fontWeight: '600' }}>
-            Lobby • {currentGame.players.length} player{currentGame.players.length !== 1 ? 's' : ''}
+            Lobby • {currentGame?.players?.length || 0} player{(currentGame?.players?.length || 0) !== 1 ? 's' : ''}
           </div>
         </div>
 
@@ -363,11 +486,11 @@ export default function Lobby() {
             color: '#333',
             textAlign: 'center'
           }}>
-            👥 Players ({currentGame.players.length})
+            👥 Players ({currentGame?.players?.length || 0})
           </h3>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-            {currentGame.players.map((player: Player) => (
+            {(currentGame?.players || []).map((player: Player) => (
               <div key={player.id} style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -490,7 +613,7 @@ export default function Lobby() {
           Who Got Who
         </h1>
         <div style={{ color: '#666', fontSize: '1rem', fontWeight: '600' }}>
-          Lobby • {currentGame.players.length} player{currentGame.players.length !== 1 ? 's' : ''}
+                      Lobby • {currentGame?.players?.length || 0} player{(currentGame?.players?.length || 0) !== 1 ? 's' : ''}
         </div>
       </div>
 
@@ -547,13 +670,13 @@ export default function Lobby() {
           color: '#333',
           textAlign: 'center'
         }}>
-          👥 Players ({currentGame.players.length})
+          👥 Players ({currentGame?.players?.length || 0})
         </h3>
         
         {/* Always show player list for host */}
         <div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-            {currentGame.players.map((player: Player) => (
+            {(currentGame?.players || []).map((player: Player) => (
               <div key={player.id} style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -651,7 +774,7 @@ export default function Lobby() {
                   </div>
                   
                   {/* Show guidance when only host is present */}
-                  {currentGame.players.length === 1 && (
+                  {(currentGame?.players?.length || 0) === 1 && (
                     <div style={{
                       background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
                       border: '2px solid #f59e0b',

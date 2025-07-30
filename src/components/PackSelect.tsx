@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
-import { getAllPacks } from '../data/packs';
+import { getAllPacks, getAllPackOptions } from '../data/packs';
 
 interface PackSelectProps {
   gameId: string;
@@ -12,15 +12,16 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'who-got-who' | 'you-got-who'>('who-got-who');
   
-  const packs = getAllPacks();
+  const packs = getAllPackOptions();
   const currentGame = state.currentGame;
   const isHost = currentGame?.hostId === state.currentPlayer?.id;
 
   // If pack already selected, show read-only view
   const packAlreadySelected = currentGame?.settings?.selectedPack;
 
-  const handlePackSelect = async (packId: 'core' | 'remote') => {
+  const handlePackSelect = async (packId: 'core' | 'remote' | 'holiday-challenge') => {
     if (packAlreadySelected || !isHost || isLoading) return;
 
     setIsLoading(true);
@@ -153,7 +154,7 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
             margin: 0
           }}>
             {packAlreadySelected 
-              ? `Pack selected: ${packs.find(p => p.id === packAlreadySelected)?.name}`
+              ? `Pack selected: ${packs?.find(p => p.id === packAlreadySelected)?.name || 'Unknown Pack'}`
               : isHost 
                 ? 'Select which type of game you want to play'
                 : 'Waiting for host to choose a pack...'
@@ -161,75 +162,214 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
           </p>
         </div>
 
-        {/* Pack Tiles */}
+        {/* Tab Navigation */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '1.5rem',
-          marginBottom: '2rem'
+          display: 'flex',
+          marginBottom: '2rem',
+          borderRadius: '12px',
+          background: '#f1f5f9',
+          padding: '4px'
         }}>
-          
-          {/* Core Pack */}
-          <div 
-            style={getPackTileStyle('core', packAlreadySelected === 'core')}
-            onClick={() => handlePackSelect('core')}
+          <button
+            onClick={() => setActiveTab('who-got-who')}
+            style={{
+              flex: 1,
+              padding: '1rem',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1.1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              background: activeTab === 'who-got-who' 
+                ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' 
+                : 'transparent',
+              color: activeTab === 'who-got-who' ? 'white' : '#64748b'
+            }}
           >
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-                🏠
-              </div>
-              <h3 style={{ 
-                fontSize: '1.5rem', 
-                fontWeight: '600',
-                margin: '0 0 0.5rem 0'
-              }}>
-                Core Pack
-              </h3>
-              <p style={{ 
-                fontSize: '0.9rem', 
-                margin: '0 0 1rem 0',
-                opacity: 0.8
-              }}>
-                Default in-person game
-              </p>
-              
-              <div style={getExampleStyle('core', packAlreadySelected === 'core')}>
-                💡 Example: "Get a player to scratch your back for 10 seconds"
-              </div>
-            </div>
-          </div>
+            WHO GOT WHO?
+          </button>
+          <button
+            onClick={() => setActiveTab('you-got-who')}
+            style={{
+              flex: 1,
+              padding: '1rem',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1.1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              background: activeTab === 'you-got-who' 
+                ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' 
+                : 'transparent',
+              color: activeTab === 'you-got-who' ? 'white' : '#64748b'
+            }}
+          >
+            YOU GOT WHO?
+          </button>
+        </div>
 
-          {/* Remote Pack */}
-          <div 
-            style={getPackTileStyle('remote', packAlreadySelected === 'remote')}
-            onClick={() => handlePackSelect('remote')}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-                📱
-              </div>
-              <h3 style={{ 
-                fontSize: '1.5rem', 
-                fontWeight: '600',
-                margin: '0 0 0.5rem 0'
+        {/* Tab Content */}
+        {activeTab === 'who-got-who' ? (
+          <div>
+            <div style={{
+              textAlign: 'center',
+              marginBottom: '2rem'
+            }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '700',
+                color: '#1e293b',
+                marginBottom: '0.5rem'
               }}>
-                Remote Pack
-              </h3>
-              <p style={{ 
-                fontSize: '0.85rem', 
-                margin: '0 0 1rem 0',
-                opacity: 0.8,
+                WHO GOT WHO?
+              </h2>
+              <p style={{
+                fontSize: '0.9rem',
+                color: '#64748b',
                 lineHeight: '1.4'
               }}>
-                Perfect when you're not together – play over WhatsApp, iMessage, and social media.
+                🕵️ <strong>Secret stealth-based gameplay</strong><br/>
+                Each player gets different secret tasks. Complete them without getting caught and target other players when you succeed.
               </p>
+            </div>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1.5rem',
+              marginBottom: '2rem'
+            }}>
               
-              <div style={getExampleStyle('remote', packAlreadySelected === 'remote')}>
-                💡 Example: "Get a player to send you a voice note"
+              {/* Core Pack */}
+              <div 
+                style={getPackTileStyle('core', packAlreadySelected === 'core')}
+                onClick={() => handlePackSelect('core')}
+              >
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
+                    🏠
+                  </div>
+                  <h3 style={{ 
+                    fontSize: '1.5rem', 
+                    fontWeight: '600',
+                    margin: '0 0 0.5rem 0'
+                  }}>
+                    Core Pack
+                  </h3>
+                  <p style={{ 
+                    fontSize: '0.85rem', 
+                    margin: '0 0 1rem 0',
+                    opacity: 0.8,
+                    lineHeight: '1.3'
+                  }}>
+                    Classic stealth gameplay for in-person groups. Each player gets unique secret tasks.
+                  </p>
+                  
+                  <div style={getExampleStyle('core', packAlreadySelected === 'core')}>
+                    💡 Example: "Get a player to scratch your back for 10 seconds"
+                  </div>
+                </div>
+              </div>
+
+              {/* Remote Pack */}
+              <div 
+                style={getPackTileStyle('remote', packAlreadySelected === 'remote')}
+                onClick={() => handlePackSelect('remote')}
+              >
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
+                    📱
+                  </div>
+                  <h3 style={{ 
+                    fontSize: '1.5rem', 
+                    fontWeight: '600',
+                    margin: '0 0 0.5rem 0'
+                  }}>
+                    Remote Pack
+                  </h3>
+                  <p style={{ 
+                    fontSize: '0.85rem', 
+                    margin: '0 0 1rem 0',
+                    opacity: 0.8,
+                    lineHeight: '1.3'
+                  }}>
+                    Stealth gameplay for remote groups. Each player gets unique secret tasks designed for digital interaction.
+                  </p>
+                  
+                  <div style={getExampleStyle('remote', packAlreadySelected === 'remote')}>
+                    💡 Example: "Get a player to send you a voice note"
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div>
+            <div style={{
+              textAlign: 'center',
+              marginBottom: '2rem'
+            }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '700',
+                color: '#1e293b',
+                marginBottom: '0.5rem'
+              }}>
+                YOU GOT WHO?
+              </h2>
+              <p style={{
+                fontSize: '0.9rem',
+                color: '#64748b',
+                lineHeight: '1.4'
+              }}>
+                🏁 <strong>Social challenge racing gameplay</strong><br/>
+                <span style={{ color: '#3b82f6', fontWeight: '600' }}>Everyone gets the exact same 10 challenges!</span> Race to complete them first. No stealth required - it's all about speed and social interaction.
+              </p>
+            </div>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1.5rem',
+              justifyContent: 'center',
+              marginBottom: '2rem'
+            }}>
+
+              {/* Holiday Challenge Pack */}
+              <div 
+                style={getPackTileStyle('holiday-challenge', packAlreadySelected === 'holiday-challenge')}
+                onClick={() => handlePackSelect('holiday-challenge')}
+              >
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
+                    🏖️
+                  </div>
+                  <h3 style={{ 
+                    fontSize: '1.5rem', 
+                    fontWeight: '600',
+                    margin: '0 0 0.5rem 0'
+                  }}>
+                    Holiday Challenge Pack
+                  </h3>
+                  <p style={{ 
+                    fontSize: '0.85rem', 
+                    margin: '0 0 1rem 0',
+                    opacity: 0.8,
+                    lineHeight: '1.3'
+                  }}>
+                    <span style={{ color: '#3b82f6', fontWeight: '600' }}>Everyone gets the same 10 challenges!</span> Racing gameplay perfect for holidays and social gatherings.
+                  </p>
+                  
+                  <div style={getExampleStyle('holiday-challenge', packAlreadySelected === 'holiday-challenge')}>
+                    💡 Example: "Get someone to take a group photo of your team" 📸
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Loading State */}
         {isLoading && (

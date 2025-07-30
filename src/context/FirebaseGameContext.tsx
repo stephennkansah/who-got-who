@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { Game, Player, TaskInstance, GameState, GameContextType } from '../types';
-import { getRandomTasks, getReplacementTask, isBonusTask } from '../data/packs';
+import { getRandomTasks, getReplacementTask, isBonusTask, getRandomHolidayChallenges, getHolidayChallengeWinCondition } from '../data/packs';
 import FirebaseService, { getGameSettings } from '../services/firebase';
 import NotificationService from '../services/notificationService';
 import { retryAsync, AsyncMutex, FirebaseOperationQueue } from '../utils/asyncHelpers';
@@ -285,7 +285,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
   };
 
   // Select pack for the game
-  const selectPack = async (packId: 'core' | 'remote') => {
+  const selectPack = async (packId: 'core' | 'remote' | 'holiday-challenge') => {
     if (!state.currentGame || !state.currentPlayer?.isHost) {
       throw new Error('Only the host can select a pack');
     }
@@ -297,20 +297,34 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
       const updatedSettings = {
         ...state.currentGame.settings,
         selectedPack: packId,
-        tasksLoaded: false
+        tasksLoaded: false,
+        // Add Holiday Challenge specific settings
+        ...(packId === 'holiday-challenge' && {
+          holidayChallengeWinCondition: getHolidayChallengeWinCondition(state.currentGame.players.length),
+          holidayGoldPoints: 3,
+          holidaySilverPoints: 1,
+          holidayMaxSilverPerChallenge: 2
+        })
       };
 
-      // Update both the packId and settings
+      // Set game type based on pack selection
+      const gameType: 'traditional' | 'holiday-challenge' = packId === 'holiday-challenge' ? 'holiday-challenge' : 'traditional';
+
+      // Update both the packId, gameType, and settings
       await FirebaseService.updateGame(state.currentGame.id, { 
         packId: packId,
-        settings: updatedSettings 
+        gameType: gameType,
+        settings: updatedSettings,
+        ...(packId === 'holiday-challenge' && { challengeCompletions: [] })
       });
       
       // Update local state
       const updatedGame = {
         ...state.currentGame,
         packId: packId,
-        settings: updatedSettings
+        gameType: gameType,
+        settings: updatedSettings,
+        ...(packId === 'holiday-challenge' && { challengeCompletions: [] })
       };
       
       dispatch({ type: 'SET_GAME', payload: updatedGame });
@@ -338,23 +352,43 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      // Load tasks for all players from the selected pack
-      const { taskCount } = getGameSettings(state.currentGame.players.length);
-      const updatedPlayers = state.currentGame.players.map(player => {
-        const rawTasks = getRandomTasks(selectedPack, taskCount);
-        const tasks: TaskInstance[] = rawTasks.map(task => ({
-          ...task,
-          id: Math.random().toString(36).substring(2, 15),
-          gameId: state.currentGame!.id,
-          playerId: player.id,
-          status: 'pending' as const
+      let updatedPlayers;
+      
+      if (selectedPack === 'holiday-challenge') {
+        // Holiday Challenge Pack: Select 10 random challenges for everyone
+        const selectedChallenges = getRandomHolidayChallenges(10);
+        
+        // Initialize players with challenge-specific fields
+        updatedPlayers = state.currentGame.players.map(player => ({
+          ...player,
+          challengeScore: 0,
+          challengeCompletions: [],
+          tasks: [] // Holiday challenges don't use individual tasks
         }));
         
-        return {
-          ...player,
-          tasks: tasks
-        };
-      });
+        // Store the selected challenges in the game data
+        await FirebaseService.updateGame(state.currentGame.id, {
+          selectedChallenges: selectedChallenges
+        });
+      } else {
+        // Traditional packs: Load tasks for all players from the selected pack
+        const { taskCount } = getGameSettings(state.currentGame.players.length);
+        updatedPlayers = state.currentGame.players.map(player => {
+          const rawTasks = getRandomTasks(selectedPack, taskCount);
+          const tasks: TaskInstance[] = rawTasks.map(task => ({
+            ...task,
+            id: Math.random().toString(36).substring(2, 15),
+            gameId: state.currentGame!.id,
+            playerId: player.id,
+            status: 'pending' as const
+          }));
+          
+          return {
+            ...player,
+            tasks: tasks
+          };
+        });
+      }
 
       // Update game settings to mark tasks as loaded
       const updatedSettings = {
@@ -374,7 +408,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
       // Start the game
       await FirebaseService.startGame(state.currentGame.id, updatedPlayers);
       
-      console.log(`Game started with ${selectedPack} pack! Tasks loaded for ${updatedPlayers.length} players.`);
+      console.log(`Game started with ${selectedPack} pack! ${selectedPack === 'holiday-challenge' ? 'Challenges initialized' : 'Tasks loaded'} for ${updatedPlayers.length} players.`);
     } catch (error) {
       console.error('Error starting game:', error);
       dispatch({ type: 'SET_ERROR', payload: `Failed to start game: ${error instanceof Error ? error.message : 'Unknown error'}` });
@@ -403,23 +437,23 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         
         // If the leaving player is the host and game hasn't started yet
         if (currentPlayer.isHost && currentGame.status === 'draft') {
+          // Warn the host that leaving will end the game
+          const confirmed = window.confirm(
+            '⚠️ Leave Lobby?\n\nAs the host, leaving the lobby will END THE GAME for all players.\n\nAre you sure you want to leave?'
+          );
+          
+          if (!confirmed) {
+            return; // Don't leave if they cancel
+          }
+          
           // Cancel host disconnect cleanup since host is properly leaving
           await FirebaseService.cancelHostDisconnectCleanup(currentGame.id);
           
           const remainingPlayers = currentGame.players.filter(p => p.id !== currentPlayer.id);
           
           if (remainingPlayers.length > 0) {
-            // Promote the first remaining player to host
-            const newHost = remainingPlayers[0];
-            await FirebaseService.updateGame(currentGame.id, {
-              hostId: newHost.id,
-              players: currentGame.players
-                .filter(p => p.id !== currentPlayer.id)
-                .map(p => p.id === newHost.id ? { ...p, isHost: true } : { ...p, isHost: false })
-            });
-            
-            // Set up disconnect cleanup for the new host
-            await FirebaseService.setupHostDisconnectCleanup(currentGame.id);
+            // Instead of promoting a new host, delete the game when host leaves during draft
+            await FirebaseService.deleteGame(currentGame.id);
           } else {
             // Last player leaving - delete the game
             await FirebaseService.deleteGame(currentGame.id);
@@ -664,6 +698,111 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     }
   };
 
+  // Holiday Challenge Pack methods
+  const completeChallenge = async (challengeId: string, proofImage?: File) => {
+    if (!state.currentGame || !state.currentPlayer) {
+      throw new Error('No active game or player');
+    }
+
+    if (state.currentGame.gameType !== 'holiday-challenge') {
+      throw new Error('This action is only available for Holiday Challenge Pack games');
+    }
+
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
+    try {
+      // Check if this challenge already has a gold completion
+      const existingCompletions = state.currentGame.challengeCompletions || [];
+      const challengeCompletions = existingCompletions.filter(c => c.challengeId === challengeId);
+      const hasGold = challengeCompletions.some(c => c.type === 'gold');
+      
+      // Check if this player already completed this challenge
+      const playerAlreadyCompleted = challengeCompletions.some(c => c.playerId === state.currentPlayer!.id);
+      if (playerAlreadyCompleted) {
+        throw new Error('You have already completed this challenge');
+      }
+
+      // Determine completion type and points
+      const completionType: 'gold' | 'silver' = hasGold ? 'silver' : 'gold';
+      const points = hasGold 
+        ? (state.currentGame.settings.holidaySilverPoints || 1)
+        : (state.currentGame.settings.holidayGoldPoints || 3);
+
+      // Upload proof image if provided
+      let proofImageUrl: string | undefined;
+      if (proofImage) {
+        proofImageUrl = await uploadProofImage(proofImage, challengeId);
+      }
+
+      // Create challenge completion
+      const completion = {
+        id: Math.random().toString(36).substring(2, 15),
+        challengeId,
+        playerId: state.currentPlayer.id,
+        gameId: state.currentGame.id,
+        completedAt: new Date(),
+        points,
+        type: completionType,
+        proofImageUrl
+      };
+
+      // Update player score and completions
+      const updatedPlayer = {
+        ...state.currentPlayer,
+        challengeScore: (state.currentPlayer.challengeScore || 0) + points,
+        challengeCompletions: [...(state.currentPlayer.challengeCompletions || []), challengeId]
+      };
+
+      // Update game with new completion
+      const updatedGame = {
+        ...state.currentGame,
+        challengeCompletions: [...existingCompletions, completion],
+        players: state.currentGame.players.map(p => 
+          p.id === state.currentPlayer!.id ? updatedPlayer : p
+        )
+      };
+
+      // Save to Firebase
+      await FirebaseService.updateGame(state.currentGame.id, {
+        challengeCompletions: updatedGame.challengeCompletions,
+        players: updatedGame.players
+      });
+
+      // Update local state
+      dispatch({ type: 'SET_GAME', payload: updatedGame });
+      dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
+
+      // Check for win condition
+      const winCondition = state.currentGame.settings.holidayChallengeWinCondition || 7;
+      if (updatedPlayer.challengeScore >= winCondition) {
+        await FirebaseService.updateGameStatus(state.currentGame.id, 'ended');
+      }
+
+      console.log(`Challenge completed: ${challengeId} (${completionType}, ${points} points)`);
+    } catch (error) {
+      console.error('Error completing challenge:', error);
+      dispatch({ type: 'SET_ERROR', payload: `Failed to complete challenge: ${error instanceof Error ? error.message : 'Unknown error'}` });
+      throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  const uploadProofImage = async (file: File, challengeId: string): Promise<string> => {
+    if (!state.currentGame || !state.currentPlayer) {
+      throw new Error('No active game or player');
+    }
+
+    // For now, return a mock URL since we don't have cloud storage set up
+    // In a real implementation, you would upload to Firebase Storage, S3, etc.
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const mockUrl = `https://mockcdn.example.com/images/${state.currentGame!.id}/${challengeId}/${state.currentPlayer!.id}_${Date.now()}.jpg`;
+        resolve(mockUrl);
+      }, 1000);
+    });
+  };
+
   // Auto-rejoin functionality
   useEffect(() => {
     const autoRejoin = async () => {
@@ -675,9 +814,18 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
           const game = await FirebaseService.getGame(savedGameId);
           if (game && (game.status === 'draft' || game.status === 'live')) {
             const player = game.players.find(p => p.id === savedPlayerId);
-            if (player) {
+            
+            // Only restore games that have a pack selected or are already live/ended
+            // This prevents restoring incomplete draft games
+            if (player && (game.settings?.selectedPack || game.status !== 'draft')) {
+              console.log('🔄 Restoring Firebase game:', game.id);
               dispatch({ type: 'SET_GAME', payload: game });
               dispatch({ type: 'SET_PLAYER', payload: player });
+            } else {
+              console.log('🚫 Skipping restoration of incomplete draft game');
+              // Clear incomplete game data
+              localStorage.removeItem('currentGameId');
+              localStorage.removeItem('currentPlayerId');
             }
           }
         } catch (error) {
@@ -708,7 +856,9 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
     forceGameState,
     simulateScore,
     updatePlayerTasks,
-    socket: null // Firebase doesn't use traditional sockets
+    socket: null, // Firebase doesn't use traditional sockets
+    completeChallenge,
+    uploadProofImage
   };
 
   return (

@@ -1,4 +1,4 @@
-import { Task, TaskPack } from '../types';
+import { Task, TaskPack, Challenge, HolidayChallengePack } from '../types';
 
 // ================================
 // CORE PACK - In-Person Game Tasks  
@@ -964,14 +964,27 @@ export const gamePacks: { [key: string]: TaskPack } = {
 // HELPER FUNCTIONS
 // ================================
 
-// Get pack by ID
+// Get pack by ID (traditional packs only)
 export function getPackById(packId: string): TaskPack | undefined {
   return gamePacks[packId];
 }
 
-// Get all available packs
+// Get any pack by ID (includes Holiday Challenge Pack)
+export function getAnyPackById(packId: string): TaskPack | HolidayChallengePack | undefined {
+  if (packId === 'holiday-challenge') {
+    return holidayChallengePack;
+  }
+  return gamePacks[packId];
+}
+
+// Get all available packs (traditional packs only)
 export function getAllPacks(): TaskPack[] {
   return Object.values(gamePacks);
+}
+
+// Get all pack options for selection (includes Holiday Challenge Pack)
+export function getAllPackOptions(): Array<TaskPack | HolidayChallengePack> {
+  return [...Object.values(gamePacks), holidayChallengePack];
 }
 
 // Get tasks from a specific pack
@@ -1078,4 +1091,95 @@ export function isBonusTask(packId: string, task: Task): boolean {
     return coreConnectionTasks.some(bonus => bonus.id === task.id);
   }
   return false; // Remote pack doesn't have bonus task concept
+}
+
+// ================================
+// HOLIDAY CHALLENGE PACK
+// ================================
+
+// Holiday challenges with proof requirements
+const holidayChallenges: Challenge[] = [
+  { id: 'hc001', text: 'Get a stranger to guess where you\'re from', requiresProof: false },
+  { id: 'hc002', text: 'Borrow sunscreen from another group', requiresProof: false },
+  { id: 'hc003', text: 'Ask someone what time sunset is', requiresProof: false },
+  { id: 'hc004', text: 'Get someone to take a group photo of your team', requiresProof: true },
+  { id: 'hc005', text: 'Clink glasses with someone not in your group', requiresProof: true },
+  { id: 'hc006', text: 'Compliment a stranger\'s sunglasses or outfit', requiresProof: false },
+  { id: 'hc007', text: 'Teach someone a phrase in your language', requiresProof: false },
+  { id: 'hc008', text: 'Ask someone how long they\'ve been on holiday', requiresProof: false },
+  { id: 'hc009', text: 'Make a new friend and learn their name', requiresProof: false },
+  { id: 'hc010', text: 'Ask someone to recommend their top 3 local foods', requiresProof: false },
+  { id: 'hc011', text: 'Get a photo with someone wearing a holiday shirt', requiresProof: true },
+  { id: 'hc012', text: 'Join a group playing a beach or pool game', requiresProof: true },
+  { id: 'hc013', text: 'Get someone to take a photo of you mid-jump into the pool', requiresProof: true },
+  { id: 'hc014', text: 'Ask a stranger what their hotel is like', requiresProof: false },
+  { id: 'hc015', text: 'Get someone you met on holiday to follow you on Instagram', requiresProof: false },
+  { id: 'hc016', text: 'Take a sip from someone\'s drink who you\'ve just met', requiresProof: true },
+  { id: 'hc017', text: 'Ask someone what day it is (and act confused)', requiresProof: false },
+  { id: 'hc018', text: 'Take a photo next to a tourist sign or map', requiresProof: true },
+  { id: 'hc019', text: 'Dance to music in a public spot for 5 seconds', requiresProof: true },
+  { id: 'hc020', text: 'Find someone with the same first name as you', requiresProof: false },
+  { id: 'hc021', text: 'High five three different strangers', requiresProof: false },
+  { id: 'hc022', text: 'Take a photo with someone while you\'re both wearing sunglasses', requiresProof: true },
+  { id: 'hc023', text: 'Shout \'I love holidays!\' in a public area', requiresProof: false },
+  { id: 'hc024', text: 'Ask a stranger what their favourite holiday destination is', requiresProof: false },
+  { id: 'hc025', text: 'Take a photo with someone wearing a hat you like', requiresProof: true },
+  { id: 'hc026', text: 'Get a stranger to cheers (toast) you without prompting', requiresProof: true },
+  { id: 'hc027', text: 'Teach someone a dance move', requiresProof: false },
+  { id: 'hc028', text: 'Get someone to say \'best holiday ever\' on video', requiresProof: true },
+  { id: 'hc029', text: 'Ask someone to take a boomerang of your group', requiresProof: true },
+  { id: 'hc030', text: 'Tell a stranger it\'s your birthday (even if it\'s not)', requiresProof: false }
+];
+
+// Holiday Challenge Pack definition
+export const holidayChallengePack: HolidayChallengePack = {
+  id: 'holiday-challenge',
+  name: 'YOU GOT WHO?',
+  description: 'Everyone gets the same 10 random challenges! Race to complete them and earn points. Dynamic scoring based on group size!',
+  challenges: holidayChallenges,
+  winCondition: (playerCount: number) => {
+    if (playerCount >= 9) return 12; // 9+ players: 12 points (4 golds or mix)
+    if (playerCount >= 6) return 15; // 6-8 players: 15 points (5 golds or mix)
+    return 18; // 2-5 players: 18 points (6 golds or mix)
+  },
+  goldPointValue: 3, // 3 points for first completion
+  silverPointValue: 1, // 1 point for subsequent completions
+  maxSilverPerChallenge: 2 // Max 2 silver awards per challenge
+};
+
+// ================================
+// HOLIDAY CHALLENGE PACK HELPERS
+// ================================
+
+// Get the Holiday Challenge Pack
+export function getHolidayChallengePack(): HolidayChallengePack {
+  return holidayChallengePack;
+}
+
+// Get a specific challenge by ID
+export function getChallengeById(challengeId: string): Challenge | undefined {
+  return holidayChallenges.find(challenge => challenge.id === challengeId);
+}
+
+// Get all challenges from Holiday Challenge Pack
+export function getAllHolidayChallenges(): Challenge[] {
+  return holidayChallenges;
+}
+
+// Get random selection of challenges for YOU GOT WHO? game
+export function getRandomHolidayChallenges(count: number = 10): Challenge[] {
+  const shuffled = [...holidayChallenges].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, holidayChallenges.length));
+}
+
+// Check if a challenge requires proof
+export function challengeRequiresProof(challengeId: string): boolean {
+  const challenge = getChallengeById(challengeId);
+  return challenge?.requiresProof || false;
+}
+
+// Get the win condition for holiday challenge pack based on player count
+export function getHolidayChallengeWinCondition(playerCount: number): number {
+  const { winCondition } = holidayChallengePack;
+  return typeof winCondition === 'function' ? winCondition(playerCount) : winCondition;
 } 

@@ -46,6 +46,13 @@ function Home() {
 
   // Navigate to game when one is created/joined
   useEffect(() => {
+    console.log('🏠 Home useEffect triggered:', {
+      hasGame: !!state.currentGame,
+      hasPlayer: !!state.currentPlayer,
+      gameStatus: state.currentGame?.status,
+      isHost: state.currentPlayer?.isHost
+    });
+    
     if (state.currentGame) {
       if (state.currentGame.status === 'draft') {
         // Check if pack is already selected and if user is host
@@ -56,7 +63,9 @@ function Home() {
           isHost,
           playerName: state.currentPlayer?.name,
           gameSettings: state.currentGame.settings,
-          gameId: state.currentGame.id
+          gameId: state.currentGame.id,
+          gameStatus: state.currentGame.status,
+          currentPhase: state.currentGame.currentPhase
         });
         
         if (packSelected || !isHost) {
@@ -74,7 +83,7 @@ function Home() {
         navigate(`/recap/${state.currentGame.id}`);
       }
     }
-  }, [state.currentGame, navigate]);
+  }, [state.currentGame, state.currentPlayer, navigate]);
 
   const handleNameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,7 +207,7 @@ function Home() {
             letterSpacing: '-2px',
             lineHeight: '0.9'
           }}>
-            WHO GOT WHO
+            WHO GOT WHO?
           </h1>
           <p style={{ 
             color: 'rgba(255,255,255,0.95)', 
@@ -227,6 +236,25 @@ function Home() {
           }}>
             👥 2-10 players • 🕐 5 mins to 5 hours • 📱 Works anywhere
           </p>
+
+          {/* YOU GOT WHO? Promotional Banner */}
+          <div style={{
+            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+            borderRadius: '12px',
+            padding: '1rem',
+            margin: '0 0 25px 0',
+            textAlign: 'center',
+            border: '2px solid rgba(251, 191, 36, 0.3)',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
+          }}>
+            <span style={{ 
+              fontSize: '1.1rem', 
+              fontWeight: '600', 
+              color: '#92400e'
+            }}>
+              🏖️ <strong>New!</strong> Also try <strong>YOU GOT WHO?</strong> - our social challenge racing game perfect for holidays!
+            </span>
+          </div>
           
           {joinGameId ? (
             <div style={{
@@ -1124,6 +1152,17 @@ function Home() {
             <span style={{ fontSize: '0.8em', opacity: 0.8 }}>Replace boring board games</span>
           </div>
         </div>
+
+        {/* Footer note about YOU GOT WHO? */}
+        <p style={{ 
+          fontSize: '0.9rem', 
+          color: 'rgba(255,255,255,0.8)', 
+          textAlign: 'center',
+          marginTop: '2rem',
+          fontWeight: '500'
+        }}>
+          💡 Looking for something different? Try our holiday-focused racing game <strong>YOU GOT WHO?</strong> in pack selection!
+        </p>
       </div>
     </div>
   );

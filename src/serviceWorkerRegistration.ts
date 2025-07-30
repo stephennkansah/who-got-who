@@ -52,9 +52,12 @@ function registerValidSW(swUrl: string, config?: Config) {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
               console.log(
-                'New content is available and will be used when all ' +
-                  'tabs for this page are closed. See https://cra.link/PWA.'
+                'New content is available! Automatically updating...'
               );
+
+              // Automatically skip waiting and reload
+              installingWorker.postMessage({ type: 'SKIP_WAITING' });
+              window.location.reload();
 
               if (config && config.onUpdate) {
                 config.onUpdate(registration);

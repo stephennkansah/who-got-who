@@ -10,6 +10,7 @@ import {
   Dispute
 } from '../types';
 import { getRandomTasks, getReplacementTask, isBonusTask } from '../data/mockTasks';
+import { getRandomHolidayChallenges, getHolidayChallengeWinCondition } from '../data/packs';
 import { getGameSettings } from '../services/firebase';
 
 // Initial State
@@ -174,9 +175,18 @@ export function GameProvider({ children }: GameProviderProps) {
         const game: Game = JSON.parse(savedGameData);
         const player = game.players.find(p => p.id === savedPlayerId);
         
-        if (game && player) {
+        // Only restore games that have a pack selected or are already live/ended
+        // This prevents restoring incomplete draft games
+        if (game && player && (game.settings?.selectedPack || game.status !== 'draft')) {
+          console.log('🔄 Restoring game from localStorage:', game.id);
           dispatch({ type: 'SET_GAME', payload: game });
           dispatch({ type: 'SET_PLAYER', payload: player });
+        } else {
+          console.log('🚫 Skipping restoration of incomplete draft game');
+          // Clear incomplete game data
+          localStorage.removeItem('gameData');
+          localStorage.removeItem('currentPlayerId');
+          localStorage.removeItem('currentGameId');
         }
       } catch (error) {
         console.log('Failed to restore game from localStorage:', error);
@@ -196,16 +206,8 @@ export function GameProvider({ children }: GameProviderProps) {
       const gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
       const playerId = Math.random().toString(36).substring(2, 15);
       
-      // Get random tasks from core pack A (7 for host starting alone)
-      const { taskCount } = getGameSettings(1);
-      const rawTasks = getRandomTasks('core-pack-a', taskCount);
-      const tasks: TaskInstance[] = rawTasks.map(task => ({
-        ...task,
-        id: Math.random().toString(36).substring(2, 15),
-        gameId: gameId,
-        playerId: playerId,
-        status: 'pending'
-      }));
+      // Don't load tasks yet - wait for pack selection
+      const tasks: TaskInstance[] = [];
       
       const player: Player = {
         id: playerId,
@@ -232,12 +234,16 @@ export function GameProvider({ children }: GameProviderProps) {
         id: gameId,
         status: 'draft',
         mode: 'casual',
-        packId: 'core-a',
+        packId: '', // No pack selected yet
         createdBy: hostName,
         createdAt: new Date(),
         hostId: playerId,
         players: [player],
-        settings: getGameSettings(1).settings,
+        settings: {
+          ...getGameSettings(1).settings,
+          selectedPack: null, // Explicitly set no pack selected
+          tasksLoaded: false
+        },
         currentPhase: 'draft'
       };
       
@@ -284,11 +290,7 @@ export function GameProvider({ children }: GameProviderProps) {
         // Create new player
         const playerId = Math.random().toString(36).substr(2, 9);
         
-        // Calculate new player count (including this joining player)
-        const newPlayerCount = game.players.length + 1;
-        const { taskCount } = getGameSettings(newPlayerCount);
-        const playerTasks = getRandomTasks('core-a', taskCount);
-        
+        // Don't assign tasks yet - wait for pack selection
         const newPlayer: Player = {
           id: playerId,
           name: playerName,
@@ -298,14 +300,7 @@ export function GameProvider({ children }: GameProviderProps) {
           lockedIn: false,
           isHost: false,
           token: 'mock-token',
-          tasks: playerTasks.map((task, index) => ({
-            id: `task-instance-${playerId}-${index}`,
-            gameId: gameId,
-            playerId: playerId,
-            text: task.text,
-            tips: task.tips,
-            status: 'pending' as const
-          })),
+          tasks: [], // No tasks until pack is selected and game starts
           stats: {
             gothcas: 0,
             failed: 0,
@@ -319,9 +314,6 @@ export function GameProvider({ children }: GameProviderProps) {
         
         game.players.push(newPlayer);
         existingPlayer = newPlayer;
-        
-        // Update game settings for new player count
-        game.settings = getGameSettings(newPlayerCount).settings;
       }
       
       dispatch({ type: 'SET_GAME', payload: game });
@@ -341,7 +333,7 @@ export function GameProvider({ children }: GameProviderProps) {
   };
 
   // Select pack for the game (local context version)
-  const selectPack = async (packId: 'core' | 'remote') => {
+  const selectPack = async (packId: 'core' | 'remote' | 'holiday-challenge') => {
     if (!state.currentGame || !state.currentPlayer?.isHost) {
       throw new Error('Only the host can select a pack');
     }
@@ -350,12 +342,24 @@ export function GameProvider({ children }: GameProviderProps) {
     const updatedSettings = {
       ...state.currentGame.settings,
       selectedPack: packId,
-      tasksLoaded: false
+      tasksLoaded: false,
+      // Add Holiday Challenge specific settings
+      ...(packId === 'holiday-challenge' && {
+        holidayChallengeWinCondition: getHolidayChallengeWinCondition(state.currentGame.players.length),
+        holidayGoldPoints: 3,
+        holidaySilverPoints: 1,
+        holidayMaxSilverPerChallenge: 2
+      })
     };
+
+    // Set game type based on pack selection
+    const gameType: 'traditional' | 'holiday-challenge' = packId === 'holiday-challenge' ? 'holiday-challenge' : 'traditional';
 
     const updatedGame = {
       ...state.currentGame,
-      settings: updatedSettings
+      gameType: gameType,
+      settings: updatedSettings,
+      ...(packId === 'holiday-challenge' && { challengeCompletions: [] })
     };
     
     dispatch({ type: 'SET_GAME', payload: updatedGame });
@@ -367,10 +371,60 @@ export function GameProvider({ children }: GameProviderProps) {
   const startGame = async () => {
     if (!state.currentGame) return;
     
+    const selectedPack = state.currentGame.settings?.selectedPack;
+    if (!selectedPack) {
+      dispatch({ type: 'SET_ERROR', payload: 'No pack selected. Please select a pack first.' });
+      return;
+    }
+    
+    let updatedPlayers = state.currentGame.players;
+    
+    if (selectedPack === 'holiday-challenge') {
+      // Holiday Challenge Pack: Select 10 random challenges for everyone
+      const selectedChallenges = getRandomHolidayChallenges(10);
+      
+      // Initialize players with challenge-specific fields
+      updatedPlayers = state.currentGame.players.map(player => ({
+        ...player,
+        challengeScore: 0,
+        challengeCompletions: [],
+        tasks: [] // Holiday challenges don't use individual tasks
+      }));
+      
+      // Store the selected challenges in the local game data
+      state.currentGame.selectedChallenges = selectedChallenges;
+    } else {
+      // Traditional packs: Load tasks for all players
+      const { taskCount } = getGameSettings(state.currentGame.players.length);
+      updatedPlayers = state.currentGame.players.map(player => {
+        const rawTasks = getRandomTasks(selectedPack, taskCount);
+        const tasks: TaskInstance[] = rawTasks.map(task => ({
+          ...task,
+          id: Math.random().toString(36).substring(2, 15),
+          gameId: state.currentGame!.id,
+          playerId: player.id,
+          status: 'pending' as const
+        }));
+        
+        return {
+          ...player,
+          tasks: tasks
+        };
+      });
+    }
+    
     const updatedGame = {
       ...state.currentGame,
       status: 'live' as const,
-      currentPhase: 'play' as const
+      currentPhase: 'play' as const,
+      players: updatedPlayers,
+      settings: {
+        ...state.currentGame.settings,
+        tasksLoaded: true
+      },
+      ...(selectedPack === 'holiday-challenge' && state.currentGame.selectedChallenges && {
+        selectedChallenges: state.currentGame.selectedChallenges
+      })
     };
     
     dispatch({ type: 'SET_GAME', payload: updatedGame });
@@ -391,6 +445,17 @@ export function GameProvider({ children }: GameProviderProps) {
   };
 
   const leaveGame = async () => {
+    // If user is host and game is still in draft/lobby phase, warn them
+    if (state.currentPlayer?.isHost && state.currentGame?.status === 'draft') {
+      const confirmed = window.confirm(
+        '⚠️ Leave Lobby?\n\nAs the host, leaving the lobby will END THE GAME for all players.\n\nAre you sure you want to leave?'
+      );
+      
+      if (!confirmed) {
+        return; // Don't leave if they cancel
+      }
+    }
+    
     // Clear localStorage
     localStorage.removeItem('currentGameId');
     localStorage.removeItem('currentPlayerId');
@@ -633,6 +698,109 @@ export function GameProvider({ children }: GameProviderProps) {
     }));
   };
 
+  // Holiday Challenge Pack methods (local context version)
+  const completeChallenge = async (challengeId: string, proofImage?: File) => {
+    if (!state.currentGame || !state.currentPlayer) {
+      throw new Error('No active game or player');
+    }
+
+    if (state.currentGame.gameType !== 'holiday-challenge') {
+      throw new Error('This action is only available for Holiday Challenge Pack games');
+    }
+
+    try {
+      // Check if this challenge already has a gold completion
+      const existingCompletions = state.currentGame.challengeCompletions || [];
+      const challengeCompletions = existingCompletions.filter(c => c.challengeId === challengeId);
+      const hasGold = challengeCompletions.some(c => c.type === 'gold');
+      
+      // Check if this player already completed this challenge
+      const playerAlreadyCompleted = challengeCompletions.some(c => c.playerId === state.currentPlayer!.id);
+      if (playerAlreadyCompleted) {
+        throw new Error('You have already completed this challenge');
+      }
+
+      // Determine completion type and points
+      const completionType: 'gold' | 'silver' = hasGold ? 'silver' : 'gold';
+      const points = hasGold 
+        ? (state.currentGame.settings.holidaySilverPoints || 1)
+        : (state.currentGame.settings.holidayGoldPoints || 3);
+
+      // Upload proof image if provided
+      let proofImageUrl: string | undefined;
+      if (proofImage) {
+        proofImageUrl = await uploadProofImage(proofImage, challengeId);
+      }
+
+      // Create challenge completion
+      const completion = {
+        id: Math.random().toString(36).substring(2, 15),
+        challengeId,
+        playerId: state.currentPlayer.id,
+        gameId: state.currentGame.id,
+        completedAt: new Date(),
+        points,
+        type: completionType,
+        proofImageUrl
+      };
+
+      // Update player score and completions
+      const updatedPlayer = {
+        ...state.currentPlayer,
+        challengeScore: (state.currentPlayer.challengeScore || 0) + points,
+        challengeCompletions: [...(state.currentPlayer.challengeCompletions || []), challengeId]
+      };
+
+      // Update game with new completion
+      const updatedGame = {
+        ...state.currentGame,
+        challengeCompletions: [...existingCompletions, completion],
+        players: state.currentGame.players.map(p => 
+          p.id === state.currentPlayer!.id ? updatedPlayer : p
+        )
+      };
+
+      // Update local state and localStorage
+      dispatch({ type: 'SET_GAME', payload: updatedGame });
+      dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
+      localStorage.setItem('gameData', JSON.stringify(updatedGame));
+
+      // Check for win condition
+      const winCondition = state.currentGame.settings.holidayChallengeWinCondition || 7;
+      if (updatedPlayer.challengeScore >= winCondition) {
+        // Auto-end game when win condition is met
+        setTimeout(() => {
+          const wonGame = {
+            ...updatedGame,
+            status: 'ended' as const,
+            currentPhase: 'ended' as const
+          };
+          dispatch({ type: 'SET_GAME', payload: wonGame });
+          localStorage.setItem('gameData', JSON.stringify(wonGame));
+        }, 1000); // Small delay to show the winning completion
+      }
+
+      console.log(`Challenge completed: ${challengeId} (${completionType}, ${points} points)`);
+    } catch (error) {
+      console.error('Error completing challenge:', error);
+      throw error;
+    }
+  };
+
+  const uploadProofImage = async (file: File, challengeId: string): Promise<string> => {
+    if (!state.currentGame || !state.currentPlayer) {
+      throw new Error('No active game or player');
+    }
+
+    // For local context, return a mock URL (same as Firebase context)
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const mockUrl = `https://mockcdn.example.com/images/${state.currentGame!.id}/${challengeId}/${state.currentPlayer!.id}_${Date.now()}.jpg`;
+        resolve(mockUrl);
+      }, 1000);
+    });
+  };
+
   const contextValue: GameContextType = {
     state,
     socket,
@@ -651,7 +819,10 @@ export function GameProvider({ children }: GameProviderProps) {
     // Testing utilities
     forceGameState,
     simulateScore,
-    updatePlayerTasks
+    updatePlayerTasks,
+    // Holiday Challenge methods
+    completeChallenge,
+    uploadProofImage
   };
 
   return (

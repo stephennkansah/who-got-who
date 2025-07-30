@@ -11,12 +11,15 @@ export interface Game {
   status: GameStatus;
   mode: GameMode;
   packId: string;
+  gameType?: 'traditional' | 'holiday-challenge'; // new field for game type
   createdBy: string;
   createdAt: Date;
   hostId: string;
   players: Player[];
   settings: GameSettings;
   currentPhase: 'draft' | 'play' | 'ended';
+  challengeCompletions?: ChallengeCompletion[]; // for holiday challenge games
+  selectedChallenges?: Challenge[]; // for holiday challenge games - random selection of 10 challenges
 }
 
 export interface GameSettings {
@@ -26,8 +29,13 @@ export interface GameSettings {
   enableNegativeScoring: boolean;
   maxPlayers: number;
   targetScore: number;
-  selectedPack?: 'core' | 'remote' | null;
+  selectedPack?: 'core' | 'remote' | 'holiday-challenge' | null;
   tasksLoaded?: boolean;
+  // Holiday Challenge Pack specific settings
+  holidayChallengeWinCondition?: number; // points needed to win
+  holidayGoldPoints?: number; // points for first completion
+  holidaySilverPoints?: number; // points for subsequent completions
+  holidayMaxSilverPerChallenge?: number; // max silver points per challenge
 }
 
 export interface Player {
@@ -43,6 +51,9 @@ export interface Player {
   stats: PlayerStats;
   avatar?: string;
   avatarType?: 'emoji' | 'photo';
+  // Holiday Challenge Pack specific fields
+  challengeScore?: number; // separate score for challenge games
+  challengeCompletions?: string[]; // array of completed challenge IDs
 }
 
 export interface PlayerStats {
@@ -101,6 +112,35 @@ export interface Task {
   tips?: string;
 }
 
+// Holiday Challenge Pack types
+export interface Challenge {
+  id: string;
+  text: string;
+  requiresProof: boolean;
+}
+
+export interface ChallengeCompletion {
+  id: string;
+  challengeId: string;
+  playerId: string;
+  gameId: string;
+  completedAt: Date;
+  points: number; // 3 for gold, 1 for silver
+  type: 'gold' | 'silver';
+  proofImageUrl?: string;
+}
+
+export interface HolidayChallengePack {
+  id: string;
+  name: string;
+  description: string;
+  challenges: Challenge[];
+  winCondition: number | ((playerCount: number) => number); // points needed to win - can be dynamic based on player count
+  goldPointValue: number; // points for first completion (default 3)
+  silverPointValue: number; // points for subsequent completions (default 1)
+  maxSilverPerChallenge?: number; // optional limit on silver points per challenge
+}
+
 // Real-time Events
 export interface SocketEvents {
   // Player events
@@ -124,6 +164,11 @@ export interface SocketEvents {
   'dispute:vote': { disputeId: string; vote: Vote };
   'dispute:resolve': { dispute: Dispute };
   'dispute:timeout': { disputeId: string };
+
+  // Holiday Challenge events
+  'challenge:complete': { completion: ChallengeCompletion };
+  'challenge:gold-claimed': { challengeId: string; playerId: string };
+  'challenge:silver-awarded': { challengeId: string; playerId: string };
 
   // System events
   'error': { message: string; code?: string };
@@ -202,7 +247,7 @@ export interface GameContextType {
   state: GameState;
   createGame: (hostName: string, avatar?: string, avatarType?: 'emoji' | 'photo') => Promise<void>;
   joinGame: (gameId: string, playerName: string, avatar?: string, avatarType?: 'emoji' | 'photo') => Promise<void>;
-  selectPack: (packId: 'core' | 'remote') => Promise<void>;
+  selectPack: (packId: 'core' | 'remote' | 'holiday-challenge') => Promise<void>;
   startGame: () => Promise<void>;
   endGame: () => Promise<void>;
   leaveGame: () => Promise<void>;
@@ -216,4 +261,7 @@ export interface GameContextType {
   simulateScore?: (points: number) => void;
   updatePlayerTasks: (playerId: string, updatedTasks: TaskInstance[]) => void;
   socket: Socket | null;
+  // Holiday Challenge methods
+  completeChallenge: (challengeId: string, proofImage?: File) => Promise<void>;
+  uploadProofImage: (file: File, challengeId: string) => Promise<string>;
 } 

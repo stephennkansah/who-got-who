@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom';
 import { FirebaseGameProvider } from './context/FirebaseGameContext';
+import { useGame } from './hooks/useGame';
 import Home from './components/Home';
 import PackSelect from './components/PackSelect';
 import Lobby from './components/Lobby';
 import Game from './components/Game';
+import HolidayChallengeGame from './components/HolidayChallengeGame';
 import Recap from './components/Recap';
 import InstallPrompt from './components/InstallPrompt';
 import FeedbackButton from './components/FeedbackButton';
@@ -15,6 +17,23 @@ import './serviceWorkerRegistration';
 const PackSelectWrapper: React.FC = () => {
   const { gameId } = useParams<{ gameId: string }>();
   return <PackSelect gameId={gameId || ''} />;
+};
+
+// Wrapper component to determine which game component to render
+const GameWrapper: React.FC = () => {
+  const { gameId } = useParams<{ gameId: string }>();
+  const { state } = useGame();
+  
+  if (!state.currentGame) {
+    return <Game />; // Show loading/default game component if no game data yet
+  }
+  
+  // Determine which component to render based on game type
+  if (state.currentGame.gameType === 'holiday-challenge') {
+    return <HolidayChallengeGame />;
+  } else {
+    return <Game />;
+  }
 };
 
 function App() {
@@ -29,7 +48,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/select-pack/:gameId" element={<PackSelectWrapper />} />
               <Route path="/lobby/:gameId" element={<Lobby />} />
-              <Route path="/game/:gameId" element={<Game />} />
+              <Route path="/game/:gameId" element={<GameWrapper />} />
               <Route path="/recap/:gameId" element={<Recap />} />
             </Routes>
           </Router>
