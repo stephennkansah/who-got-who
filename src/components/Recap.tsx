@@ -48,30 +48,38 @@ export default function Recap() {
     const allPlayers = currentGame.players;
     
     // Sneakiest (Most successful Gotchas)
-    const maxGotchas = Math.max(...allPlayers.map(p => p.stats?.gothcas || 0));
-    if ((player.stats?.gothcas || 0) === maxGotchas && maxGotchas > 0) {
-      awards.push('sneakiest');
+    if (allPlayers.length > 0) {
+      const maxGotchas = Math.max(...allPlayers.map(p => p.stats?.gothcas || 0));
+      if ((player.stats?.gothcas || 0) === maxGotchas && maxGotchas > 0) {
+        awards.push('sneakiest');
+      }
     }
     
     // Social Butterfly (Most unique targets)
-    const maxTargets = Math.max(...allPlayers.map(p => p.stats?.uniqueTargets?.length || 0));
-    if ((player.stats?.uniqueTargets?.length || 0) === maxTargets && maxTargets > 1) {
-      awards.push('social');
+    if (allPlayers.length > 0) {
+      const maxTargets = Math.max(...allPlayers.map(p => p.stats?.uniqueTargets?.length || 0));
+      if ((player.stats?.uniqueTargets?.length || 0) === maxTargets && maxTargets > 1) {
+        awards.push('social');
+      }
     }
     
     // Detective (Caught the most people - disputes won)
     // TODO: Track disputes won
     
     // Untouchable (Least times caught)
-    const minFailed = Math.min(...allPlayers.map(p => p.stats?.failed || 0));
-    if ((player.stats?.failed || 0) === minFailed && allPlayers.length > 3) {
-      awards.push('untouchable');
+    if (allPlayers.length > 3) {
+      const minFailed = Math.min(...allPlayers.map(p => p.stats?.failed || 0));
+      if ((player.stats?.failed || 0) === minFailed) {
+        awards.push('untouchable');
+      }
     }
     
     // Court Jester (Most failed attempts)
-    const maxFailed = Math.max(...allPlayers.map(p => p.stats?.failed || 0));
-    if ((player.stats?.failed || 0) === maxFailed && maxFailed > 2) {
-      awards.push('jester');
+    if (allPlayers.length > 0) {
+      const maxFailed = Math.max(...allPlayers.map(p => p.stats?.failed || 0));
+      if ((player.stats?.failed || 0) === maxFailed && maxFailed > 2) {
+        awards.push('jester');
+      }
     }
     
     // Chaos Agent (Most disputes created)

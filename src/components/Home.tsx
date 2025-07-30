@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
+import { validateGameInput } from '../utils/validation';
 
 import AvatarPicker from './AvatarPicker';
 
@@ -77,12 +78,23 @@ function Home() {
 
   const handleNameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!playerName.trim()) return;
     
-    // If joining via link, go directly to that game
+    // Validate input before proceeding
     const joinGameId = searchParams.get('join');
-    if (joinGameId) {
-      await joinGame(joinGameId.toUpperCase(), playerName.trim(), selectedAvatar, avatarType);
+    const validation = validateGameInput(playerName, joinGameId || undefined, selectedAvatar);
+    
+    if (!validation.isValid) {
+      alert(`Please fix the following:\n${validation.errors.join('\n')}`);
+      return;
+    }
+    
+    // Use sanitized values
+    const safeName = validation.sanitizedValues.playerName!;
+    const safeGameId = validation.sanitizedValues.gameId;
+    const safeAvatar = validation.sanitizedValues.avatar || selectedAvatar;
+    
+    if (safeGameId) {
+      await joinGame(safeGameId, safeName, safeAvatar, avatarType);
     } else {
       setShowGameOptions(true);
     }

@@ -3,6 +3,7 @@ import { Game, Player, TaskInstance, GameState, GameContextType } from '../types
 import { getRandomTasks, getReplacementTask, isBonusTask } from '../data/packs';
 import FirebaseService, { getGameSettings } from '../services/firebase';
 import NotificationService from '../services/notificationService';
+import { retryAsync, AsyncMutex, FirebaseOperationQueue } from '../utils/asyncHelpers';
 
 
 // Check if Firebase is properly configured
@@ -187,9 +188,12 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
       console.log('Game created with ID:', gameId);
       console.log('Player updated with gameId');
 
-      // Get the created game (with a small delay to ensure Firebase consistency)
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const game = await FirebaseService.getGame(gameId);
+      // Get the created game with retry logic for Firebase consistency
+      const game = await retryAsync(
+        () => FirebaseService.getGame(gameId),
+        3,
+        100
+      );
       console.log('Retrieved game:', game);
       
       if (game) {
