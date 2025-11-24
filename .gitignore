@@ -19,6 +19,14 @@ dist/
 
 # Android signing
 keystore.properties
+android.keystore.backup.*
+
+# Gradle cache files
+.gradle/
+gradle/
+
+# Node cache files
+node_modules/.cache/
 
 # IDE
 .vscode/
