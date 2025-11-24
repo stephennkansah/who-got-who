@@ -3,7 +3,8 @@ import { Game, Player, TaskInstance, GameState, GameContextType } from '../types
 import { getRandomTasks, getReplacementTask, isBonusTask, getRandomHolidayChallenges, getHolidayChallengeWinCondition } from '../data/packs';
 import FirebaseService, { getGameSettings } from '../services/firebase';
 import NotificationService from '../services/notificationService';
-import { retryAsync, AsyncMutex, FirebaseOperationQueue } from '../utils/asyncHelpers';
+import { retryAsync } from '../utils/asyncHelpers';
+import { calculateScore, updatePlayerStats, checkWinCondition, canSwapTask } from '../utils/gameRules';
 
 
 // Check if Firebase is properly configured
@@ -501,7 +502,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
 
   // Swap task
   const swapTask = async (taskId: string) => {
-    if (!state.currentPlayer || !state.currentGame || state.currentPlayer.swapsLeft <= 0) return;
+    if (!state.currentPlayer || !state.currentGame || !canSwapTask(state.currentPlayer)) return;
 
     // Find the task being swapped and check if it's a bonus task
     const taskBeingSwapped = state.currentPlayer.tasks.find(task => task.id === taskId);
@@ -606,33 +607,30 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
       } else {
         // Handle successful gotcha
         const uniqueTargets = state.currentPlayer.stats.uniqueTargets || [];
-        const gothcas = state.currentPlayer.stats.gothcas || 0;
         
-        const isFirstTimeTarget = !uniqueTargets.includes(targetId);
-        const bonusPoints = isFirstTimeTarget ? 0.5 : 0;
-        const newScore = state.currentPlayer.score + 1 + bonusPoints;
+        const { score: newScore, isFirstTimeTarget } = calculateScore(
+          state.currentPlayer.score, 
+          targetId, 
+          uniqueTargets
+        );
 
-        // Update local tasks immediately
         const updatedTasks = state.currentPlayer.tasks.map(t => 
           t.id === taskId 
             ? { ...task, status: 'completed' as const, targetId, gotAt: new Date() }
             : t
         );
 
+        const updatedStats = updatePlayerStats(
+          state.currentPlayer.stats,
+          targetId,
+          isFirstTimeTarget
+        );
+
         const updatedPlayer = {
           ...state.currentPlayer,
           score: newScore,
           tasks: updatedTasks,
-          stats: {
-            ...state.currentPlayer.stats,
-            gothcas: gothcas + 1,
-            uniqueTargets: isFirstTimeTarget 
-              ? [...uniqueTargets, targetId]
-              : uniqueTargets,
-            firstTimeTargets: isFirstTimeTarget 
-              ? (state.currentPlayer.stats.firstTimeTargets || 0) + 1 
-              : (state.currentPlayer.stats.firstTimeTargets || 0)
-          }
+          stats: updatedStats
         };
 
         const targetPlayer = state.currentGame.players.find(p => p.id === targetId);
@@ -648,7 +646,7 @@ export function FirebaseGameProvider({ children }: FirebaseGameProviderProps) {
         dispatch({ type: 'SET_PLAYER', payload: updatedPlayer });
         
         // Check if player won
-        if (updatedPlayer.score >= state.currentGame.settings.targetScore) {
+        if (checkWinCondition(updatedPlayer.score, state.currentGame.settings.targetScore)) {
           console.log('🏆 Player reached target score! Ending game...');
           await endGame();
         }

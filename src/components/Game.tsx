@@ -4,9 +4,13 @@ import { useGame } from '../hooks/useGame';
 import { TaskInstance, Player } from '../types';
 import TaskListView from './TaskListView';
 import TargetSelectModal from './TargetSelectModal';
-import PlayerAvatar from './PlayerAvatar';
-import FirebaseService from '../services/firebase';
 
+// Sub-components
+import { GameHeader } from './game/GameHeader';
+import { LeaderboardWidget } from './game/LeaderboardWidget';
+import { GameNotifications } from './game/GameNotifications';
+import { FullLeaderboard } from './game/FullLeaderboard';
+import { ConfirmationModal } from './common/ConfirmationModal';
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -15,13 +19,25 @@ export default function Game() {
   const [selectedTask, setSelectedTask] = useState<TaskInstance | null>(null);
   const [showTargetModal, setShowTargetModal] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
-  // Removed viewMode - only list view now
   const [notifications, setNotifications] = useState<Array<{id: string, message: string, type: string}>>([]);
+  
+  // Confirmation Modal State
+  const [confirmation, setConfirmation] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDangerous?: boolean;
+    confirmLabel?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
-
-  // Microsoft Clarity tracking now handled via script tag in index.html
 
   useEffect(() => {
     if (!gameId) {
@@ -102,13 +118,16 @@ export default function Game() {
   const handleSwapTask = async (taskId: string) => {
     if (!currentPlayer || currentPlayer.swapsLeft <= 0) return;
     
-    const confirmed = window.confirm(
-      `Replace this task with a new one?\n\nSwaps remaining: ${currentPlayer.swapsLeft - 1}/2`
-    );
-    
-    if (confirmed) {
-      await swapTask(taskId);
-    }
+    setConfirmation({
+      isOpen: true,
+      title: 'Swap Task?',
+      message: `Replace this task with a new one?\n\nSwaps remaining: ${currentPlayer.swapsLeft - 1}/2`,
+      onConfirm: async () => {
+        await swapTask(taskId);
+        setConfirmation(prev => ({ ...prev, isOpen: false }));
+      },
+      confirmLabel: 'Swap Task'
+    });
   };
 
   const handleTargetSelect = async (targetId: string) => {
@@ -138,31 +157,46 @@ export default function Game() {
     return currentGame.players.filter(p => p.id !== currentPlayer.id);
   };
 
-  // Removed createTaskCards - using TaskListView only
+  const handleEndGame = async () => {
+    setConfirmation({
+      isOpen: true,
+      title: '🏁 End Game?',
+      message: 'This will end the game for ALL players and show final results.\n\nThis action cannot be undone.',
+      isDangerous: true,
+      confirmLabel: 'End Game',
+      onConfirm: async () => {
+        await endGameContext();
+        setConfirmation(prev => ({ ...prev, isOpen: false }));
+        navigate(`/recap/${gameId}`);
+      }
+    });
+  };
+
+  const handleLeaveGame = async () => {
+    setConfirmation({
+      isOpen: true,
+      title: '🚪 Leave Game?',
+      message: 'You will exit the current game and return to the home screen.\n\nOther players can continue without you.',
+      isDangerous: true,
+      confirmLabel: 'Leave Game',
+      onConfirm: async () => {
+        await leaveGame();
+        setConfirmation(prev => ({ ...prev, isOpen: false }));
+        navigate('/');
+      }
+    });
+  };
 
   if (!currentGame || !currentPlayer) {
     return (
-      <div className="flex flex-center" style={{ minHeight: '100vh' }}>
+      <div className="container flex-center">
         <div className="card" style={{ textAlign: 'center' }}>
           <h2>Loading...</h2>
-          <p style={{ marginBottom: '30px' }}>Loading game...</p>
+          <p style={{ marginBottom: '30px', color: 'white' }}>Loading game...</p>
           
           <button
             onClick={() => navigate('/')}
-            style={{
-              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              padding: '12px 24px',
-              fontSize: '1em',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              margin: '0 auto'
-            }}
+            className="btn btn-primary"
           >
             🏠 Back to Home
           </button>
@@ -171,250 +205,58 @@ export default function Game() {
     );
   }
 
-  const handleEndGame = async () => {
-    const confirmed = window.confirm(
-      '🏁 End Game?\n\nThis will end the game for ALL players and show final results.\n\nThis action cannot be undone.'
-    );
-    
-    if (confirmed) {
-      await endGameContext();
-      navigate(`/recap/${gameId}`);
-    }
-  };
-
-  const handleLeaveGame = async () => {
-    const confirmed = window.confirm(
-      '🚪 Leave Game?\n\nYou will exit the current game and return to the home screen.\n\nOther players can continue without you.'
-    );
-    
-    if (confirmed) {
-      await leaveGame();
-      navigate('/');
-    }
-  };
-
-  // Removed taskCards - using TaskListView only
-
   return (
     <div className="container">
-      {/* Compact Header with Controls */}
-      <div style={{ 
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '1rem',
-        padding: '0.5rem 0'
-      }}>
-        {/* Left: Leaderboard Position */}
-        <button 
-          onClick={() => setShowLeaderboard(true)}
-          style={{
-            background: 'linear-gradient(135deg, #ffd700, #ffb347)',
-            border: 'none',
-            borderRadius: '50%',
-            width: '50px',
-            height: '50px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '0.7rem',
-            fontWeight: '700',
-            color: '#8b4513',
-            cursor: 'pointer',
-            boxShadow: '0 3px 10px rgba(255, 215, 0, 0.3)'
-          }}
-        >
-          <div style={{ fontSize: '1rem' }}>
-            {(() => {
-              if (!currentGame?.players || !currentPlayer) return '#-';
-              const sortedPlayers = currentGame.players.sort((a, b) => b.score - a.score);
-              const rank = sortedPlayers.findIndex(p => p.id === currentPlayer.id);
-              if (rank === 0) return '🥇';
-              if (rank === 1) return '🥈';
-              if (rank === 2) return '🥉';
-              return `#${rank + 1}`;
-            })()}
-          </div>
-          <div style={{ fontSize: '0.6rem' }}>
-            {currentPlayer?.score || 0}
-          </div>
-        </button>
-
-        {/* Center: Title */}
-        <div style={{ textAlign: 'center', flex: 1 }}>
-          <h1 style={{ 
-            fontSize: '1.3rem', 
-            margin: '0',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            fontWeight: '800'
-          }}>
-            Who Got Who
-          </h1>
-          <div style={{ color: '#666', fontSize: '0.75rem', fontWeight: '600' }}>
-            {currentGame.players.length} players
-          </div>
-        </div>
-
-        {/* Right: Game Controls */}
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {currentPlayer?.isHost && (
-            <button
-              onClick={handleEndGame}
-              style={{
-                background: 'linear-gradient(135deg, #ff6b6b, #ff5252)',
-                border: 'none',
-                borderRadius: '50%',
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.2rem',
-                cursor: 'pointer',
-                boxShadow: '0 3px 10px rgba(255, 107, 107, 0.3)'
-              }}
-              title="End Game"
-            >
-              🏁
-            </button>
-          )}
-          <button
-            onClick={handleLeaveGame}
-            style={{
-              background: 'linear-gradient(135deg, #6c757d, #495057)',
-              border: 'none',
-              borderRadius: '50%',
-              width: '40px',
-              height: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.2rem',
-              cursor: 'pointer',
-              boxShadow: '0 3px 10px rgba(108, 117, 125, 0.3)'
-            }}
-            title="Leave Game"
-          >
-            🚪
-          </button>
-        </div>
-      </div>
+      <GameHeader 
+        currentPlayer={currentPlayer}
+        playerCount={currentGame.players.length}
+        onEndGame={handleEndGame}
+        onLeaveGame={handleLeaveGame}
+        onShowLeaderboard={() => setShowLeaderboard(true)}
+      />
 
       {/* Combined Game Info */}
       <div className="card" style={{ 
         marginBottom: '1rem',
-        background: 'linear-gradient(135deg, #e3f2fd 0%, #ffebf0 100%)',
-        border: '1px solid #ff6b9d',
-        padding: '0.75rem'
+        textAlign: 'center',
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)'
       }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            fontSize: '0.9rem', 
-            marginBottom: '0.3rem',
-            fontWeight: '600',
-            color: '#4caf50'
-          }}>
-            🎮 Complete stealth tasks • Say "Gotcha!" when you succeed
-          </div>
-          <div style={{ 
-            color: '#8b2635', 
-            fontSize: '0.8rem',
-            fontWeight: '600'
-          }}>
-            🕵️ <strong>Don't get caught or it's an auto-fail!</strong> Stay sneaky! 🤫
-          </div>
+        <div style={{ 
+          fontSize: '0.9rem', 
+          marginBottom: '0.3rem',
+          fontWeight: '600',
+          color: '#08d9d6' // Secondary Neon
+        }}>
+          🎮 Complete stealth tasks • Say "Gotcha!" when you succeed
+        </div>
+        <div style={{ 
+          color: '#ff7675', // Danger Pastel
+          fontSize: '0.8rem',
+          fontWeight: '600'
+        }}>
+          🕵️ <strong>Don't get caught or it's an auto-fail!</strong> Stay sneaky! 🤫
         </div>
       </div>
 
-      {/* Compact Top 3 Leaderboard */}
-      <div className="card" style={{ marginBottom: '1rem' }}>
-        <div 
-          onClick={() => setShowLeaderboard(true)}
-          style={{
-            cursor: 'pointer',
-            background: 'linear-gradient(135deg, #ffd700, #ffed4a)',
-            borderRadius: '12px',
-            padding: '0.75rem',
-            marginBottom: '1rem',
-            border: '2px solid #f59e0b',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-        >
-          <div style={{ 
-            textAlign: 'center', 
-            fontSize: '0.9rem', 
-            fontWeight: '700',
-            color: '#8b4513',
-            marginBottom: '0.5rem'
-          }}>
-            🏆 LEADERBOARD - Click for Game Summary
-          </div>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            {(() => {
-              if (!currentGame?.players) return <div>Loading...</div>;
-              const sortedPlayers = [...currentGame.players].sort((a, b) => b.score - a.score);
-              const topThree = sortedPlayers.slice(0, 3);
-              
-              return topThree.map((player, index) => (
-                <div key={player.id} style={{
-                  flex: '1',
-                  textAlign: 'center',
-                  background: player.id === currentPlayer?.id 
-                    ? 'rgba(59, 130, 246, 0.2)' 
-                    : 'rgba(255, 255, 255, 0.7)',
-                  border: player.id === currentPlayer?.id 
-                    ? '2px solid #3b82f6' 
-                    : '1px solid rgba(139, 69, 19, 0.2)',
-                  borderRadius: '8px',
-                  padding: '0.4rem 0.2rem',
-                  fontSize: '0.75rem',
-                  fontWeight: '600'
-                }}>
-                  <div style={{ fontSize: '1.2rem', marginBottom: '0.1rem' }}>
-                    {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                  </div>
-                  <div style={{ 
-                    color: '#8b4513',
-                    fontWeight: '700',
-                    fontSize: '0.7rem',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}>
-                    {player.name}
-                    {player.id === currentPlayer?.id && ' (You)'}
-                  </div>
-                  <div style={{ 
-                    fontSize: '0.8rem', 
-                    fontWeight: '800',
-                    color: '#8b4513'
-                  }}>
-                    {player.score}
-                  </div>
-                </div>
-              ));
-            })()}
-          </div>
-        </div>
-      </div>
+      <LeaderboardWidget 
+        players={currentGame.players}
+        currentPlayerId={currentPlayer.id}
+        onShowLeaderboard={() => setShowLeaderboard(true)}
+      />
 
       {/* Task Cards */}
-      <div className="card" style={{ marginBottom: '1rem' }}>
+      <div className="card" style={{ 
+        marginBottom: '1rem',
+        background: 'rgba(255,255,255,0.02)' // Slightly darker for contrast
+      }}>
         <h2 style={{ 
           fontSize: '1.2rem', 
           marginBottom: '1rem',
           textAlign: 'center',
-          color: '#333'
+          color: 'white',
+          textTransform: 'uppercase',
+          letterSpacing: '2px'
         }}>
           Your Tasks
         </h2>
@@ -428,329 +270,14 @@ export default function Game() {
         />
       </div>
 
-      {/* Notifications */}
-      <div style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        zIndex: 2000,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem',
-        maxWidth: '300px'
-      }}>
-        {notifications.map(notification => (
-          <div
-            key={notification.id}
-            style={{
-              background: 'linear-gradient(135deg, #10b981, #059669)',
-              color: 'white',
-              padding: '0.75rem 1rem',
-              borderRadius: '12px',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              animation: 'slideInRight 0.3s ease-out',
-              border: '2px solid rgba(255, 255, 255, 0.2)'
-            }}
-          >
-            {notification.message}
-          </div>
-        ))}
-      </div>
+      <GameNotifications notifications={notifications} />
 
-      {/* Leaderboard Modal */}
       {showLeaderboard && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '1rem'
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '20px',
-            padding: '1.5rem',
-            width: '100%',
-            maxWidth: '400px',
-            maxHeight: '70vh',
-            overflow: 'auto'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0, color: '#333' }}>🏆 Game Summary</h3>
-              <button
-                onClick={() => setShowLeaderboard(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.5rem',
-                  cursor: 'pointer',
-                  color: '#666'
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Game Summary Section */}
-            {(() => {
-              if (!currentGame?.players) return <div>Loading game data...</div>;
-              
-              // Get all completed tasks across all players
-              const allCompletions = currentGame.players.flatMap(player => 
-                player.tasks
-                  .filter(task => (task.status === 'completed' || task.status === 'failed') && task.targetId)
-                  .map(task => ({
-                    ...task,
-                    playerName: player.name,
-                    playerId: player.id,
-                    targetName: currentGame.players.find(p => p.id === task.targetId)?.name || 'Unknown',
-                    isSuccess: task.status === 'completed'
-                  }))
-              ).sort((a, b) => new Date(b.gotAt || 0).getTime() - new Date(a.gotAt || 0).getTime());
-
-              return (
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <h4 style={{ 
-                    margin: '0 0 0.75rem 0',
-                    color: '#333',
-                    fontSize: '1rem',
-                    fontWeight: '700',
-                    textAlign: 'center'
-                  }}>
-                    📊 Recent Activity
-                  </h4>
-                  <div style={{
-                    background: '#f8f9fa',
-                    borderRadius: '12px',
-                    padding: '0.75rem',
-                    maxHeight: '150px',
-                    overflowY: 'auto',
-                    border: '1px solid #e9ecef'
-                  }}>
-                    {allCompletions.length > 0 ? (
-                      allCompletions.slice(0, 8).map((completion, index) => (
-                        <div key={`${completion.playerId}-${completion.id}-${index}`} style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '0.4rem 0.5rem',
-                          marginBottom: '0.3rem',
-                          background: completion.isSuccess ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)',
-                          borderRadius: '8px',
-                          fontSize: '0.8rem'
-                        }}>
-                          <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '0.5rem',
-                            flex: 1
-                          }}>
-                            <span style={{ fontSize: '1rem' }}>
-                              {completion.isSuccess ? '🎯' : '🚨'}
-                            </span>
-                            <div>
-                              <div style={{ fontWeight: '600', color: '#333' }}>
-                                {completion.playerName}
-                              </div>
-                              <div style={{ 
-                                fontSize: '0.7rem', 
-                                color: '#666',
-                                maxWidth: '200px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                {completion.text}
-                              </div>
-                            </div>
-                          </div>
-                          <div style={{ 
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            color: completion.isSuccess ? '#2e7d32' : '#c62828',
-                            textAlign: 'right'
-                          }}>
-                            {completion.isSuccess ? 'Got' : 'Caught by'}
-                            <br />
-                            <strong>{completion.targetName}</strong>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ 
-                        textAlign: 'center', 
-                        color: '#666', 
-                        fontSize: '0.9rem',
-                        padding: '1rem'
-                      }}>
-                        No completed tasks yet - game just started! 🎮
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-
-{(() => {
-              if (!currentGame?.players) return <div>No players found</div>;
-              const sortedPlayers = [...currentGame.players].sort((a, b) => b.score - a.score);
-              const topThree = sortedPlayers.slice(0, 3);
-              const others = sortedPlayers.slice(3);
-              
-              return (
-                <div>
-                  <h4 style={{ 
-                    margin: '0 0 0.75rem 0',
-                    color: '#333',
-                    fontSize: '1rem',
-                    fontWeight: '700',
-                    textAlign: 'center'
-                  }}>
-                    🏆 Current Rankings
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {/* Top 3 Podium */}
-                  {topThree.length > 0 && (
-                    <div style={{ 
-                      background: 'linear-gradient(135deg, #ffd700, #ffed4a)',
-                      borderRadius: '16px',
-                      padding: '1rem',
-                      marginBottom: '0.5rem'
-                    }}>
-                      <h4 style={{ 
-                        margin: '0 0 0.75rem 0', 
-                        textAlign: 'center',
-                        color: '#8b4513',
-                        fontSize: '1rem',
-                        fontWeight: '700'
-                      }}>
-                        🏆 TOP PLAYERS
-                      </h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {topThree.map((player, index) => (
-                          <div key={player.id} style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '0.75rem',
-                            background: player.id === currentPlayer.id 
-                              ? 'rgba(59, 130, 246, 0.2)' 
-                              : 'rgba(255, 255, 255, 0.7)',
-                            borderRadius: '12px',
-                            border: player.id === currentPlayer.id 
-                              ? '2px solid #3b82f6' 
-                              : '1px solid rgba(139, 69, 19, 0.2)',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              <div style={{ 
-                                fontSize: '2rem',
-                                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
-                              }}>
-                                {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                              </div>
-                              <PlayerAvatar player={player} size="medium" />
-                              <div>
-                                <div style={{ 
-                                  fontWeight: '700',
-                                  fontSize: '1.1rem',
-                                  color: '#8b4513'
-                                }}>
-                                  {player.name} {player.id === currentPlayer.id && '(You)'}
-                                </div>
-                                <div style={{ fontSize: '0.85rem', color: '#a16207' }}>
-                                  {player.tasks.filter(t => t.status === 'completed').length} tasks completed
-                                </div>
-                              </div>
-                            </div>
-                            <div style={{
-                              fontSize: '1.5rem',
-                              fontWeight: '900',
-                              color: '#8b4513',
-                              background: 'rgba(255, 255, 255, 0.8)',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '8px',
-                              border: '2px solid rgba(139, 69, 19, 0.3)'
-                            }}>
-                              {player.score}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Other Players */}
-                  {others.length > 0 && (
-                    <div>
-                      <h4 style={{ 
-                        margin: '0 0 0.5rem 0',
-                        color: '#666',
-                        fontSize: '0.9rem',
-                        fontWeight: '600'
-                      }}>
-                        OTHER PLAYERS
-                      </h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                        {others.map((player, index) => (
-                          <div key={player.id} style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '0.5rem 0.75rem',
-                            background: player.id === currentPlayer.id 
-                              ? 'rgba(59, 130, 246, 0.1)' 
-                              : 'rgba(0,0,0,0.02)',
-                            borderRadius: '8px',
-                            border: player.id === currentPlayer.id 
-                              ? '2px solid rgba(59, 130, 246, 0.3)' 
-                              : '1px solid rgba(0,0,0,0.1)'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <div style={{ 
-                                fontSize: '0.9rem',
-                                color: '#666',
-                                fontWeight: '600',
-                                minWidth: '24px'
-                              }}>
-                                {index + 4}.
-                              </div>
-                              <PlayerAvatar player={player} size="small" />
-                              <div>
-                                <div style={{ fontWeight: '600' }}>
-                                  {player.name} {player.id === currentPlayer.id && '(You)'}
-                                </div>
-                                <div style={{ fontSize: '0.75rem', color: '#666' }}>
-                                  {player.tasks.filter(t => t.status === 'completed').length} completed
-                                </div>
-                              </div>
-                            </div>
-                            <div style={{
-                              fontSize: '1rem',
-                              fontWeight: '700',
-                              color: '#333'
-                            }}>
-                              {player.score}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
+        <FullLeaderboard 
+          players={currentGame.players}
+          currentPlayerId={currentPlayer.id}
+          onClose={() => setShowLeaderboard(false)}
+        />
       )}
 
       {/* Target Select Modal */}
@@ -762,6 +289,17 @@ export default function Game() {
         taskText={selectedTask?.text || ''}
         isReverse={(selectedTask as any)?.resultType === 'failed'}
       />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmation.isOpen}
+        title={confirmation.title}
+        message={confirmation.message}
+        onConfirm={confirmation.onConfirm}
+        onCancel={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
+        isDangerous={confirmation.isDangerous}
+        confirmLabel={confirmation.confirmLabel}
+      />
     </div>
   );
-} 
+}

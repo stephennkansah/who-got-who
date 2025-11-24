@@ -17,6 +17,9 @@ dist/
 .env.test.local
 .env.production.local
 
+# Android signing
+keystore.properties
+
 # IDE
 .vscode/
 .idea/
