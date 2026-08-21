@@ -348,7 +348,7 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
     const gameId = state.currentGame?.id;
     if (!gameId || !state.isConnected) return undefined;
     const subscription = awsGameClient.subscriptions
-      .onGameUpdated({ gameId }, { authMode: 'identityPool' })
+      .onGameUpdated({ gameId }, { authMode: 'apiKey' })
       .subscribe({
         next: (event: { revision?: number }) => {
           if ((event.revision || 0) >= revisionRef.current) {

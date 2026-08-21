@@ -37,7 +37,7 @@ const schema = a.schema({
     .for(a.ref('gameAction'))
     .arguments({ gameId: a.string().required() })
     .handler(a.handler.custom({ entry: './game-updates.js' }))
-    .authorization((allow) => [allow.guest()]),
+    .authorization((allow) => [allow.publicApiKey()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
@@ -47,6 +47,9 @@ export const data = defineData({
   schema,
   authorizationModes: {
     defaultAuthorizationMode: 'identityPool',
+    apiKeyAuthorizationMode: {
+      expiresInDays: 365,
+    },
   },
   logging: {
     fieldLogLevel: 'error',
