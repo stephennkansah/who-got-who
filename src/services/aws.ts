@@ -3,9 +3,8 @@ import { fetchAuthSession } from 'aws-amplify/auth';
 import { generateClient } from 'aws-amplify/data';
 import { uploadData } from 'aws-amplify/storage';
 
-export const awsGameClient = generateClient<any>();
-
 let configurationPromise: Promise<void> | null = null;
+let gameClient: ReturnType<typeof generateClient<any>> | null = null;
 
 export function configureAws(): Promise<void> {
   if (!configurationPromise) {
@@ -25,6 +24,12 @@ export function configureAws(): Promise<void> {
     });
   }
   return configurationPromise;
+}
+
+export async function getAwsGameClient(): Promise<ReturnType<typeof generateClient<any>>> {
+  await configureAws();
+  if (!gameClient) gameClient = generateClient<any>();
+  return gameClient;
 }
 
 export async function getIdentityId(): Promise<string> {

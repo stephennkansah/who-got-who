@@ -10,8 +10,8 @@ import React, {
 import imageCompression from 'browser-image-compression';
 import { Game, GameContextType, GameState, Player } from '../types';
 import {
-  awsGameClient,
   configureAws,
+  getAwsGameClient,
   getIdentityId,
   uploadPrivateImage,
 } from '../services/aws';
@@ -142,7 +142,8 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
   }, [state]);
 
   const refreshGame = useCallback(async (gameId: string) => {
-    const response = await awsGameClient.queries.getGameView(
+    const client = await getAwsGameClient();
+    const response = await client.queries.getGameView(
       { gameId },
       { authMode: 'identityPool' },
     );
@@ -160,10 +161,10 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
       explicitGameId?: string,
       refresh = true,
     ) => {
-      await configureAws();
+      const client = await getAwsGameClient();
       const gameId = explicitGameId || stateRef.current.currentGame?.id;
-      const response = await awsGameClient.mutations.gameAction(
-        { action, gameId, requestId: requestId(), payload },
+      const response = await client.mutations.gameAction(
+        { action, gameId, requestId: requestId(), payload: JSON.stringify(payload) },
         { authMode: 'identityPool' },
       );
       if (response.errors?.length || !response.data) throw dataError(response.errors);
@@ -347,19 +348,30 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const gameId = state.currentGame?.id;
     if (!gameId || !state.isConnected) return undefined;
-    const subscription = awsGameClient.subscriptions
-      .onGameUpdated({ gameId }, { authMode: 'apiKey' })
-      .subscribe({
-        next: (event: { revision?: number }) => {
-          if ((event.revision || 0) >= revisionRef.current) {
-            void refreshGame(gameId).catch((error) =>
-              dispatch({ type: 'ERROR', value: errorMessage(error) }),
-            );
-          }
-        },
-        error: () => dispatch({ type: 'CONNECTED', value: false }),
-      });
-    return () => subscription.unsubscribe();
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+    void getAwsGameClient()
+      .then((client) => {
+        if (cancelled) return;
+        const subscription = client.subscriptions
+          .onGameUpdated({ gameId }, { authMode: 'apiKey' })
+          .subscribe({
+            next: (event: { revision?: number }) => {
+              if ((event.revision || 0) >= revisionRef.current) {
+                void refreshGame(gameId).catch((error) =>
+                  dispatch({ type: 'ERROR', value: errorMessage(error) }),
+                );
+              }
+            },
+            error: () => dispatch({ type: 'CONNECTED', value: false }),
+          });
+        unsubscribe = () => subscription.unsubscribe();
+      })
+      .catch((error) => dispatch({ type: 'ERROR', value: errorMessage(error) }));
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [refreshGame, state.currentGame?.id, state.isConnected]);
 
   useEffect(() => {
