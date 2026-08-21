@@ -14,34 +14,26 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({ players, c
 
   return (
     <div className="card leaderboard-widget">
-      <div 
+      <button
         onClick={onShowLeaderboard}
-        style={{ cursor: 'pointer' }}
+        aria-label="Show full leaderboard and activity"
+        style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'inherit' }}
       >
-        <div style={{ 
-          textAlign: 'center', 
-          fontSize: '0.8rem', 
-          fontWeight: '800',
-          textTransform: 'uppercase',
-          letterSpacing: '1px',
-          color: 'rgba(255,255,255,0.7)',
-          marginBottom: '0.5rem'
-        }}>
-          Live Leaderboard
+        <div className="leaderboard-label">
+          Live leaderboard · tap for all
         </div>
-        
+
         <div className="leaderboard-grid">
           {topThree.map((player, index) => (
-            <div 
-              key={player.id} 
+            <div
+              key={player.id}
               className={`leaderboard-card ${player.id === currentPlayerId ? 'is-me' : ''}`}
             >
-              <span className="medal">
+              <span className="medal" aria-hidden="true">
                 {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
               </span>
               <span className="player-name">
-                {player.name}
-                {player.id === currentPlayerId && ' (You)'}
+                {player.id === currentPlayerId ? `${player.name} (You)` : player.name}
               </span>
               <span className="player-score">
                 <AnimatedScore value={player.score} />
@@ -49,7 +41,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({ players, c
             </div>
           ))}
         </div>
-      </div>
+      </button>
     </div>
   );
 };

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { TaskInstance, Player } from '../types';
 import TaskListView from './TaskListView';
 import TargetSelectModal from './TargetSelectModal';
+import DisputeModal from './DisputeModal';
+import VotingBanner from './VotingBanner';
 
 // Sub-components
 import { GameHeader } from './game/GameHeader';
@@ -15,11 +17,20 @@ import { ConfirmationModal } from './common/ConfirmationModal';
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const { state, claimGotcha, endGame: endGameContext, leaveGame, swapTask } = useGame();
+  const {
+    state,
+    claimGotcha,
+    acceptGotcha,
+    disputeGotcha,
+    endGame: endGameContext,
+    leaveGame,
+    swapTask,
+  } = useGame();
   const [selectedTask, setSelectedTask] = useState<TaskInstance | null>(null);
   const [showTargetModal, setShowTargetModal] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [notifications, setNotifications] = useState<Array<{id: string, message: string, type: string}>>([]);
+  const seenNotifications = useRef(new Set<string>());
   
   // Confirmation Modal State
   const [confirmation, setConfirmation] = useState<{
@@ -38,6 +49,29 @@ export default function Game() {
 
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
+  const responseClaim = state.activeDisputes.find(
+    (dispute) => dispute.phase === 'response' && dispute.targetId === currentPlayer?.id,
+  );
+  const votingDisputes = state.activeDisputes.filter(
+    (dispute) =>
+      dispute.phase === 'voting' &&
+      dispute.targetId !== currentPlayer?.id &&
+      dispute.accuserId !== currentPlayer?.id,
+  );
+
+  const handleAcceptClaim = useCallback(async () => {
+    if (!responseClaim) return;
+    try {
+      await acceptGotcha(responseClaim.taskInstanceId);
+    } catch {
+      // A different open client may have resolved the timer first.
+    }
+  }, [acceptGotcha, responseClaim]);
+
+  const handleDisputeClaim = useCallback(async (reason?: string) => {
+    if (!responseClaim) return;
+    await disputeGotcha(responseClaim.taskInstanceId, reason);
+  }, [disputeGotcha, responseClaim]);
 
   useEffect(() => {
     if (!gameId) {
@@ -86,8 +120,8 @@ export default function Game() {
         const notificationId = `${task.playerId}-${task.id}-${task.gotAt}`;
         
         // Check if we already showed this notification
-        const existingNotification = notifications.find(n => n.id === notificationId);
-        if (!existingNotification && task.playerId !== currentPlayer.id) {
+        if (!seenNotifications.current.has(notificationId) && task.playerId !== currentPlayer.id) {
+          seenNotifications.current.add(notificationId);
           const message = `🎯 ${task.playerName} got ${task.targetName}!`;
           
           setNotifications(prev => [...prev, {
@@ -105,7 +139,7 @@ export default function Game() {
     };
 
     handleTaskNotifications();
-  }, [currentGame?.players, currentPlayer, notifications]);
+  }, [currentGame, currentPlayer]);
 
   const handleTaskResult = (task: TaskInstance, result: 'passed' | 'failed') => {
     // Both passed and failed tasks need target selection
@@ -117,16 +151,21 @@ export default function Game() {
 
   const handleSwapTask = async (taskId: string) => {
     if (!currentPlayer || currentPlayer.swapsLeft <= 0) return;
-    
+    const swapsTotal = currentGame?.settings?.swapsAllowed ?? 2;
+
     setConfirmation({
       isOpen: true,
-      title: 'Swap Task?',
-      message: `Replace this task with a new one?\n\nSwaps remaining: ${currentPlayer.swapsLeft - 1}/2`,
+      title: '🔄 Swap task?',
+      message: `Replace this task with a random new one?\n\nSwaps left after this: ${currentPlayer.swapsLeft - 1}/${swapsTotal}`,
       onConfirm: async () => {
-        await swapTask(taskId);
         setConfirmation(prev => ({ ...prev, isOpen: false }));
+        try {
+          await swapTask(taskId);
+        } catch {
+          // Errors surface via the global toast bridge.
+        }
       },
-      confirmLabel: 'Swap Task'
+      confirmLabel: 'Swap it'
     });
   };
 
@@ -190,13 +229,13 @@ export default function Game() {
   if (!currentGame || !currentPlayer) {
     return (
       <div className="container flex-center">
-        <div className="card" style={{ textAlign: 'center' }}>
-          <h2>Loading...</h2>
-          <p style={{ marginBottom: '30px', color: 'white' }}>Loading game...</p>
-          
+        <div className="card" style={{ textAlign: 'center', padding: '2.5rem 2rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'spin 2s linear infinite' }} aria-hidden="true">⏳</div>
+          <h2>Connecting…</h2>
+          <p style={{ marginBottom: '1.5rem' }}>Loading your game.</p>
           <button
             onClick={() => navigate('/')}
-            className="btn btn-primary"
+            className="btn btn-secondary"
           >
             🏠 Back to Home
           </button>
@@ -216,26 +255,25 @@ export default function Game() {
       />
 
       {/* Combined Game Info */}
-      <div className="card" style={{ 
+      <div className="card" style={{
         marginBottom: '1rem',
         textAlign: 'center',
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.1)'
+        padding: '0.9rem 1.25rem'
       }}>
-        <div style={{ 
-          fontSize: '0.9rem', 
-          marginBottom: '0.3rem',
-          fontWeight: '600',
-          color: '#08d9d6' // Secondary Neon
+        <div style={{
+          fontSize: '0.9rem',
+          marginBottom: '0.2rem',
+          fontWeight: 700,
+          color: 'var(--text-main)'
         }}>
-          🎮 Complete stealth tasks • Say "Gotcha!" when you succeed
+          🎮 Complete stealth tasks · say "Gotcha!" when you succeed
         </div>
-        <div style={{ 
-          color: '#ff7675', // Danger Pastel
+        <div style={{
+          color: 'var(--danger)',
           fontSize: '0.8rem',
-          fontWeight: '600'
+          fontWeight: 700
         }}>
-          🕵️ <strong>Don't get caught or it's an auto-fail!</strong> Stay sneaky! 🤫
+          🕵️ Don't get caught or it's an auto-fail — stay sneaky! 🤫
         </div>
       </div>
 
@@ -245,28 +283,31 @@ export default function Game() {
         onShowLeaderboard={() => setShowLeaderboard(true)}
       />
 
+      {votingDisputes.map((dispute) => (
+        <VotingBanner key={dispute.id} dispute={dispute} />
+      ))}
+
       {/* Task Cards */}
-      <div className="card" style={{ 
-        marginBottom: '1rem',
-        background: 'rgba(255,255,255,0.02)' // Slightly darker for contrast
-      }}>
-        <h2 style={{ 
-          fontSize: '1.2rem', 
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <h2 style={{
+          fontSize: '1.05rem',
           marginBottom: '1rem',
           textAlign: 'center',
-          color: 'white',
           textTransform: 'uppercase',
           letterSpacing: '2px'
         }}>
-          Your Tasks
+          🤫 Your Secret Tasks
         </h2>
-        
-        <TaskListView 
+
+        <TaskListView
           tasks={currentPlayer.tasks}
           players={currentGame.players}
           onTaskResult={handleTaskResult}
           onSwapTask={handleSwapTask}
           swapsLeft={currentPlayer.swapsLeft}
+          swapsTotal={currentGame.settings?.swapsAllowed ?? 2}
+          activeDisputes={state.activeDisputes}
+          currentPlayerId={currentPlayer.id}
         />
       </div>
 
@@ -289,6 +330,18 @@ export default function Game() {
         taskText={selectedTask?.text || ''}
         isReverse={(selectedTask as any)?.resultType === 'failed'}
       />
+
+      {responseClaim && (
+        <DisputeModal
+          dispute={responseClaim}
+          accuserName={currentGame.players.find(p => p.id === responseClaim.accuserId)?.name}
+          taskText={currentGame.players
+            .flatMap(p => p.tasks || [])
+            .find(task => task.id === responseClaim.taskInstanceId)?.text}
+          onAccept={handleAcceptClaim}
+          onDispute={handleDisputeClaim}
+        />
+      )}
 
       {/* Confirmation Modal */}
       <ConfirmationModal

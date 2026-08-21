@@ -117,9 +117,9 @@ Install it on your Android device:
 
 #### 6.3 Privacy Policy
 - **Required**: You need a privacy policy URL
-- Since you use Firebase, create a privacy policy page on your website
+- The AWS-backed game stores temporary gameplay data, so publish a privacy policy page on your website
 - **Template provided**: Use `privacy-policy-template.html` as a starting point
-- Customize it with your details and upload to: `https://whogotwho.club/privacy-policy.html`
+- Publish the served policy at: `https://whogotwho.club/privacy.html`
 
 #### 6.4 Target Audience
 - Select appropriate age groups
@@ -252,4 +252,3 @@ keytool -list -v -keystore android.keystore -alias who-got-who
 ---
 
 **Good luck with your Play Store submission! 🎉**
-

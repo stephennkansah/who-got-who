@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { validateGameInput } from '../utils/validation';
 import AvatarPicker from './AvatarPicker';
+import { showToast } from './common/Toast';
 
 function Home() {
   const navigate = useNavigate();
@@ -13,25 +14,30 @@ function Home() {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState('😎');
   const [avatarType, setAvatarType] = useState<'emoji' | 'photo'>('emoji');
-  const [mode, setMode] = useState<'start' | 'join' | 'welcome'>('welcome');
+  const [mode, setMode] = useState<'join' | 'welcome'>('welcome');
 
   // Initialization effects...
   useEffect(() => {
     if (!hasInitialized) {
       setHasInitialized(true);
-      const joinGameId = searchParams.get('join');
+      const joinGameId = searchParams.get('join')?.trim().toUpperCase();
       if (!joinGameId && state.currentGame) {
-        leaveGame();
+        void leaveGame().catch(() => undefined);
       }
       if (joinGameId) {
         setMode('join');
         setGameId(joinGameId);
+        if (state.currentGame && state.currentGame.id !== joinGameId) {
+          void leaveGame().catch(() => undefined);
+        }
       }
     }
   }, [hasInitialized, searchParams, state.currentGame, leaveGame]);
 
   useEffect(() => {
     if (state.currentGame) {
+      const requestedGameId = searchParams.get('join')?.trim().toUpperCase();
+      if (requestedGameId && requestedGameId !== state.currentGame.id) return;
       if (state.currentGame.status === 'draft') {
         const packSelected = state.currentGame.settings?.selectedPack;
         const isHost = state.currentPlayer?.isHost;
@@ -47,22 +53,41 @@ function Home() {
         navigate(`/recap/${state.currentGame.id}`);
       }
     }
-  }, [state.currentGame, state.currentPlayer, navigate]);
+  }, [state.currentGame, state.currentPlayer, navigate, searchParams]);
 
   const handleStartGame = async () => {
-    if (!playerName.trim()) {
-      alert('Please enter your name');
+    const validation = validateGameInput(playerName, undefined, selectedAvatar);
+    if (!validation.isValid) {
+      showToast(validation.errors.join(' '), 'error');
       return;
     }
-    await createGame(playerName, selectedAvatar, avatarType);
+    try {
+      await createGame(
+        validation.sanitizedValues.playerName!,
+        validation.sanitizedValues.avatar,
+        avatarType,
+      );
+    } catch {
+      // The provider renders the actionable service error below.
+    }
   };
 
   const handleJoinGame = async () => {
-    if (!playerName.trim() || !gameId.trim()) {
-      alert('Please enter your name and game code');
+    const validation = validateGameInput(playerName, gameId, selectedAvatar);
+    if (!validation.isValid) {
+      showToast(validation.errors.join(' '), 'error');
       return;
     }
-    await joinGame(gameId.toUpperCase(), playerName, selectedAvatar, avatarType);
+    try {
+      await joinGame(
+        validation.sanitizedValues.gameId!,
+        validation.sanitizedValues.playerName!,
+        validation.sanitizedValues.avatar,
+        avatarType,
+      );
+    } catch {
+      // The provider renders the actionable service error below.
+    }
   };
 
   if (state.isLoading) {
@@ -88,12 +113,17 @@ function Home() {
 
       {/* Welcome / Action Card */}
       <div className="card" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
+        {state.error && (
+          <div role="alert" className="game-error" style={{ marginBottom: '1rem' }}>
+            {state.error}
+          </div>
+        )}
         <div style={{ marginBottom: '1.5rem' }}>
           <h2 style={{ marginBottom: '0.5rem' }}>Welcome!</h2>
           <p>Choose your look</p>
         </div>
 
-        <div style={{ marginBottom: '2rem' }}>
+        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'center' }}>
           <AvatarPicker
             selectedAvatar={selectedAvatar}
             onAvatarChange={(avatar, isPhoto) => {
@@ -104,6 +134,7 @@ function Home() {
         </div>
 
         <input
+          aria-label="Player name"
           type="text"
           placeholder="Enter your name"
           value={playerName}
@@ -113,15 +144,14 @@ function Home() {
 
         {mode === 'welcome' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-            <button 
+            <button
               className="btn btn-primary"
-              onClick={() => setMode('start')}
-              disabled={!playerName.trim()}
-              style={{ opacity: playerName.trim() ? 1 : 0.7 }}
+              onClick={handleStartGame}
+              disabled={!playerName.trim() || state.isLoading}
             >
-              ✨ Start New Game
+              🚀 Start New Game
             </button>
-            <button 
+            <button
               className="btn btn-secondary"
               onClick={() => setMode('join')}
             >
@@ -130,46 +160,29 @@ function Home() {
           </div>
         )}
 
-        {mode === 'start' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-            <button 
-              className="btn btn-primary"
-              onClick={handleStartGame}
-            >
-              🚀 Launch Party
-            </button>
-            <button 
-              className="btn btn-secondary"
-              onClick={() => setMode('welcome')}
-              style={{ border: 'none', color: '#6b7280', padding: '0.5rem' }}
-            >
-              Back
-            </button>
-          </div>
-        )}
-
         {mode === 'join' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-            <input 
+            <input
+              aria-label="Game code"
               type="text"
-              placeholder="Game Code (e.g. ABCD)"
+              placeholder="Game Code (e.g. ABC234)"
               value={gameId}
               onChange={(e) => setGameId(e.target.value.toUpperCase())}
+              maxLength={6}
               style={{ textTransform: 'uppercase', letterSpacing: '2px' }}
             />
-            <button 
+            <button
               className="btn btn-primary"
               onClick={handleJoinGame}
-              disabled={gameId.length < 3}
+              disabled={gameId.length !== 6 || !playerName.trim() || state.isLoading}
             >
               Join Party
             </button>
-            <button 
-              className="btn btn-secondary"
+            <button
+              className="btn btn-ghost"
               onClick={() => setMode('welcome')}
-              style={{ border: 'none', color: '#6b7280', padding: '0.5rem' }}
             >
-              Back
+              ← Back
             </button>
           </div>
         )}
@@ -210,9 +223,14 @@ function Home() {
           <Step number="1" text="Each player gets secret tasks to complete on others" />
           <Step number="2" text="Complete tasks without being obvious - it's your mission" />
           <Step number="3" text="Say 'Gotcha!' and claim your win in the app" />
-          <Step number="4" text="First to complete their tasks wins!" />
+          <Step number="4" text="First to reach the target score wins!" />
         </div>
       </div>
+
+      <p style={{ textAlign: 'center', margin: '1.25rem 0', fontSize: '0.8rem' }}>
+        <a href="/privacy.html" style={{ color: '#fff' }}>Privacy</a>
+        {' · '}Only upload photos with everyone&apos;s permission.
+      </p>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Task, TaskPack, Challenge, HolidayChallengePack } from '../types';
+import type { Task, TaskPack, Challenge, HolidayChallengePack } from '../../../src/types';
 
 // ================================
 // CORE PACK - In-Person Game Tasks  
@@ -284,11 +284,11 @@ const corePhysicalTasks: Task[] = [
   },
   {
     id: 'p028',
-    text: 'Get a player to hand you their phone.'
+    text: 'Get a player to show you the time on their phone.'
   },
   {
     id: 'p029',
-    text: 'Tap a player, then make another player believe someone else did it.'
+    text: 'Get two players to point at the same object at the same time.'
   },
   {
     id: 'p030',
@@ -376,7 +376,7 @@ const coreTechnologyTasks: Task[] = [
   },
   {
     id: 't004',
-    text: 'Get a player to ask for the Wi-Fi password.'
+    text: 'Get a player to ask whether Wi-Fi is available.'
   },
   {
     id: 't005',
@@ -384,7 +384,7 @@ const coreTechnologyTasks: Task[] = [
   },
   {
     id: 't006',
-    text: 'Get a player to scroll through a social media feed.'
+    text: 'Get a player to mention a social media platform.'
   },
   {
     id: 't007',
@@ -416,7 +416,7 @@ const coreTechnologyTasks: Task[] = [
   },
   {
     id: 't014',
-    text: 'Get a player to like one of your social media posts.'
+    text: 'Get a player to recommend a social media creator.'
   }
 ];
 
@@ -524,7 +524,7 @@ const remoteTasks: Task[] = [
   },
   {
     id: 'r009',
-    text: 'Get a player to vote in your Instagram poll.'
+    text: 'Get a player to suggest a question for a group poll.'
   },
   {
     id: 'r010',
@@ -556,7 +556,7 @@ const remoteTasks: Task[] = [
   },
   {
     id: 'r017',
-    text: 'Get a player to share their live location.'
+    text: 'Get a player to recommend a public meeting place.'
   },
   {
     id: 'r018',
@@ -668,11 +668,11 @@ const remoteTasks: Task[] = [
   },
   {
     id: 'r045',
-    text: 'Get a player to screenshot their home screen and send it.'
+    text: 'Get a player to describe their favourite phone widget.'
   },
   {
     id: 'r046',
-    text: 'Get a player to share a message from another group.'
+    text: 'Get a player to share a joke they wrote themselves.'
   },
   {
     id: 'r047',
@@ -704,7 +704,7 @@ const remoteTasks: Task[] = [
   },
   {
     id: 'r054',
-    text: 'Get a player to forward you a voice note from another chat.'
+    text: 'Get a player to record an original five-second voice note.'
   },
   {
     id: 'r055',
@@ -720,7 +720,7 @@ const remoteTasks: Task[] = [
   },
   {
     id: 'r058',
-    text: 'Get a player to change their WhatsApp status.'
+    text: 'Get a player to suggest a funny group-chat status.'
   },
   {
     id: 'r059',
@@ -728,7 +728,7 @@ const remoteTasks: Task[] = [
   },
   {
     id: 'r060',
-    text: 'Get a player to send a photo from their Notes app.'
+    text: 'Get a player to send a photo of a handwritten doodle.'
   },
   {
     id: 'r061',
@@ -752,7 +752,7 @@ const remoteTasks: Task[] = [
   },
   {
     id: 'r066',
-    text: 'Get a player to screen-record scrolling through social media.'
+    text: 'Get a player to recommend a public video channel.'
   },
   {
     id: 'r067',
@@ -1103,32 +1103,32 @@ const holidayChallenges: Challenge[] = [
   { id: 'hc002', text: 'Borrow sunscreen from another group', requiresProof: false },
   { id: 'hc003', text: 'Ask someone what time sunset is', requiresProof: false },
   { id: 'hc004', text: 'Get someone to take a group photo of your team', requiresProof: true },
-  { id: 'hc005', text: 'Clink glasses with someone not in your group', requiresProof: true },
+  { id: 'hc005', text: 'With permission, clink glasses with someone not in your group', requiresProof: true },
   { id: 'hc006', text: 'Compliment a stranger\'s sunglasses or outfit', requiresProof: false },
   { id: 'hc007', text: 'Teach someone a phrase in your language', requiresProof: false },
   { id: 'hc008', text: 'Ask someone how long they\'ve been on holiday', requiresProof: false },
   { id: 'hc009', text: 'Make a new friend and learn their name', requiresProof: false },
   { id: 'hc010', text: 'Ask someone to recommend their top 3 local foods', requiresProof: false },
-  { id: 'hc011', text: 'Get a photo with someone wearing a holiday shirt', requiresProof: true },
-  { id: 'hc012', text: 'Join a group playing a beach or pool game', requiresProof: true },
-  { id: 'hc013', text: 'Get someone to take a photo of you mid-jump into the pool', requiresProof: true },
+  { id: 'hc011', text: 'With their permission, get a photo with someone wearing a holiday shirt', requiresProof: true },
+  { id: 'hc012', text: 'Ask to join a group playing a beach or pool game', requiresProof: true },
+  { id: 'hc013', text: 'Get someone to take a creative mid-air photo of you on dry land', requiresProof: true },
   { id: 'hc014', text: 'Ask a stranger what their hotel is like', requiresProof: false },
-  { id: 'hc015', text: 'Get someone you met on holiday to follow you on Instagram', requiresProof: false },
-  { id: 'hc016', text: 'Take a sip from someone\'s drink who you\'ve just met', requiresProof: true },
+  { id: 'hc015', text: 'Ask someone you met to recommend a local creator or public page', requiresProof: false },
+  { id: 'hc016', text: 'Ask someone you just met to recommend their favourite local drink', requiresProof: false },
   { id: 'hc017', text: 'Ask someone what day it is (and act confused)', requiresProof: false },
   { id: 'hc018', text: 'Take a photo next to a tourist sign or map', requiresProof: true },
   { id: 'hc019', text: 'Dance to music in a public spot for 5 seconds', requiresProof: true },
   { id: 'hc020', text: 'Find someone with the same first name as you', requiresProof: false },
-  { id: 'hc021', text: 'High five three different strangers', requiresProof: false },
-  { id: 'hc022', text: 'Take a photo with someone while you\'re both wearing sunglasses', requiresProof: true },
-  { id: 'hc023', text: 'Shout \'I love holidays!\' in a public area', requiresProof: false },
+  { id: 'hc021', text: 'High five three different people in your group', requiresProof: false },
+  { id: 'hc022', text: 'With their permission, take a photo together while wearing sunglasses', requiresProof: true },
+  { id: 'hc023', text: 'Get your group to say \'I love holidays!\' together', requiresProof: false },
   { id: 'hc024', text: 'Ask a stranger what their favourite holiday destination is', requiresProof: false },
-  { id: 'hc025', text: 'Take a photo with someone wearing a hat you like', requiresProof: true },
-  { id: 'hc026', text: 'Get a stranger to cheers (toast) you without prompting', requiresProof: true },
+  { id: 'hc025', text: 'With their permission, take a photo with someone wearing a hat you like', requiresProof: true },
+  { id: 'hc026', text: 'Ask someone outside your group to join a friendly toast', requiresProof: true },
   { id: 'hc027', text: 'Teach someone a dance move', requiresProof: false },
-  { id: 'hc028', text: 'Get someone to say \'best holiday ever\' on video', requiresProof: true },
+  { id: 'hc028', text: 'With their permission, record someone saying \'best holiday ever\'', requiresProof: true },
   { id: 'hc029', text: 'Ask someone to take a boomerang of your group', requiresProof: true },
-  { id: 'hc030', text: 'Tell a stranger it\'s your birthday (even if it\'s not)', requiresProof: false }
+  { id: 'hc030', text: 'Get someone to share their favourite birthday memory', requiresProof: false }
 ];
 
 // Holiday Challenge Pack definition
@@ -1182,4 +1182,4 @@ export function challengeRequiresProof(challengeId: string): boolean {
 export function getHolidayChallengeWinCondition(playerCount: number): number {
   const { winCondition } = holidayChallengePack;
   return typeof winCondition === 'function' ? winCondition(playerCount) : winCondition;
-} 
+}

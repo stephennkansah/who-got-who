@@ -72,16 +72,14 @@ const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
       onClick={onClick}
       onMouseEnter={(e) => {
         if (onClick) {
-          const target = e.target as HTMLDivElement;
-          target.style.transform = 'scale(1.05)';
-          target.style.borderColor = '#3b82f6';
+          e.currentTarget.style.transform = 'scale(1.05)';
+          e.currentTarget.style.borderColor = '#3b82f6';
         }
       }}
       onMouseLeave={(e) => {
         if (onClick) {
-          const target = e.target as HTMLDivElement;
-          target.style.transform = 'scale(1)';
-          target.style.borderColor = '#e5e7eb';
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.borderColor = '#e5e7eb';
         }
       }}
     >

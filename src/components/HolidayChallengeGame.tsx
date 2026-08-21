@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
-import { Challenge, ChallengeCompletion } from '../types';
-import { getAllHolidayChallenges, challengeRequiresProof } from '../data/packs';
+import { Challenge } from '../types';
 import PlayerAvatar from './PlayerAvatar';
+import Modal from './common/Modal';
+import { ConfirmationModal } from './common/ConfirmationModal';
+import { showToast } from './common/Toast';
 
 export default function HolidayChallengeGame() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -11,38 +13,42 @@ export default function HolidayChallengeGame() {
   const { state, completeChallenge, endGame, leaveGame } = useGame();
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [showImageUpload, setShowImageUpload] = useState(false);
+  const [confirmChallenge, setConfirmChallenge] = useState<Challenge | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'end' | 'leave' | null>(null);
 
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
-  const challenges = getAllHolidayChallenges();
+  const challenges = currentGame?.selectedChallenges || [];
+
+  // Object URL for the proof preview
+  useEffect(() => {
+    if (!selectedImage) {
+      setImagePreview(null);
+      return undefined;
+    }
+    const url = URL.createObjectURL(selectedImage);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [selectedImage]);
+
+  useEffect(() => {
+    if (currentGame?.status === 'ended') {
+      navigate(`/recap/${gameId}`);
+    }
+  }, [currentGame?.status, gameId, navigate]);
 
   if (!currentGame || !currentPlayer) {
     return (
-      <div className="flex flex-center" style={{ minHeight: '100vh' }}>
-        <div className="card" style={{ textAlign: 'center' }}>
-          <h2>Loading...</h2>
-          <p style={{ marginBottom: '30px' }}>Loading Holiday Challenge...</p>
-          
-          <button
-            onClick={() => navigate('/')}
-            style={{
-              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              padding: '12px 24px',
-              fontSize: '1em',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              margin: '0 auto'
-            }}
-          >
+      <div className="container flex-center">
+        <div className="card text-center" style={{ padding: '2.5rem 2rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'spin 2s linear infinite' }} aria-hidden="true">⏳</div>
+          <h2>Connecting…</h2>
+          <p style={{ marginBottom: '1.5rem' }}>Loading the holiday challenge.</p>
+          <button className="btn btn-secondary" onClick={() => navigate('/')}>
             🏠 Back to Home
           </button>
         </div>
@@ -52,39 +58,42 @@ export default function HolidayChallengeGame() {
 
   if (currentGame.gameType !== 'holiday-challenge') {
     return (
-      <div className="flex flex-center" style={{ minHeight: '100vh' }}>
-        <div className="card" style={{ textAlign: 'center' }}>
-          <h2>❌ Wrong Game Type</h2>
-          <p style={{ marginBottom: '30px' }}>This component is only for Holiday Challenge Pack games.</p>
-          
-          <button
-            onClick={() => navigate(`/game/${gameId}`)}
-            style={{
-              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              padding: '12px 24px',
-              fontSize: '1em',
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}
-          >
-            🎮 Go to Standard Game
+      <div className="container flex-center">
+        <div className="card text-center" style={{ padding: '2.5rem 2rem' }}>
+          <h2>Wrong game type</h2>
+          <p style={{ marginBottom: '1.5rem' }}>This screen is only for You Got Who? games.</p>
+          <button className="btn btn-primary" onClick={() => navigate(`/game/${gameId}`)}>
+            🎮 Go to your game
           </button>
         </div>
       </div>
     );
   }
 
+  const goldPoints = currentGame.settings.holidayGoldPoints || 3;
+  const silverPoints = currentGame.settings.holidaySilverPoints || 1;
+
+  const getChallengeStatus = (challengeId: string) => {
+    const completions = currentGame.challengeCompletions || [];
+    const challengeCompletions = completions.filter(c => c.challengeId === challengeId);
+
+    const playerCompletion = challengeCompletions.find(c => c.playerId === currentPlayer.id);
+    if (playerCompletion) {
+      return { completed: true, type: playerCompletion.type, points: playerCompletion.points, awardsClosed: false, goldTaken: true };
+    }
+
+    const hasGold = challengeCompletions.some(c => c.type === 'gold');
+    const silverCount = challengeCompletions.filter(c => c.type === 'silver').length;
+    const awardsClosed = hasGold && silverCount >= (currentGame.settings.holidayMaxSilverPerChallenge || 2);
+    return { completed: false, type: undefined as undefined | 'gold' | 'silver', points: 0, goldTaken: hasGold, awardsClosed };
+  };
+
   const handleChallengeClick = (challenge: Challenge) => {
     setSelectedChallenge(challenge);
-    
-    // Check if challenge requires proof
-    if (challengeRequiresProof(challenge.id)) {
+    if (challenge.requiresProof) {
       setShowImageUpload(true);
     } else {
-      handleCompleteChallenge(challenge, null);
+      setConfirmChallenge(challenge);
     }
   };
 
@@ -93,26 +102,17 @@ export default function HolidayChallengeGame() {
     try {
       await completeChallenge(challenge.id, proofImage || undefined);
       setSelectedChallenge(null);
+      setConfirmChallenge(null);
       setShowImageUpload(false);
       setSelectedImage(null);
+      showToast('Challenge complete! 🎉', 'success');
     } catch (error) {
-      console.error('Error completing challenge:', error);
-      alert(`Failed to complete challenge: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      showToast(
+        error instanceof Error ? error.message : 'That challenge could not be completed — try again.',
+        'error',
+      );
     } finally {
       setIsCompleting(false);
-    }
-  };
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-    }
-  };
-
-  const handleImageUploadConfirm = () => {
-    if (selectedChallenge && selectedImage) {
-      handleCompleteChallenge(selectedChallenge, selectedImage);
     }
   };
 
@@ -122,146 +122,49 @@ export default function HolidayChallengeGame() {
     setSelectedImage(null);
   };
 
-  const getChallengeStatus = (challengeId: string) => {
-    const completions = currentGame.challengeCompletions || [];
-    const challengeCompletions = completions.filter(c => c.challengeId === challengeId);
-    
-    const playerCompletion = challengeCompletions.find(c => c.playerId === currentPlayer.id);
-    if (playerCompletion) {
-      return { completed: true, type: playerCompletion.type, points: playerCompletion.points };
-    }
-
-    const hasGold = challengeCompletions.some(c => c.type === 'gold');
-    return { completed: false, canGetGold: !hasGold, goldTaken: hasGold };
-  };
-
-  const handleEndGame = async () => {
-    const confirmed = window.confirm(
-      '🏁 End Holiday Challenge?\n\nThis will end the game for ALL players and show final results.\n\nThis action cannot be undone.'
-    );
-    
-    if (confirmed) {
-      await endGame();
-      navigate(`/recap/${gameId}`);
-    }
-  };
-
-  const handleLeaveGame = async () => {
-    const confirmed = window.confirm(
-      '🚪 Leave Game?\n\nYou will exit the current game and return to the home screen.\n\nOther players can continue without you.'
-    );
-    
-    if (confirmed) {
-      await leaveGame();
-      navigate('/');
-    }
-  };
-
-  const sortedPlayers = [...currentGame.players].sort((a, b) => 
+  const sortedPlayers = [...currentGame.players].sort((a, b) =>
     (b.challengeScore || 0) - (a.challengeScore || 0)
   );
 
   const winCondition = currentGame.settings.holidayChallengeWinCondition || 7;
+  const myRank = sortedPlayers.findIndex(p => p.id === currentPlayer.id);
+  const completedCount = challenges.filter(c => getChallengeStatus(c.id).completed).length;
 
   return (
     <div className="container">
       {/* Header */}
-      <div style={{ 
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '1rem',
-        padding: '0.5rem 0'
-      }}>
-        {/* Left: Leaderboard Position */}
-        <button 
+      <div className="game-header">
+        <button
           onClick={() => setShowLeaderboard(true)}
-          style={{
-            background: 'linear-gradient(135deg, #ffd700, #ffb347)',
-            border: 'none',
-            borderRadius: '50%',
-            width: '50px',
-            height: '50px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '0.7rem',
-            fontWeight: '700',
-            color: '#8b4513',
-            cursor: 'pointer',
-            boxShadow: '0 3px 10px rgba(255, 215, 0, 0.3)'
-          }}
+          className="rank-badge"
+          aria-label="Show leaderboard"
         >
-          <div style={{ fontSize: '1rem' }}>
-            {(() => {
-              const rank = sortedPlayers.findIndex(p => p.id === currentPlayer.id);
-              if (rank === 0) return '🥇';
-              if (rank === 1) return '🥈';
-              if (rank === 2) return '🥉';
-              return `#${rank + 1}`;
-            })()}
+          <div style={{ fontSize: '1.05rem', lineHeight: 1 }} aria-hidden="true">
+            {myRank === 0 ? '🥇' : myRank === 1 ? '🥈' : myRank === 2 ? '🥉' : `#${myRank + 1}`}
           </div>
-          <div style={{ fontSize: '0.6rem' }}>
-            {currentPlayer?.challengeScore || 0}
-          </div>
+          <div style={{ fontSize: '0.85rem' }}>{currentPlayer.challengeScore || 0}</div>
         </button>
 
-        {/* Center: Title */}
-        <div style={{ textAlign: 'center', flex: 1 }}>
-          <h1 style={{ 
-            fontSize: '1.3rem', 
-            margin: '0',
-            background: 'linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            fontWeight: '800'
-          }}>
-            🏖️ Holiday Challenge
-          </h1>
-          <div style={{ color: '#666', fontSize: '0.75rem', fontWeight: '600' }}>
-            First to {winCondition} points wins!
-          </div>
+        <div className="header-title" style={{ textAlign: 'center' }}>
+          <h1>🏖️ You Got Who?</h1>
+          <div className="player-count">FIRST TO {winCondition} POINTS</div>
         </div>
 
-        {/* Right: Game Controls */}
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {currentPlayer?.isHost && (
+        <div style={{ display: 'flex', gap: '0.6rem' }}>
+          {currentPlayer.isHost && (
             <button
-              onClick={handleEndGame}
-              style={{
-                background: 'linear-gradient(135deg, #ff6b6b, #ff5252)',
-                border: 'none',
-                borderRadius: '50%',
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.2rem',
-                cursor: 'pointer',
-                boxShadow: '0 3px 10px rgba(255, 107, 107, 0.3)'
-              }}
+              onClick={() => setConfirmAction('end')}
+              className="btn-icon danger"
+              aria-label="End game for everyone"
               title="End Game"
             >
               🏁
             </button>
           )}
           <button
-            onClick={handleLeaveGame}
-            style={{
-              background: 'linear-gradient(135deg, #6c757d, #495057)',
-              border: 'none',
-              borderRadius: '50%',
-              width: '40px',
-              height: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.2rem',
-              cursor: 'pointer',
-              boxShadow: '0 3px 10px rgba(108, 117, 125, 0.3)'
-            }}
+            onClick={() => setConfirmAction('leave')}
+            className="btn-icon"
+            aria-label="Leave game"
             title="Leave Game"
           >
             🚪
@@ -270,423 +173,280 @@ export default function HolidayChallengeGame() {
       </div>
 
       {/* Game Info */}
-      <div className="card" style={{ 
-        marginBottom: '1rem',
-        background: 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)',
-        border: '1px solid #ff9800',
-        padding: '0.75rem'
+      <div className="card" style={{
+        background: 'var(--warning-soft)',
+        border: '1px solid var(--warning-border)',
+        padding: '0.9rem 1.1rem',
+        textAlign: 'center'
       }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            fontSize: '0.9rem', 
-            marginBottom: '0.3rem',
-            fontWeight: '600',
-            color: '#e65100'
-          }}>
-            🎯 Complete challenges to earn points • 🥇 Gold = {currentGame.settings.holidayGoldPoints || 3} pts • 🥈 Silver = {currentGame.settings.holidaySilverPoints || 1} pt
-          </div>
-          <div style={{ 
-            color: '#bf360c', 
-            fontSize: '0.8rem',
-            fontWeight: '600'
-          }}>
-            📸 Some challenges require photo proof!
-          </div>
+        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--warning-ink)', marginBottom: '0.2rem' }}>
+          🥇 First to finish: {goldPoints} pts · 🥈 next {currentGame.settings.holidayMaxSilverPerChallenge || 2}: {silverPoints} pt each
+        </div>
+        <div style={{ color: 'var(--warning-ink)', fontSize: '0.78rem', fontWeight: 600, opacity: 0.85 }}>
+          📸 Only upload photo proof with permission from everyone shown.
         </div>
       </div>
 
       {/* Top 3 Leaderboard */}
-      <div className="card" style={{ marginBottom: '1rem' }}>
-        <div 
+      <div className="card leaderboard-widget">
+        <button
           onClick={() => setShowLeaderboard(true)}
-          style={{
-            cursor: 'pointer',
-            background: 'linear-gradient(135deg, #ffd700, #ffed4a)',
-            borderRadius: '12px',
-            padding: '0.75rem',
-            marginBottom: '1rem',
-            border: '2px solid #f59e0b',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          aria-label="Show full leaderboard"
+          style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'inherit' }}
         >
-          <div style={{ 
-            textAlign: 'center', 
-            fontSize: '0.9rem', 
-            fontWeight: '700',
-            color: '#8b4513',
-            marginBottom: '0.5rem'
-          }}>
-            🏆 LEADERBOARD - Click for Full Rankings
-          </div>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
+          <div className="leaderboard-label">Leaderboard · tap for all</div>
+          <div className="leaderboard-grid">
             {sortedPlayers.slice(0, 3).map((player, index) => (
-              <div key={player.id} style={{
-                flex: '1',
-                textAlign: 'center',
-                background: player.id === currentPlayer?.id 
-                  ? 'rgba(59, 130, 246, 0.2)' 
-                  : 'rgba(255, 255, 255, 0.7)',
-                border: player.id === currentPlayer?.id 
-                  ? '2px solid #3b82f6' 
-                  : '1px solid rgba(139, 69, 19, 0.2)',
-                borderRadius: '8px',
-                padding: '0.4rem 0.2rem',
-                fontSize: '0.75rem',
-                fontWeight: '600'
-              }}>
-                <div style={{ fontSize: '1.2rem', marginBottom: '0.1rem' }}>
+              <div
+                key={player.id}
+                className={`leaderboard-card ${player.id === currentPlayer.id ? 'is-me' : ''}`}
+              >
+                <span className="medal" aria-hidden="true">
                   {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                </div>
-                <div style={{ 
-                  color: '#8b4513',
-                  fontWeight: '700',
-                  fontSize: '0.7rem',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}>
-                  {player.name}
-                  {player.id === currentPlayer?.id && ' (You)'}
-                </div>
-                <div style={{ 
-                  fontSize: '0.8rem', 
-                  fontWeight: '800',
-                  color: '#8b4513'
-                }}>
-                  {player.challengeScore || 0}
-                </div>
+                </span>
+                <span className="player-name">
+                  {player.id === currentPlayer.id ? `${player.name} (You)` : player.name}
+                </span>
+                <span className="player-score">{player.challengeScore || 0}</span>
               </div>
             ))}
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Challenge List */}
-      <div className="card" style={{ marginBottom: '1rem' }}>
-        <h2 style={{ 
-          fontSize: '1.2rem', 
-          marginBottom: '1rem',
-          textAlign: 'center',
-          color: '#333'
-        }}>
-          Holiday Challenges
+      <div className="card">
+        <h2 style={{ fontSize: '1.05rem', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '2px' }}>
+          🏁 Challenges
         </h2>
-        
-        <div style={{ 
-          display: 'grid',
-          gap: '0.75rem',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))'
-        }}>
-          {challenges.map((challenge) => {
+        <p style={{ textAlign: 'center', fontSize: '0.8rem', marginBottom: '1rem' }}>
+          {completedCount}/{challenges.length} done — race the others!
+        </p>
+
+        <div className="flex-column gap-1">
+          {challenges.map((challenge, index) => {
             const status = getChallengeStatus(challenge.id);
-            const requiresProof = challengeRequiresProof(challenge.id);
-            
+            const locked = status.completed || status.awardsClosed;
+
             return (
-              <div
+              <button
                 key={challenge.id}
-                onClick={() => !status.completed && handleChallengeClick(challenge)}
+                className="task-list-item"
+                onClick={() => handleChallengeClick(challenge)}
+                disabled={locked || isCompleting}
                 style={{
-                  background: status.completed 
-                    ? (status.type === 'gold' 
-                        ? 'linear-gradient(135deg, #ffd700, #ffed4a)' 
-                        : 'linear-gradient(135deg, #c0c0c0, #d3d3d3)')
-                    : (status.goldTaken 
-                        ? 'linear-gradient(135deg, #e3f2fd, #bbdefb)'
-                        : 'linear-gradient(135deg, #f8f9fa, #e9ecef)'),
-                  border: status.completed 
-                    ? `2px solid ${status.type === 'gold' ? '#f59e0b' : '#9ca3af'}`
-                    : (status.goldTaken 
-                        ? '2px solid #2196f3'
-                        : '2px solid #dee2e6'),
-                  borderRadius: '12px',
-                  padding: '1rem',
-                  cursor: status.completed ? 'default' : 'pointer',
-                  transition: 'all 0.3s ease',
-                  opacity: status.completed ? 0.8 : 1
-                }}
-                onMouseEnter={(e) => {
-                  if (!status.completed) {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!status.completed) {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  background: status.completed
+                    ? (status.type === 'gold' ? 'var(--warning-soft)' : 'rgba(0,0,0,0.04)')
+                    : 'white',
+                  borderLeft: `5px solid ${
+                    status.completed
+                      ? (status.type === 'gold' ? 'var(--warning)' : '#9ca3af')
+                      : status.awardsClosed
+                        ? '#d1d5db'
+                        : 'var(--success)'
+                  }`,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  opacity: locked ? 0.7 : 1,
+                  cursor: locked ? 'default' : 'pointer',
+                  marginBottom: 0,
+                  animationDelay: `${Math.min(index * 50, 400)}ms`,
                 }}
               >
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  gap: '0.75rem'
-                }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      color: '#333',
-                      marginBottom: '0.5rem',
-                      lineHeight: '1.4'
-                    }}>
+                <div className="flex-between gap-1" style={{ alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.4, marginBottom: '0.3rem' }}>
                       {challenge.text}
                     </div>
-                    
-                    {requiresProof && (
-                      <div style={{
-                        fontSize: '0.75rem',
-                        color: '#666',
-                        fontStyle: 'italic'
-                      }}>
+                    {challenge.requiresProof && (
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
                         📸 Requires photo proof
                       </div>
                     )}
-                  </div>
-                  
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.25rem'
-                  }}>
-                    {status.completed ? (
-                      <>
-                        <div style={{ fontSize: '1.5rem' }}>
-                          {status.type === 'gold' ? '🥇' : '🥈'}
-                        </div>
-                        <div style={{
-                          fontSize: '0.8rem',
-                          fontWeight: '700',
-                          color: status.type === 'gold' ? '#f59e0b' : '#6b7280'
-                        }}>
-                          +{status.points}
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ fontSize: '1.5rem' }}>
-                          {status.goldTaken ? '🥈' : '🥇'}
-                        </div>
-                        <div style={{
-                          fontSize: '0.7rem',
-                          fontWeight: '600',
-                          color: status.goldTaken ? '#6b7280' : '#f59e0b'
-                        }}>
-                          {status.goldTaken ? `+${currentGame.settings.holidaySilverPoints || 1}` : `+${currentGame.settings.holidayGoldPoints || 3}`}
-                        </div>
-                      </>
+                    {status.awardsClosed && !status.completed && (
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                        All points claimed for this one
+                      </div>
                     )}
                   </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                    <div style={{ fontSize: '1.4rem' }} aria-hidden="true">
+                      {status.completed
+                        ? (status.type === 'gold' ? '🥇' : '🥈')
+                        : status.awardsClosed
+                          ? '🔒'
+                          : (status.goldTaken ? '🥈' : '🥇')}
+                    </div>
+                    <div style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 800,
+                      color: status.completed || !status.goldTaken ? 'var(--warning-ink)' : 'var(--text-muted)',
+                    }}>
+                      {status.completed
+                        ? `+${status.points}`
+                        : status.awardsClosed
+                          ? '—'
+                          : (status.goldTaken ? `+${silverPoints}` : `+${goldPoints}`)}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
       </div>
 
-      {/* Image Upload Modal */}
-      {showImageUpload && selectedChallenge && (
+      {/* Confirm a no-proof completion — one mistap shouldn't claim gold */}
+      <ConfirmationModal
+        isOpen={!!confirmChallenge}
+        title="Done it? 🎉"
+        message={confirmChallenge
+          ? `"${confirmChallenge.text}"\n\nClaim ${getChallengeStatus(confirmChallenge.id).goldTaken ? `🥈 ${silverPoints} point${silverPoints === 1 ? '' : 's'}` : `🥇 ${goldPoints} points`} — everyone will see it.`
+          : ''}
+        confirmLabel={isCompleting ? 'Claiming…' : 'Yes, claim it!'}
+        cancelLabel="Not yet"
+        onConfirm={() => confirmChallenge && handleCompleteChallenge(confirmChallenge, null)}
+        onCancel={() => { setConfirmChallenge(null); setSelectedChallenge(null); }}
+      />
+
+      {/* Photo proof modal */}
+      <Modal
+        isOpen={showImageUpload && !!selectedChallenge}
+        onClose={handleImageUploadCancel}
+        ariaLabel="Upload photo proof"
+        showClose
+      >
+        <h3 style={{ margin: '0 0 0.75rem' }}>📸 Photo proof</h3>
+
         <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '1rem'
+          background: 'rgba(0,0,0,0.04)',
+          borderRadius: 'var(--radius-sm)',
+          padding: '0.75rem 1rem',
+          marginBottom: '1rem',
+          fontSize: '0.9rem',
+          fontStyle: 'italic',
         }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '20px',
-            padding: '1.5rem',
-            width: '100%',
-            maxWidth: '400px'
-          }}>
-            <h3 style={{ margin: '0 0 1rem 0', color: '#333' }}>📸 Upload Proof</h3>
-            
-            <div style={{
-              background: '#f8f9fa',
-              borderRadius: '8px',
-              padding: '1rem',
-              marginBottom: '1rem',
-              fontSize: '0.9rem',
-              color: '#666'
-            }}>
-              {selectedChallenge.text}
-            </div>
-
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '2px dashed #ddd',
-                borderRadius: '8px',
-                marginBottom: '1rem',
-                fontSize: '0.9rem'
-              }}
-            />
-
-            {selectedImage && (
-              <div style={{
-                background: '#e8f5e8',
-                padding: '0.5rem',
-                borderRadius: '6px',
-                marginBottom: '1rem',
-                fontSize: '0.85rem',
-                color: '#2e7d32'
-              }}>
-                ✓ Image selected: {selectedImage.name}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button
-                onClick={handleImageUploadCancel}
-                style={{
-                  flex: 1,
-                  padding: '0.75rem',
-                  border: '2px solid #ddd',
-                  borderRadius: '8px',
-                  background: 'white',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleImageUploadConfirm}
-                disabled={!selectedImage || isCompleting}
-                style={{
-                  flex: 1,
-                  padding: '0.75rem',
-                  border: 'none',
-                  borderRadius: '8px',
-                  background: selectedImage && !isCompleting 
-                    ? 'linear-gradient(135deg, #4caf50, #45a049)' 
-                    : '#ddd',
-                  color: selectedImage && !isCompleting ? 'white' : '#666',
-                  cursor: selectedImage && !isCompleting ? 'pointer' : 'not-allowed',
-                  fontSize: '0.9rem',
-                  fontWeight: '600'
-                }}
-              >
-                {isCompleting ? 'Completing...' : 'Complete Challenge'}
-              </button>
-            </div>
-          </div>
+          "{selectedChallenge?.text}"
         </div>
-      )}
+
+        {imagePreview ? (
+          <div style={{ marginBottom: '1rem' }}>
+            <img
+              src={imagePreview}
+              alt="Selected proof"
+              style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', borderRadius: 'var(--radius-sm)' }}
+            />
+          </div>
+        ) : (
+          <p className="text-small" style={{ marginBottom: '1rem' }}>
+            Snap it or pick it from your camera roll.
+          </p>
+        )}
+
+        <label
+          className="btn btn-secondary"
+          style={{ marginBottom: '0.75rem', cursor: 'pointer' }}
+        >
+          {imagePreview ? '🔁 Choose a different photo' : '📷 Take or choose a photo'}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
+            style={{ display: 'none' }}
+          />
+        </label>
+
+        <div className="flex gap-1">
+          <button className="btn btn-secondary" onClick={handleImageUploadCancel} style={{ flex: 1 }}>
+            Cancel
+          </button>
+          <button
+            className="btn btn-success"
+            onClick={() => selectedChallenge && selectedImage && handleCompleteChallenge(selectedChallenge, selectedImage)}
+            disabled={!selectedImage || isCompleting}
+            style={{ flex: 1.4 }}
+          >
+            {isCompleting ? '⏳ Uploading…' : '✅ Complete it!'}
+          </button>
+        </div>
+      </Modal>
 
       {/* Leaderboard Modal */}
       {showLeaderboard && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '1rem'
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '20px',
-            padding: '1.5rem',
-            width: '100%',
-            maxWidth: '400px',
-            maxHeight: '70vh',
-            overflow: 'auto'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0, color: '#333' }}>🏆 Full Rankings</h3>
-              <button
-                onClick={() => setShowLeaderboard(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.5rem',
-                  cursor: 'pointer',
-                  color: '#666'
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {sortedPlayers.map((player, index) => (
-                <div key={player.id} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.75rem',
-                  background: player.id === currentPlayer.id 
-                    ? 'rgba(59, 130, 246, 0.1)' 
-                    : 'rgba(0,0,0,0.02)',
-                  borderRadius: '12px',
-                  border: player.id === currentPlayer.id 
-                    ? '2px solid rgba(59, 130, 246, 0.3)' 
-                    : '1px solid rgba(0,0,0,0.1)'
+        <Modal isOpen onClose={() => setShowLeaderboard(false)} showClose ariaLabel="Full rankings" maxWidth={400}>
+          <h3 style={{ margin: '0 0 1rem', textAlign: 'left' }}>🏆 Full rankings</h3>
+          <div className="flex-column gap-1">
+            {sortedPlayers.map((player, index) => {
+              const isYou = player.id === currentPlayer.id;
+              return (
+                <div key={player.id} className="flex-between" style={{
+                  padding: '0.6rem 0.75rem',
+                  background: isYou ? 'rgba(139, 92, 246, 0.08)' : 'rgba(0,0,0,0.03)',
+                  borderRadius: 'var(--radius-sm)',
+                  border: isYou ? '2px solid rgba(139, 92, 246, 0.35)' : '2px solid transparent'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ 
-                      fontSize: '1.5rem',
-                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
-                    }}>
+                  <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0 }}>
+                    <span style={{ fontSize: index < 3 ? '1.4rem' : '0.9rem', fontWeight: 700, minWidth: '28px', textAlign: 'center', color: 'var(--text-muted)' }} aria-hidden="true">
                       {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
-                    </div>
-                    <PlayerAvatar player={player} size="medium" />
-                    <div>
-                      <div style={{ 
-                        fontWeight: '700',
-                        fontSize: '1rem',
-                        color: '#333'
-                      }}>
-                        {player.name} {player.id === currentPlayer.id && '(You)'}
+                    </span>
+                    <PlayerAvatar player={player} size="small" />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {player.name} {isYou && '(You)'}
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: '#666' }}>
-                        {player.challengeCompletions?.length || 0} challenges completed
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        {player.challengeCompletions?.length || 0} challenges done
                       </div>
                     </div>
                   </div>
-                  <div style={{
-                    fontSize: '1.5rem',
-                    fontWeight: '900',
-                    color: '#333',
-                    background: 'rgba(255, 215, 0, 0.2)',
-                    padding: '0.25rem 0.5rem',
-                    borderRadius: '8px',
-                    border: '2px solid rgba(255, 215, 0, 0.5)'
-                  }}>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--warning-ink)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
                     {player.challengeScore || 0}
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        </div>
+        </Modal>
       )}
+
+      {/* End / leave confirmations */}
+      <ConfirmationModal
+        isOpen={confirmAction === 'end'}
+        title="🏁 End the game?"
+        message={'This ends the game for ALL players and shows the final results.\nIt can\'t be undone.'}
+        confirmLabel="End game"
+        isDangerous
+        onConfirm={async () => {
+          setConfirmAction(null);
+          try {
+            await endGame();
+            navigate(`/recap/${gameId}`);
+          } catch {
+            // Errors surface via the global toast bridge.
+          }
+        }}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmationModal
+        isOpen={confirmAction === 'leave'}
+        title="🚪 Leave game?"
+        message={'You\'ll return to the home screen.\nEveryone else keeps playing.'}
+        confirmLabel="Leave"
+        isDangerous
+        onConfirm={async () => {
+          setConfirmAction(null);
+          try {
+            await leaveGame();
+          } catch {
+            // Best-effort; still go home.
+          }
+          navigate('/');
+        }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

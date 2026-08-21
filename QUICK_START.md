@@ -45,7 +45,7 @@ Copy the fingerprint and use it in `assetlinks.json.example` → save as `assetl
 1. Open `privacy-policy-template.html`
 2. Replace `[DATE]` with today's date
 3. Replace `[YOUR_EMAIL]` with your contact email
-4. Upload to your website at `https://whogotwho.club/privacy-policy.html`
+4. Verify the served page at `https://whogotwho.club/privacy.html`
 
 ## Step 5: Upload to Play Store
 

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import Modal from './common/Modal';
+import { showToast } from './common/Toast';
 
 interface ShareButtonProps {
   gameId?: string;
@@ -7,33 +9,32 @@ interface ShareButtonProps {
   size?: 'small' | 'medium' | 'large';
 }
 
-const ShareButton: React.FC<ShareButtonProps> = ({ 
-  gameId, 
+const ShareButton: React.FC<ShareButtonProps> = ({
+  gameId,
   gameType,
   style,
-  size = 'medium' 
+  size = 'medium'
 }) => {
   const [showShareOptions, setShowShareOptions] = useState(false);
 
   const baseUrl = window.location.origin;
-  
+
   // Include game type in URL for YOU GOT WHO? games
-  const shareUrl = gameId 
-    ? gameType === 'holiday-challenge' 
+  const shareUrl = gameId
+    ? gameType === 'holiday-challenge'
       ? `${baseUrl}/?join=${gameId}&type=you-got-who`
       : `${baseUrl}/?join=${gameId}`
     : baseUrl;
-  
-  // Different messages for different game types
+
   const isYouGotWho = gameType === 'holiday-challenge';
-  
-  const shareText = gameId 
+
+  const shareText = gameId
     ? isYouGotWho
       ? `🏖️ Join my YOU GOT WHO? game!\n\nGame Code: ${gameId}\n\nSocial holiday challenges - race to complete the same challenges! Perfect for vacations!\n\n${shareUrl}`
       : `🎮 Join my WHO GOT WHO? game!\n\nGame Code: ${gameId}\n\nSecret missions, stealth gameplay - perfect for parties, dinners & hangouts!\n\n${shareUrl}`
     : `🎮 Check out WHO GOT WHO?\n\nSecret missions game perfect for parties, dinners & social events. Play in the background of whatever you're doing!\n\n${shareUrl}`;
 
-  const shareTitle = gameId 
+  const shareTitle = gameId
     ? isYouGotWho
       ? `Join YOU GOT WHO? Game ${gameId}!`
       : `Join WHO GOT WHO? Game ${gameId}!`
@@ -50,12 +51,9 @@ const ShareButton: React.FC<ShareButtonProps> = ({
         });
         return { success: true, cancelled: false };
       } catch (error) {
-        // Check if it was cancelled by user (AbortError) vs actual failure
         if (error instanceof Error && error.name === 'AbortError') {
-          console.log('Native share cancelled by user');
           return { success: false, cancelled: true };
         }
-        console.log('Native share failed:', error);
         return { success: false, cancelled: false };
       }
     }
@@ -63,10 +61,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   };
 
   const handleShare = async () => {
-    // Try native share first
     const result = await handleNativeShare();
-    
-    // Only show fallback if native share failed (not if cancelled)
     if (!result.success && !result.cancelled) {
       setShowShareOptions(true);
     }
@@ -102,8 +97,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(shareText);
-      alert('✅ Copied to clipboard!');
-    } catch (error) {
+    } catch {
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = shareText;
@@ -111,8 +105,8 @@ const ShareButton: React.FC<ShareButtonProps> = ({
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
-      alert('✅ Copied to clipboard!');
     }
+    showToast('Invite copied — paste it anywhere!', 'success');
     setShowShareOptions(false);
   };
 
@@ -126,145 +120,73 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   };
 
   const buttonSizes = {
-    small: { padding: '8px 16px', fontSize: '0.9em' },
-    medium: { padding: '12px 24px', fontSize: '1em' },
-    large: { padding: '16px 32px', fontSize: '1.1em' }
+    small: { padding: '8px 16px', fontSize: '0.85rem' },
+    medium: { padding: '12px 24px', fontSize: '1rem' },
+    large: { padding: '16px 32px', fontSize: '1.1rem' }
   };
 
-  if (showShareOptions) {
-    return (
-      <div style={{ position: 'relative' }}>
-        {/* Backdrop */}
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px'
-          }}
-          onClick={() => setShowShareOptions(false)}
-        >
-          {/* Share modal */}
-          <div 
-            style={{
-              background: 'white',
-              borderRadius: '20px',
-              padding: '30px',
-              maxWidth: '400px',
-              width: '100%',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '20px'
-            }}>
-              <h3 style={{ margin: 0, color: '#1f2937', fontSize: '1.3em' }}>
-                📤 Share Game
-              </h3>
-              <button
-                onClick={() => setShowShareOptions(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '24px',
-                  cursor: 'pointer',
-                  color: '#6b7280'
-                }}
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '15px'
-            }}>
-              {shareOptions.map((option) => (
-                <button
-                  key={option.name}
-                  onClick={() => handleOptionClick(option)}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    padding: '20px 15px',
-                    border: 'none',
-                    borderRadius: '15px',
-                    background: `${option.color}15`,
-                    color: option.color,
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    fontSize: '0.9em',
-                    fontWeight: '600'
-                  }}
-                  onMouseEnter={(e) => {
-                    const target = e.target as HTMLButtonElement;
-                    target.style.background = `${option.color}25`;
-                    target.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    const target = e.target as HTMLButtonElement;
-                    target.style.background = `${option.color}15`;
-                    target.style.transform = 'translateY(0)';
-                  }}
-                >
-                  <div style={{ fontSize: '2em', marginBottom: '8px' }}>
-                    {option.icon}
-                  </div>
-                  {option.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <button
-      onClick={handleShare}
-      style={{
-        background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-        color: 'white',
-        border: 'none',
-        borderRadius: '15px',
-        ...buttonSizes[size],
-        fontWeight: '600',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
-        transition: 'all 0.3s ease',
-        ...style
-      }}
-      onMouseEnter={(e) => {
-        const target = e.target as HTMLButtonElement;
-        target.style.transform = 'translateY(-2px)';
-        target.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.4)';
-      }}
-      onMouseLeave={(e) => {
-        const target = e.target as HTMLButtonElement;
-        target.style.transform = 'translateY(0)';
-        target.style.boxShadow = '0 4px 15px rgba(139, 92, 246, 0.3)';
-      }}
-    >
-      📤 Share Game
-    </button>
+    <>
+      <button
+        onClick={handleShare}
+        style={{
+          background: 'var(--primary-gradient)',
+          color: 'white',
+          border: 'none',
+          borderRadius: 'var(--radius-pill)',
+          ...buttonSizes[size],
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
+          transition: 'transform 0.1s ease',
+          ...style
+        }}
+      >
+        📤 Share Game
+      </button>
+
+      <Modal
+        isOpen={showShareOptions}
+        onClose={() => setShowShareOptions(false)}
+        ariaLabel="Share game"
+        maxWidth={400}
+        showClose
+      >
+        <h3 style={{ margin: '0 0 1.25rem', textAlign: 'left' }}>📤 Share Game</h3>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '12px'
+        }}>
+          {shareOptions.map((option) => (
+            <button
+              key={option.name}
+              onClick={() => handleOptionClick(option)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '18px 12px',
+                border: 'none',
+                borderRadius: 'var(--radius-md)',
+                background: `${option.color}15`,
+                color: option.color,
+                fontSize: '0.9rem',
+                fontWeight: 700,
+              }}
+            >
+              <div style={{ fontSize: '1.9rem', marginBottom: '6px' }} aria-hidden="true">
+                {option.icon}
+              </div>
+              {option.name}
+            </button>
+          ))}
+        </div>
+      </Modal>
+    </>
   );
 };
 
-export default ShareButton; 
+export default ShareButton;

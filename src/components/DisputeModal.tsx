@@ -1,37 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dispute } from '../types';
+import Modal from './common/Modal';
 
 interface DisputeModalProps {
   dispute: Dispute;
+  /** Name of the player claiming the Gotcha (resolved by the parent). */
+  accuserName?: string;
+  /** Text of the claimed task, when visible to this client. */
+  taskText?: string;
   onAccept: () => void;
   onDispute: (reason?: string) => void;
-  onCancel: () => void;
 }
 
-export default function DisputeModal({ 
-  dispute, 
-  onAccept, 
-  onDispute, 
-  onCancel 
+export default function DisputeModal({
+  dispute,
+  accuserName,
+  taskText,
+  onAccept,
+  onDispute,
 }: DisputeModalProps) {
   const [reason, setReason] = useState('');
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [showReason, setShowReason] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const remaining = new Date(dispute.closesAt).getTime() - Date.now();
+    return Math.max(0, Math.ceil(remaining / 1000));
+  });
+  const expiredRef = useRef(false);
+  const buzzedRef = useRef(false);
 
   useEffect(() => {
     const updateTimer = () => {
-      const now = new Date().getTime();
-      const closeTime = new Date(dispute.closesAt).getTime();
-      const remaining = Math.max(0, Math.ceil((closeTime - now) / 1000));
+      const remaining = Math.max(
+        0,
+        Math.ceil((new Date(dispute.closesAt).getTime() - Date.now()) / 1000),
+      );
       setTimeLeft(remaining);
-      
-      if (remaining === 0) {
-        onAccept(); // Auto-accept when time runs out
+
+      if (remaining <= 10 && !buzzedRef.current) {
+        buzzedRef.current = true;
+        navigator.vibrate?.(200);
+      }
+      if (remaining === 0 && !expiredRef.current) {
+        expiredRef.current = true;
+        onAccept(); // No response in time = automatic accept
       }
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
-    
     return () => clearInterval(interval);
   }, [dispute.closesAt, onAccept]);
 
@@ -41,68 +57,83 @@ export default function DisputeModal({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const claimer = accuserName || 'Another player';
+
   return (
-    <div className="modal-overlay">
-      <div className="modal">
-        <h3>⚖️ Gotcha Claimed!</h3>
-        
-        <div className="timer" style={{ margin: '1rem 0' }}>
-          ⏱️ Time to respond: {formatTime(timeLeft)}
-        </div>
-        
-        <div className="card" style={{ margin: '1rem 0', backgroundColor: '#333' }}>
-          <p><strong>Someone claims they completed a task on you!</strong></p>
-          <p>Did they say "Gotcha!" before you could call them out?</p>
-        </div>
-        
-        <div className="flex flex-column gap-1">
-          <button 
-            className="btn btn-success"
-            onClick={onAccept}
-          >
-            ✅ Accept - They got me fair and square
-          </button>
-          
-          <button 
-            className="btn btn-danger"
-            onClick={() => onDispute(reason)}
-          >
-            ❌ Dispute - I caught them first!
-          </button>
-        </div>
-        
-        <div style={{ margin: '1rem 0' }}>
-          <input
-            type="text"
-            className="input"
-            placeholder="Optional: Why are you disputing? (e.g., 'I saw them before they said Gotcha')"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            maxLength={100}
-          />
-        </div>
-        
-        <div className="text-small" style={{ 
-          margin: '1rem 0', 
-          padding: '0.5rem', 
-          backgroundColor: '#444', 
-          borderRadius: '4px' 
-        }}>
-          <strong>How disputes work:</strong><br/>
-          • If you dispute, other players will vote<br/>
-          • Majority decides the outcome<br/>
-          • Ties go to the host's default setting<br/>
-          • If you don't respond in time, the Gotcha is automatically accepted
-        </div>
-        
-        <button 
-          className="btn btn-secondary btn-small" 
-          onClick={onCancel}
-          style={{ marginTop: '0.5rem' }}
-        >
-          Cancel (Auto-accept)
-        </button>
+    <Modal isOpen dismissible={false} role="alertdialog" ariaLabel="Gotcha claim response">
+      <h3 style={{ marginBottom: '0.75rem' }}>⚡ Gotcha Claimed!</h3>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <span className={`timer ${timeLeft <= 30 ? 'urgent' : ''}`} role="timer" aria-label={`Time to respond: ${formatTime(timeLeft)}`}>
+          ⏱️ {formatTime(timeLeft)}
+        </span>
       </div>
-    </div>
+
+      <div style={{
+        background: 'var(--warning-soft)',
+        border: '1px solid var(--warning-border)',
+        borderRadius: 'var(--radius-sm)',
+        padding: '0.9rem 1rem',
+        marginBottom: '1rem',
+        textAlign: 'left'
+      }}>
+        <p style={{ margin: 0, color: 'var(--warning-ink)', fontWeight: 700 }}>
+          {claimer} says they got you!
+        </p>
+        {taskText && (
+          <p style={{ margin: '0.4rem 0 0', color: 'var(--warning-ink)', fontStyle: 'italic', fontSize: '0.9rem' }}>
+            "{taskText}"
+          </p>
+        )}
+        <p style={{ margin: '0.4rem 0 0', fontSize: '0.85rem', color: 'var(--warning-ink)' }}>
+          Did they say "Gotcha!" before you could call them out?
+        </p>
+      </div>
+
+      <div className="flex-column gap-1" style={{ marginBottom: '0.75rem' }}>
+        <button className="btn btn-success" onClick={onAccept}>
+          ✅ Fair and square — accept
+        </button>
+
+        {!showReason ? (
+          <button className="btn btn-danger" onClick={() => setShowReason(true)}>
+            ❌ No way — dispute it
+          </button>
+        ) : (
+          <div className="flex-column gap-1" style={{
+            background: 'var(--danger-soft)',
+            border: '1px solid var(--danger-border)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '0.75rem'
+          }}>
+            <label htmlFor="dispute-reason" className="sr-only">Why are you disputing?</label>
+            <input
+              id="dispute-reason"
+              type="text"
+              placeholder="Why? e.g. “I caught them first” (optional)"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={100}
+              style={{ fontSize: '0.9rem', padding: '0.7rem 1rem' }}
+            />
+            <button className="btn btn-danger" onClick={() => onDispute(reason)}>
+              ⚖️ Send to a group vote
+            </button>
+          </div>
+        )}
+      </div>
+
+      <p className="text-small" style={{
+        margin: 0,
+        padding: '0.6rem 0.75rem',
+        background: 'rgba(0,0,0,0.04)',
+        borderRadius: '8px',
+        textAlign: 'left',
+        lineHeight: 1.5
+      }}>
+        <strong>How disputes work:</strong> the other players vote, majority decides.
+        No response before the timer ends counts as accepting.
+      </p>
+    </Modal>
   );
-} 
+}

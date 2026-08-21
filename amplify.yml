@@ -1,11 +1,15 @@
 version: 1
-frontend:
+backend:
   phases:
-    preBuild:
-      commands:
-        - npm ci
     build:
       commands:
+        - npm ci --cache .npm --prefer-offline
+        - npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
+frontend:
+  phases:
+    build:
+      commands:
+        - cp amplify_outputs.json public/amplify_outputs.json
         - npm run build
   artifacts:
     baseDirectory: build
@@ -13,13 +17,27 @@ frontend:
       - '**/*'
   cache:
     paths:
-      - node_modules/**/*
+      - .npm/**/*
   customHeaders:
-    - pattern: '**'
+    - pattern: '**/*'
+      headers:
+        - key: 'Content-Security-Policy'
+          value: "default-src 'self'; connect-src 'self' https://*.amazonaws.com wss://*.amazonaws.com; img-src 'self' data: blob: https://*.amazonaws.com; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self' mailto:"
+        - key: 'Referrer-Policy'
+          value: 'strict-origin-when-cross-origin'
+        - key: 'X-Content-Type-Options'
+          value: 'nosniff'
+        - key: 'Permissions-Policy'
+          value: 'camera=(self), microphone=(), geolocation=()'
+    - pattern: 'static/**'
       headers:
         - key: 'Cache-Control'
-          value: 'no-cache, no-store, must-revalidate'
-        - key: 'Pragma'
+          value: 'public, max-age=31536000, immutable'
+    - pattern: 'amplify_outputs.json'
+      headers:
+        - key: 'Cache-Control'
+          value: 'no-store'
+    - pattern: 'sw.js'
+      headers:
+        - key: 'Cache-Control'
           value: 'no-cache'
-        - key: 'Expires'
-          value: '0' 

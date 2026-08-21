@@ -1,91 +1,151 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { Player, AwardType } from '../types';
 import ResultsShare from './ResultsShare';
 import PlayerAvatar from './PlayerAvatar';
 
+const CONFETTI_COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
 
+/** One-shot celebratory confetti (CSS-driven, honors prefers-reduced-motion). */
+const ConfettiBurst: React.FC = () => {
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: 28 }, (_, i) => ({
+        left: (i * 37) % 100,
+        delay: ((i * 53) % 120) / 100,
+        duration: 2.6 + ((i * 29) % 140) / 100,
+        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        size: 8 + ((i * 13) % 8),
+      })),
+    [],
+  );
+
+  return (
+    <div aria-hidden="true">
+      {pieces.map((piece, i) => (
+        <span
+          key={i}
+          className="confetti-piece"
+          style={{
+            left: `${piece.left}vw`,
+            width: piece.size,
+            height: piece.size * 1.4,
+            background: piece.color,
+            animationDelay: `${piece.delay}s`,
+            animationDuration: `${piece.duration}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+/** Counts up to the final score once on mount. */
+const CountUpScore: React.FC<{ value: number }> = ({ value }) => {
+  const [display, setDisplay] = useState(() =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches ? value : 0,
+  );
+
+  useEffect(() => {
+    if (display === value) return undefined;
+    const steps = 24;
+    const stepTime = 900 / steps;
+    let step = 0;
+    const interval = window.setInterval(() => {
+      step += 1;
+      const next = Math.round((value * step) / steps * 10) / 10;
+      setDisplay(step >= steps ? value : next);
+      if (step >= steps) window.clearInterval(interval);
+    }, stepTime);
+    return () => window.clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{display}</span>;
+};
 
 export default function Recap() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const { state, createGame, leaveGame } = useGame();
   const [showTimeline, setShowTimeline] = useState(false);
-  const [showAwards, setShowAwards] = useState(false);
 
   const currentGame = state.currentGame;
   const currentPlayer = state.currentPlayer;
+  const isHoliday = currentGame?.gameType === 'holiday-challenge';
+
+  // Freeze the duration at mount so it doesn't tick upward while people read
+  const durationMinutes = useMemo(() => {
+    if (!currentGame) return 0;
+    return Math.max(1, Math.round((Date.now() - new Date(currentGame.createdAt).getTime()) / 60000));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentGame?.id]);
 
   useEffect(() => {
     if (!gameId || !currentGame) {
       navigate('/');
-      return;
     }
   }, [gameId, currentGame, navigate]);
 
-  const getWinner = (): Player | null => {
-    if (!currentGame) return null;
-    
-    const sortedPlayers = [...currentGame.players].sort((a, b) => b.score - a.score);
-    return sortedPlayers[0] || null;
-  };
+  // After "Start a new lobby", route into the fresh game instead of lingering here
+  useEffect(() => {
+    if (currentGame && currentGame.status === 'draft') {
+      const packSelected = currentGame.settings?.selectedPack;
+      if (packSelected || !currentPlayer?.isHost) {
+        navigate(`/lobby/${currentGame.id}`);
+      } else {
+        navigate(`/select-pack/${currentGame.id}`);
+      }
+    }
+  }, [currentGame, currentPlayer, navigate]);
 
-  const getFinalRankings = (): Player[] => {
-    if (!currentGame) return [];
-    
+  const scoreOf = (player: Player) =>
+    isHoliday ? (player.challengeScore || 0) : player.score;
+
+  const finalRankings = useMemo(() => {
+    if (!currentGame) return [] as Player[];
     return [...currentGame.players].sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
+      const diff = scoreOf(b) - scoreOf(a);
+      if (diff !== 0) return diff;
       // Tiebreaker: fewer failed attempts
       return (a.stats?.failed || 0) - (b.stats?.failed || 0);
     });
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentGame, isHoliday]);
+
+  const winner = finalRankings[0] || null;
+  const isWinner = !!winner && winner.id === currentPlayer?.id;
 
   const getPlayerAwards = (player: Player): AwardType[] => {
-    if (!currentGame) return [];
-    
+    if (!currentGame || isHoliday) return [];
+
     const awards: AwardType[] = [];
     const allPlayers = currentGame.players;
-    
-    // Sneakiest (Most successful Gotchas)
-    if (allPlayers.length > 0) {
-      const maxGotchas = Math.max(...allPlayers.map(p => p.stats?.gothcas || 0));
-      if ((player.stats?.gothcas || 0) === maxGotchas && maxGotchas > 0) {
-        awards.push('sneakiest');
-      }
+
+    const maxGotchas = Math.max(...allPlayers.map(p => p.stats?.gothcas || 0));
+    if ((player.stats?.gothcas || 0) === maxGotchas && maxGotchas > 0) {
+      awards.push('sneakiest');
     }
-    
-    // Social Butterfly (Most unique targets)
-    if (allPlayers.length > 0) {
-      const maxTargets = Math.max(...allPlayers.map(p => p.stats?.uniqueTargets?.length || 0));
-      if ((player.stats?.uniqueTargets?.length || 0) === maxTargets && maxTargets > 1) {
-        awards.push('social');
-      }
+
+    const maxTargets = Math.max(...allPlayers.map(p => p.stats?.uniqueTargets?.length || 0));
+    if ((player.stats?.uniqueTargets?.length || 0) === maxTargets && maxTargets > 1) {
+      awards.push('social');
     }
-    
-    // Detective (Caught the most people - disputes won)
-    // TODO: Track disputes won
-    
-    // Untouchable (Least times caught)
+
     if (allPlayers.length > 3) {
       const minFailed = Math.min(...allPlayers.map(p => p.stats?.failed || 0));
       if ((player.stats?.failed || 0) === minFailed) {
         awards.push('untouchable');
       }
     }
-    
-    // Court Jester (Most failed attempts)
-    if (allPlayers.length > 0) {
-      const maxFailed = Math.max(...allPlayers.map(p => p.stats?.failed || 0));
-      if ((player.stats?.failed || 0) === maxFailed && maxFailed > 2) {
-        awards.push('jester');
-      }
+
+    const maxFailed = Math.max(...allPlayers.map(p => p.stats?.failed || 0));
+    if ((player.stats?.failed || 0) === maxFailed && maxFailed > 2) {
+      awards.push('jester');
     }
-    
-    // Chaos Agent (Most disputes created)
-    // TODO: Track disputes created
-    
-    return awards.slice(0, 2); // Max 2 awards per player
+
+    return awards.slice(0, 2);
   };
 
   const getAwardInfo = (awardType: AwardType) => {
@@ -93,50 +153,42 @@ export default function Recap() {
       sneakiest: { name: 'Sneakiest', icon: '🥷', description: 'Most successful Gotchas' },
       social: { name: 'Social Butterfly', icon: '🦋', description: 'Most unique targets' },
       detective: { name: 'Detective', icon: '🕵️', description: 'Caught the most people' },
-      untouchable: { name: 'Untouchable', icon: '👻', description: 'Least times caught' },
+      untouchable: { name: 'Untouchable', icon: '👻', description: 'Never got caught' },
       jester: { name: 'Court Jester', icon: '🃏', description: 'Most failed attempts' },
       chaos: { name: 'Chaos Agent', icon: '💥', description: 'Most disputes created' }
     };
-    
     return awards[awardType];
   };
 
   const handleNewGame = async () => {
-    if (currentGame && currentPlayer) {
-      await createGame(currentPlayer.name);
+    if (!currentPlayer) return;
+    try {
+      await createGame(
+        currentPlayer.name,
+        currentPlayer.avatarType === 'photo' ? undefined : currentPlayer.avatar,
+        'emoji',
+      );
+    } catch {
+      // Errors surface via the global toast bridge.
     }
   };
 
   const handleNewGroup = async () => {
-    // Clear game state and return to home
-    await leaveGame();
+    try {
+      await leaveGame();
+    } catch {
+      // Best-effort; still go home.
+    }
     navigate('/');
   };
 
   if (!currentGame) {
     return (
-      <div className="flex flex-center" style={{ minHeight: '100vh' }}>
-        <div className="card" style={{ textAlign: 'center' }}>
-          <h2>Loading...</h2>
-          <p style={{ marginBottom: '30px' }}>Loading game results...</p>
-          
-          <button
-            onClick={() => navigate('/')}
-            style={{
-              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              padding: '12px 24px',
-              fontSize: '1em',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              margin: '0 auto'
-            }}
-          >
+      <div className="container flex-center">
+        <div className="card text-center" style={{ padding: '2.5rem 2rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'spin 2s linear infinite' }} aria-hidden="true">⏳</div>
+          <h2>Loading results…</h2>
+          <button className="btn btn-secondary" onClick={() => navigate('/')} style={{ marginTop: '1rem' }}>
             🏠 Back to Home
           </button>
         </div>
@@ -144,42 +196,53 @@ export default function Recap() {
     );
   }
 
-  const winner = getWinner();
-  const finalRankings = getFinalRankings();
-  const isWinner = winner?.id === currentPlayer?.id;
+  const totalGotchas = isHoliday
+    ? (currentGame.challengeCompletions?.length || 0)
+    : currentGame.players.reduce((sum, p) => sum + (p.stats?.gothcas || 0), 0);
 
   return (
     <div className="container">
+      {isWinner && <ConfettiBurst />}
+
       {/* Winner Banner */}
-      <div className={`card text-center ${isWinner ? 'winner-banner' : ''}`} style={{ 
-        background: isWinner 
-          ? 'linear-gradient(135deg, #ffd700, #ffed4e)' 
-          : 'linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(238, 90, 111, 0.2))',
-        color: isWinner ? '#000' : '#fff',
+      <div className="card text-center" style={{
+        background: isWinner
+          ? 'linear-gradient(135deg, #fde68a, #fbbf24)'
+          : 'var(--glass-bg)',
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        paddingTop: '2rem',
+        paddingBottom: '1.75rem',
       }}>
-        <div style={{ position: 'relative', zIndex: 2 }}>
-          <h1 style={{ fontSize: '2.5rem', margin: '1rem 0' }}>
-            {isWinner ? '🎉 You Won! 🎉' : '🏆 Game Over'}
-          </h1>
-          {winner && (
-            <h2 style={{ margin: '0.5rem 0' }}>
-              {isWinner ? '🥇 Congratulations!' : `🏆 ${winner.name} Wins!`}
+        <h1 style={{
+          fontSize: '2.2rem',
+          margin: '0 0 0.5rem',
+          color: 'var(--text-main)',
+          textShadow: 'none',
+        }}>
+          {isWinner ? '🎉 You won! 🎉' : '🏁 Game over'}
+        </h1>
+        {winner && (
+          <>
+            <div className="flex-center gap-1" style={{ marginBottom: '0.5rem' }}>
+              <PlayerAvatar player={winner} size="large" />
+            </div>
+            <h2 style={{ margin: '0 0 0.25rem' }}>
+              {isWinner ? 'Champion of stealth!' : `${winner.name} wins!`}
             </h2>
-          )}
-          <p className="text-small" style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-            Final Score: {winner?.score || 0} points
-          </p>
-        </div>
+            <p style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: isWinner ? '#92400e' : 'var(--text-muted)' }}>
+              <CountUpScore value={scoreOf(winner)} /> points
+            </p>
+          </>
+        )}
         {isWinner && (
-          <div style={{ 
-            position: 'absolute', 
-            top: '10px', 
-            right: '10px', 
-            fontSize: '3rem',
-            animation: 'float 2s ease-in-out infinite' 
-          }}>
+          <div style={{
+            position: 'absolute',
+            top: '12px',
+            right: '14px',
+            fontSize: '2.4rem',
+            animation: 'float 2s ease-in-out infinite'
+          }} aria-hidden="true">
             🎊
           </div>
         )}
@@ -188,305 +251,197 @@ export default function Recap() {
       {/* Final Rankings */}
       <div className="card">
         <div className="card-header">
-          <h3>🏅 Final Standings</h3>
+          <h3 style={{ margin: 0 }}>🏅 Final standings</h3>
         </div>
-        
-        {finalRankings.map((player: Player, index: number) => (
-          <div key={player.id} className="flex flex-between" style={{ 
-            padding: '1.5rem', 
-            borderRadius: '15px',
-            margin: '0.5rem 0',
-            background: player.id === currentPlayer?.id 
-              ? 'linear-gradient(135deg, rgba(255, 107, 107, 0.3), rgba(238, 90, 111, 0.3))'
-              : 'rgba(255, 255, 255, 0.1)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            transition: 'all 0.3s ease'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ fontSize: '1.5rem' }}>
-                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
-              </span>
-              <PlayerAvatar player={player} size="medium" />
-              <div>
-                <strong style={{ fontSize: '1.1rem' }}>{player.name}</strong>
-                {player.id === currentPlayer?.id && <span className="text-small"> 👤 (You)</span>}
-              </div>
-            </div>
-            <div style={{ marginLeft: '4rem' }}>
-              
-              {/* Player awards */}
-              <div style={{ marginTop: '0.8rem' }}>
-                {getPlayerAwards(player).map((awardType: AwardType) => {
-                  const award = getAwardInfo(awardType);
-                  return (
-                    <span key={awardType} className="score-badge" style={{ 
-                      background: 'linear-gradient(135deg, #ffd93d, #ff6b6b)', 
-                      color: '#000',
-                      margin: '0 0.25rem',
-                      fontSize: '0.75rem',
-                      padding: '4px 8px'
-                    }}>
-                      {award.icon} {award.name}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className="score-badge" style={{ 
-                background: 'linear-gradient(135deg, #56ab2f, #a8e6cf)',
-                fontSize: '1.2rem',
-                padding: '8px 16px'
+
+        <div className="flex-column gap-1">
+          {finalRankings.map((player: Player, index: number) => {
+            const isYou = player.id === currentPlayer?.id;
+            const awards = getPlayerAwards(player);
+            return (
+              <div key={player.id} className="flex-between" style={{
+                padding: '0.75rem 0.85rem',
+                borderRadius: 'var(--radius-sm)',
+                background: isYou ? 'rgba(139, 92, 246, 0.08)' : 'rgba(0,0,0,0.03)',
+                border: isYou ? '2px solid rgba(139, 92, 246, 0.35)' : '2px solid transparent',
+                gap: '0.6rem',
               }}>
-                {player.score}
+                <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0, flex: 1 }}>
+                  <span style={{ fontSize: index < 3 ? '1.5rem' : '1rem', fontWeight: 700, minWidth: '30px', textAlign: 'center', color: 'var(--text-muted)' }} aria-hidden="true">
+                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                  </span>
+                  <PlayerAvatar player={player} size="medium" />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {player.name} {isYou && <span style={{ color: 'var(--primary)' }}>(You)</span>}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {isHoliday
+                        ? `${player.challengeCompletions?.length || 0} challenges`
+                        : `🎯 ${player.stats?.gothcas || 0} gotcha${(player.stats?.gothcas || 0) === 1 ? '' : 's'}`}
+                    </div>
+                    {awards.length > 0 && (
+                      <div style={{ marginTop: '0.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                        {awards.map((awardType) => {
+                          const award = getAwardInfo(awardType);
+                          return (
+                            <span key={awardType} title={award.description} style={{
+                              background: 'var(--warning-soft)',
+                              border: '1px solid var(--warning-border)',
+                              color: 'var(--warning-ink)',
+                              borderRadius: 'var(--radius-pill)',
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              padding: '2px 8px',
+                            }}>
+                              {award.icon} {award.name}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 800,
+                  color: 'var(--primary)',
+                  fontVariantNumeric: 'tabular-nums',
+                  flexShrink: 0,
+                }}>
+                  {scoreOf(player)}
+                </div>
               </div>
-              <div className="text-small" style={{ marginTop: '0.5rem' }}>
-                🎯 {player.stats?.gothcas || 0} Gotchas
-              </div>
-            </div>
-          </div>
-        ))}
+            );
+          })}
+        </div>
       </div>
 
       {/* Game Stats */}
-      <div className="card card-demo">
+      <div className="card">
         <div className="card-header">
-          <h3>📊 Game Statistics</h3>
+          <h3 style={{ margin: 0 }}>📊 Game stats</h3>
         </div>
-        
-        <div className="text-small" style={{ lineHeight: '1.8' }}>
-          <div className="flex flex-between" style={{ margin: '0.8rem 0' }}>
-            <span>🎮 Game Mode:</span>
-            <strong style={{ color: '#56ab2f' }}>
-              🌟 Standard Game
-            </strong>
+        <div className="flex-column gap-1" style={{ fontSize: '0.9rem' }}>
+          <div className="flex-between">
+            <span style={{ color: 'var(--text-muted)' }}>🎮 Mode</span>
+            <strong>{isHoliday ? '🏖️ You Got Who?' : '🕵️ Who Got Who'}</strong>
           </div>
-          <div className="flex flex-between" style={{ margin: '0.8rem 0' }}>
-            <span>👥 Total Players:</span>
+          <div className="flex-between">
+            <span style={{ color: 'var(--text-muted)' }}>👥 Players</span>
             <strong>{currentGame.players.length}</strong>
           </div>
-          <div className="flex flex-between" style={{ margin: '0.8rem 0' }}>
-            <span>⏱️ Game Duration:</span>
-            <strong>
-              {Math.round((new Date().getTime() - new Date(currentGame.createdAt).getTime()) / (1000 * 60))} min
-            </strong>
+          <div className="flex-between">
+            <span style={{ color: 'var(--text-muted)' }}>⏱️ Duration</span>
+            <strong>{durationMinutes} min</strong>
           </div>
-          <div className="flex flex-between" style={{ margin: '0.8rem 0' }}>
-            <span>🎯 Total Gotchas:</span>
-            <strong>
-              {currentGame.players.reduce((sum, p) => sum + (p.stats?.gothcas || 0), 0)}
-            </strong>
+          <div className="flex-between">
+            <span style={{ color: 'var(--text-muted)' }}>{isHoliday ? '🏁 Challenges completed' : '🎯 Total gotchas'}</span>
+            <strong>{totalGotchas}</strong>
           </div>
         </div>
       </div>
 
-      {/* Awards Section */}
-      <div className="card" style={{ background: 'linear-gradient(135deg, rgba(255, 217, 61, 0.2), rgba(255, 107, 107, 0.2))' }}>
-        <div className="flex flex-between" style={{ marginBottom: '1rem' }}>
-          <h3>🏆 Awards</h3>
-          <button 
-            className="btn btn-small btn-secondary"
-            onClick={() => setShowAwards(!showAwards)}
-          >
-            {showAwards ? '🙈 Hide' : '👀 Show'} Awards
-          </button>
-        </div>
-        
-        {showAwards && (
-          <div>
-            {finalRankings.map((player: Player) => {
-              const awards = getPlayerAwards(player);
-              if (awards.length === 0) return null;
-              
-              return (
-                <div key={player.id} style={{ 
-                  marginBottom: '1rem', 
-                  padding: '1rem', 
-                  background: 'rgba(255, 255, 255, 0.1)', 
-                  borderRadius: '12px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}>
-                  <strong style={{ fontSize: '1.1rem' }}>🎖️ {player.name}</strong>
-                  <div style={{ marginTop: '0.8rem' }}>
-                    {awards.map((awardType: AwardType) => {
-                      const award = getAwardInfo(awardType);
-                      return (
-                        <div key={awardType} style={{ margin: '0.5rem 0', padding: '0.5rem', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
-                          <span style={{ fontSize: '1.1rem' }}>{award.icon} <strong>{award.name}</strong></span>
-                          <div className="text-small" style={{ marginTop: '0.25rem' }}>{award.description}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+      {/* Timeline (classic mode) */}
+      {!isHoliday && (
+        <div className="card">
+          <div className="flex-between" style={{ marginBottom: showTimeline ? '1rem' : 0 }}>
+            <h3 style={{ margin: 0 }}>📅 Timeline</h3>
+            <button
+              className="btn btn-secondary btn-small"
+              onClick={() => setShowTimeline(!showTimeline)}
+            >
+              {showTimeline ? 'Hide' : 'Show'}
+            </button>
           </div>
-        )}
-      </div>
 
-      {/* Timeline */}
-      <div className="card">
-        <div className="flex flex-between" style={{ marginBottom: '1rem' }}>
-          <h3>📅 Game Timeline</h3>
-          <button 
-            className="btn btn-small btn-secondary"
-            onClick={() => setShowTimeline(!showTimeline)}
-          >
-            {showTimeline ? '🙈 Hide' : '👀 Show'} Timeline
-          </button>
-        </div>
-        
-        {showTimeline && (
-          <div className="text-small">
-            <div style={{ 
-              padding: '1rem', 
-              borderLeft: '4px solid #4ecdc4', 
-              marginLeft: '1rem',
-              background: 'rgba(78, 205, 196, 0.1)',
-              borderRadius: '0 8px 8px 0',
-              marginBottom: '1rem'
-            }}>
-              <p><strong>🎮 Game Created</strong></p>
-              <p>👑 Host: {currentGame.createdBy}</p>
-              <p>⏰ {new Date(currentGame.createdAt).toLocaleString()}</p>
-            </div>
-            
-            {/* Gotcha Timeline */}
-            {(() => {
-              // Collect all completed tasks from all players
-              const allGotchas: Array<{
-                playerName: string;
-                playerAvatar?: string;
-                targetName: string;
-                targetAvatar?: string;
-                gotAt: Date;
-                isCaught: boolean;
-              }> = [];
+          {showTimeline && (
+            <div className="text-small">
+              {(() => {
+                const allGotchas: Array<{
+                  playerName: string;
+                  targetName: string;
+                  gotAt: Date;
+                  isCaught: boolean;
+                  text: string;
+                }> = [];
 
-              currentGame.players.forEach(player => {
-                player.tasks.forEach(task => {
-                  if (task.status === 'completed' && task.gotAt && task.targetId) {
-                    const targetPlayer = currentGame.players.find(p => p.id === task.targetId);
-                    if (targetPlayer) {
-                      allGotchas.push({
-                        playerName: player.name,
-                        playerAvatar: player.avatar,
-                        targetName: targetPlayer.name,
-                        targetAvatar: targetPlayer.avatar,
-                        gotAt: new Date(task.gotAt),
-                        isCaught: false
-                      });
+                currentGame.players.forEach(player => {
+                  player.tasks.forEach(task => {
+                    if ((task.status === 'completed' || task.status === 'failed') && task.gotAt && task.targetId) {
+                      const other = currentGame.players.find(p => p.id === task.targetId);
+                      if (other) {
+                        allGotchas.push({
+                          playerName: player.name,
+                          targetName: other.name,
+                          gotAt: new Date(task.gotAt),
+                          isCaught: task.status === 'failed',
+                          text: task.text,
+                        });
+                      }
                     }
-                  } else if (task.status === 'failed' && task.gotAt && task.targetId) {
-                    // This is when someone got caught
-                    const catcherPlayer = currentGame.players.find(p => p.id === task.targetId);
-                    if (catcherPlayer) {
-                      allGotchas.push({
-                        playerName: player.name,
-                        playerAvatar: player.avatar,
-                        targetName: catcherPlayer.name,
-                        targetAvatar: catcherPlayer.avatar,
-                        gotAt: new Date(task.gotAt),
-                        isCaught: true
-                      });
-                    }
-                  }
+                  });
                 });
-              });
 
-              // Sort by time
-              allGotchas.sort((a, b) => a.gotAt.getTime() - b.gotAt.getTime());
+                allGotchas.sort((a, b) => a.gotAt.getTime() - b.gotAt.getTime());
 
-              return allGotchas.map((gotcha, index) => (
-                <div key={index} style={{ 
-                  padding: '0.8rem', 
-                  borderLeft: gotcha.isCaught ? '4px solid #e74c3c' : '4px solid #f39c12', 
-                  marginLeft: '1rem',
-                  background: gotcha.isCaught ? 'rgba(231, 76, 60, 0.1)' : 'rgba(243, 156, 18, 0.1)',
-                  borderRadius: '0 8px 8px 0',
-                  marginBottom: '0.8rem'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
-                    <span style={{ fontSize: '1.2em' }}>
-                      {gotcha.isCaught ? '🚨' : '🎯'}
-                    </span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <PlayerAvatar 
-                        player={{ name: gotcha.playerName, avatar: gotcha.playerAvatar, avatarType: gotcha.playerAvatar?.startsWith('data:') ? 'photo' : 'emoji' } as any} 
-                        size="small" 
-                      />
-                      <span style={{ fontWeight: 'bold' }}>{gotcha.playerName}</span>
+                if (allGotchas.length === 0) {
+                  return (
+                    <p style={{ textAlign: 'center', margin: 0 }}>
+                      A quiet game — no gotchas were claimed. 🤫
+                    </p>
+                  );
+                }
+
+                return allGotchas.map((gotcha, index) => (
+                  <div key={index} style={{
+                    padding: '0.6rem 0.75rem',
+                    borderLeft: `4px solid ${gotcha.isCaught ? 'var(--danger)' : 'var(--success)'}`,
+                    background: gotcha.isCaught ? 'var(--danger-soft)' : 'var(--success-soft)',
+                    borderRadius: '0 8px 8px 0',
+                    marginBottom: '0.5rem',
+                  }}>
+                    <div style={{ fontWeight: 700, marginBottom: '0.15rem' }}>
+                      {gotcha.isCaught ? '🚨' : '🎯'} {gotcha.playerName}{' '}
+                      {gotcha.isCaught ? 'got caught by' : 'got'} {gotcha.targetName}
                     </div>
-                    <span>{gotcha.isCaught ? 'got caught by' : 'got'}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <PlayerAvatar 
-                        player={{ name: gotcha.targetName, avatar: gotcha.targetAvatar, avatarType: gotcha.targetAvatar?.startsWith('data:') ? 'photo' : 'emoji' } as any} 
-                        size="small" 
-                      />
-                      <span style={{ fontWeight: 'bold' }}>{gotcha.targetName}</span>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                      "{gotcha.text}" · {gotcha.gotAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.85em', color: '#666' }}>
-                    ⏰ {gotcha.gotAt.toLocaleTimeString()}
-                  </p>
-                </div>
-              ));
-            })()}
-            
-            <div style={{ 
-              padding: '1rem', 
-              borderLeft: '4px solid #56ab2f', 
-              marginLeft: '1rem',
-              background: 'rgba(86, 171, 47, 0.1)',
-              borderRadius: '0 8px 8px 0'
-            }}>
-              <p><strong>🏁 Game Ended</strong></p>
-              <p>🏆 Winner: {winner?.name || 'No winner'}</p>
-              <p>⏰ {new Date().toLocaleString()}</p>
+                ));
+              })()}
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Action Buttons */}
-      <div className="card" style={{ background: 'linear-gradient(135deg, rgba(78, 205, 196, 0.2), rgba(68, 160, 141, 0.2))' }}>
-        <h3>🚀 What's Next?</h3>
-        
-        <div className="flex flex-column gap-1">
-          <button 
-            className="btn"
+      <div className="card">
+        <h3 style={{ textAlign: 'center' }}>🚀 What's next?</h3>
+
+        <div className="flex-column gap-1">
+          <button
+            className="btn btn-primary"
             onClick={handleNewGame}
             disabled={state.isLoading}
-            style={{ background: 'linear-gradient(135deg, #4ecdc4, #44a08d)' }}
           >
-            🔄 New Game (Same Group)
+            🔄 Start a new lobby
           </button>
-          
-          <button 
-            className="btn btn-secondary"
+          <p className="text-small" style={{ textAlign: 'center', margin: '-0.25rem 0 0.25rem' }}>
+            You'll get a fresh code to share with the group.
+          </p>
+
+          <ResultsShare game={currentGame} style={{ width: '100%' }} />
+
+          <button
+            className="btn btn-ghost"
             onClick={handleNewGroup}
           >
-            👥 Play with New Group
+            🏠 Back to home
           </button>
-          
-          <ResultsShare 
-            game={currentGame}
-            style={{ width: '100%' }}
-          />
         </div>
-      </div>
-
-      {/* Back to Home */}
-      <div className="text-center" style={{ margin: '2rem 0' }}>
-        <button 
-          className="btn btn-small btn-secondary"
-          onClick={() => navigate('/')}
-        >
-          🏠 Back to Home
-        </button>
       </div>
     </div>
   );
-} 
+}

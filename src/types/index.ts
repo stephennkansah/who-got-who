@@ -1,5 +1,3 @@
-import { Socket } from 'socket.io-client';
-
 // Game Types
 export type GameStatus = 'draft' | 'live' | 'ended';
 export type GameMode = 'casual';
@@ -66,6 +64,7 @@ export interface PlayerStats {
 
 export interface TaskInstance {
   id: string;
+  templateId?: string;
   gameId: string;
   playerId: string;
   text: string;
@@ -84,6 +83,7 @@ export interface Dispute {
   openedAt: Date;
   closesAt: Date;
   result: DisputeResult;
+  phase?: 'response' | 'voting';
   votes: Vote[];
   description?: string;
 }
@@ -254,14 +254,14 @@ export interface GameContextType {
   updatePlayerName: (newName: string) => Promise<void>;
   swapTask: (taskId: string) => Promise<void>;
   claimGotcha: (taskId: string, targetId: string) => Promise<void>;
-  disputeGotcha: (taskInstanceId: string) => Promise<void>;
+  disputeGotcha: (taskInstanceId: string, reason?: string) => Promise<void>;
   voteOnDispute: (disputeId: string, vote: boolean) => Promise<void>;
   acceptGotcha: (taskInstanceId: string) => Promise<void>;
   forceGameState?: (status: 'draft' | 'live' | 'ended') => void;
   simulateScore?: (points: number) => void;
   updatePlayerTasks: (playerId: string, updatedTasks: TaskInstance[]) => void;
-  socket: Socket | null;
+  socket: null;
   // Holiday Challenge methods
   completeChallenge: (challengeId: string, proofImage?: File) => Promise<void>;
   uploadProofImage: (file: File, challengeId: string) => Promise<string>;
-} 
+}

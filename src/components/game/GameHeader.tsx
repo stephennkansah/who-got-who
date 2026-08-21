@@ -10,29 +10,29 @@ interface GameHeaderProps {
   onShowLeaderboard: () => void;
 }
 
-export const GameHeader: React.FC<GameHeaderProps> = ({ 
-  currentPlayer, 
-  playerCount, 
-  onEndGame, 
+export const GameHeader: React.FC<GameHeaderProps> = ({
+  currentPlayer,
+  playerCount,
+  onEndGame,
   onLeaveGame,
-  onShowLeaderboard 
+  onShowLeaderboard
 }) => {
   return (
     <div className="game-header">
-      {/* Left: Leaderboard Position */}
-      <button 
+      {/* Left: your score — opens the leaderboard */}
+      <button
         onClick={onShowLeaderboard}
         className="rank-badge"
-        aria-label="Show Leaderboard"
+        aria-label="Show leaderboard"
       >
-        <div style={{ fontSize: '1.2rem' }}>🏆</div>
-        <div style={{ fontSize: '0.8rem' }}>
+        <div style={{ fontSize: '1.05rem', lineHeight: 1 }} aria-hidden="true">🏆</div>
+        <div style={{ fontSize: '0.85rem' }}>
           <AnimatedScore value={currentPlayer?.score || 0} />
         </div>
       </button>
 
       {/* Center: Title */}
-      <div className="header-title">
+      <div className="header-title" style={{ textAlign: 'center' }}>
         <h1>Who Got Who</h1>
         <div className="player-count">
           {playerCount} PLAYERS
@@ -40,11 +40,12 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
       </div>
 
       {/* Right: Game Controls */}
-      <div style={{ display: 'flex', gap: '0.8rem' }}>
+      <div style={{ display: 'flex', gap: '0.6rem' }}>
         {currentPlayer?.isHost && (
           <button
             onClick={onEndGame}
             className="btn-icon danger"
+            aria-label="End game for everyone"
             title="End Game"
           >
             🏁
@@ -53,6 +54,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         <button
           onClick={onLeaveGame}
           className="btn-icon"
+          aria-label="Leave game"
           title="Leave Game"
         >
           🚪

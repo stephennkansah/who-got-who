@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "who-got-who-dev",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set BROWSER=none&& npm start"],
+      "port": 3000
+    }
+  ]
+}

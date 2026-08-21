@@ -67,8 +67,10 @@ pids
 # Optional REPL history
 .node_repl_history
 
-# Output of Amplify CLI
-amplify/
+# Amplify Gen 2 local output (the backend definition in /amplify is source)
+/amplify_outputs.json
+/public/amplify_outputs.json
+/.amplify/
 
 # AWS deployment
 .aws-amplify-console/
@@ -89,4 +91,4 @@ app/
 build/
 gradle.properties
 settings.gradle
-build.gradle 
+build.gradle

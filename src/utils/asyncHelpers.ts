@@ -147,18 +147,18 @@ export const batchAsync = async <T, R>(
 };
 
 /**
- * Singleton to manage Firebase operation queuing
+ * Singleton to manage remote operation queuing
  */
-export class FirebaseOperationQueue {
-  private static instance: FirebaseOperationQueue;
+export class RemoteOperationQueue {
+  private static instance: RemoteOperationQueue;
   private mutex = new AsyncMutex();
   private pendingOperations = new Map<string, Promise<any>>();
 
-  static getInstance(): FirebaseOperationQueue {
-    if (!FirebaseOperationQueue.instance) {
-      FirebaseOperationQueue.instance = new FirebaseOperationQueue();
+  static getInstance(): RemoteOperationQueue {
+    if (!RemoteOperationQueue.instance) {
+      RemoteOperationQueue.instance = new RemoteOperationQueue();
     }
-    return FirebaseOperationQueue.instance;
+    return RemoteOperationQueue.instance;
   }
 
   async queueOperation<T>(

@@ -6,8 +6,8 @@
  * Validate game ID format
  */
 export const isValidGameId = (gameId: string): boolean => {
-  // Game IDs should be 6 characters, alphanumeric, uppercase
-  return /^[A-Z0-9]{6}$/.test(gameId);
+  // Match the server's six-character alphabet and omit ambiguous 0/1 digits.
+  return /^[A-Z2-9]{6}$/.test(gameId);
 };
 
 /**
@@ -120,7 +120,7 @@ export const validateGameInput = (
   // Validate game ID if provided (for joining)
   if (gameId !== undefined) {
     if (!gameId || !isValidGameId(gameId)) {
-      errors.push('Game ID must be exactly 6 uppercase letters and numbers');
+      errors.push('Game ID must be exactly 6 uppercase letters and digits 2-9');
     } else {
       sanitizedValues.gameId = sanitizeGameId(gameId);
     }

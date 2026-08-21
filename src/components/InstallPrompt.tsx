@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { showToast } from './common/Toast';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const DISMISS_KEY = 'wgw-install-dismissed';
+
 const InstallPrompt: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showInstallButton, setShowInstallButton] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(
+    () => localStorage.getItem(DISMISS_KEY) === 'true',
+  );
 
   useEffect(() => {
     // Check if already installed
@@ -17,17 +22,13 @@ const InstallPrompt: React.FC = () => {
       return;
     }
 
-    // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowInstallButton(true);
     };
 
-    // Listen for app installed event
     const handleAppInstalled = () => {
       setIsInstalled(true);
-      setShowInstallButton(false);
       setDeferredPrompt(null);
     };
 
@@ -40,9 +41,21 @@ const InstallPrompt: React.FC = () => {
     };
   }, []);
 
+  const showManualInstallInstructions = () => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
+
+    if (isIOS) {
+      showToast('To install: tap the Share button, then "Add to Home Screen".', 'info');
+    } else if (isAndroid) {
+      showToast('To install: open the browser menu (⋮), then "Add to Home screen".', 'info');
+    } else {
+      showToast('Look for "Install app" or "Add to Home Screen" in your browser menu.', 'info');
+    }
+  };
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
-      // Fallback for iOS and other browsers
       showManualInstallInstructions();
       return;
     }
@@ -50,106 +63,70 @@ const InstallPrompt: React.FC = () => {
     try {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      
       if (outcome === 'accepted') {
-        setShowInstallButton(false);
         setDeferredPrompt(null);
       }
-    } catch (error) {
-      console.error('Install prompt failed:', error);
+    } catch {
       showManualInstallInstructions();
     }
   };
 
-  const showManualInstallInstructions = () => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isAndroid = /Android/.test(navigator.userAgent);
-    
-    let instructions = '';
-    
-    if (isIOS) {
-      instructions = 'Tap the Share button and select "Add to Home Screen"';
-    } else if (isAndroid) {
-      instructions = 'Tap the menu (⋮) and select "Add to Home screen" or "Install app"';
-    } else {
-      instructions = 'Look for "Install" or "Add to Home Screen" in your browser menu';
-    }
-    
-    alert(`To install Who Got Who:\n\n${instructions}`);
+  const handleDismiss = () => {
+    localStorage.setItem(DISMISS_KEY, 'true');
+    setIsDismissed(true);
   };
 
-  // Don't show if already installed
-  if (isInstalled) {
-    return null;
-  }
-
-  // Show manual install button for browsers that don't support beforeinstallprompt
-  if (!showInstallButton && !deferredPrompt) {
-    return (
-      <div style={{
-        position: 'fixed',
-        bottom: '20px',
-        right: '20px',
-        zIndex: 1000
-      }}>
-        <button
-          onClick={showManualInstallInstructions}
-          style={{
-            background: 'linear-gradient(135deg, #667eea, #764ba2)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '25px',
-            padding: '12px 20px',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-        >
-          📱 Install App
-        </button>
-      </div>
-    );
-  }
-
-  if (!showInstallButton) {
+  if (isInstalled || isDismissed) {
     return null;
   }
 
   return (
     <div style={{
       position: 'fixed',
-      bottom: '20px',
-      right: '20px',
-      zIndex: 1000
+      bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+      right: '16px',
+      zIndex: 900,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
     }}>
       <button
         onClick={handleInstallClick}
         style={{
-          background: 'linear-gradient(135deg, #667eea, #764ba2)',
+          background: 'var(--primary-gradient)',
           color: 'white',
           border: 'none',
-          borderRadius: '25px',
-          padding: '12px 20px',
-          fontSize: '14px',
-          fontWeight: '600',
-          cursor: 'pointer',
-          boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
+          borderRadius: 'var(--radius-pill)',
+          padding: '10px 16px',
+          fontSize: '13px',
+          fontWeight: 700,
+          boxShadow: '0 4px 15px rgba(139, 92, 246, 0.35)',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          animation: 'pulse 2s infinite'
+          gap: '6px',
         }}
       >
         📱 Install App
       </button>
-      
-
+      <button
+        onClick={handleDismiss}
+        aria-label="Hide install button"
+        style={{
+          width: '30px',
+          height: '30px',
+          borderRadius: '50%',
+          background: 'rgba(255, 255, 255, 0.9)',
+          color: 'var(--text-muted)',
+          border: 'none',
+          fontSize: '13px',
+          fontWeight: 700,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        }}
+      >
+        ✕
+      </button>
     </div>
   );
 };
 
-export default InstallPrompt; 
+export default InstallPrompt;

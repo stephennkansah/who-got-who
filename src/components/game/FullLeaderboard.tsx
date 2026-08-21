@@ -1,6 +1,7 @@
 import React from 'react';
-import { Player, TaskInstance } from '../../types';
+import { Player } from '../../types';
 import PlayerAvatar from '../PlayerAvatar';
+import Modal from '../common/Modal';
 
 interface FullLeaderboardProps {
   players: Player[];
@@ -10,292 +11,130 @@ interface FullLeaderboardProps {
 
 export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, currentPlayerId, onClose }) => {
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-  const topThree = sortedPlayers.slice(0, 3);
-  const others = sortedPlayers.slice(3);
 
-  // Helper to get completion history
-  const getRecentActivity = () => {
-    const allCompletions = players.flatMap(player => 
-      player.tasks
-        .filter(task => (task.status === 'completed' || task.status === 'failed') && task.targetId)
-        .map(task => ({
-          ...task,
-          playerName: player.name,
-          playerId: player.id,
-          targetName: players.find(p => p.id === task.targetId)?.name || 'Unknown',
-          isSuccess: task.status === 'completed'
-        }))
-    ).sort((a, b) => new Date(b.gotAt || 0).getTime() - new Date(a.gotAt || 0).getTime());
-    
-    return allCompletions;
-  };
-
-  const allCompletions = getRecentActivity();
+  // All completed / failed tasks across players, newest first
+  const allCompletions = players.flatMap(player =>
+    player.tasks
+      .filter(task => (task.status === 'completed' || task.status === 'failed') && task.targetId)
+      .map(task => ({
+        ...task,
+        playerName: player.name,
+        playerId: player.id,
+        targetName: players.find(p => p.id === task.targetId)?.name || 'Unknown',
+        isSuccess: task.status === 'completed'
+      }))
+  ).sort((a, b) => new Date(b.gotAt || 0).getTime() - new Date(a.gotAt || 0).getTime());
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      padding: '1rem'
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '20px',
-        padding: '1.5rem',
-        width: '100%',
-        maxWidth: '400px',
-        maxHeight: '70vh',
-        overflow: 'auto'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ margin: 0, color: '#333' }}>🏆 Game Summary</h3>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#666'
-            }}
-          >
-            ×
-          </button>
-        </div>
+    <Modal isOpen onClose={onClose} showClose ariaLabel="Game summary" maxWidth={400}>
+      <h3 style={{ margin: '0 0 1rem', textAlign: 'left' }}>🏆 Game Summary</h3>
 
-        {/* Recent Activity Section */}
-        <div style={{ marginBottom: '1.5rem' }}>
-          <h4 style={{ 
-            margin: '0 0 0.75rem 0',
-            color: '#333',
-            fontSize: '1rem',
-            fontWeight: '700',
-            textAlign: 'center'
-          }}>
-            📊 Recent Activity
-          </h4>
-          <div style={{
-            background: '#f8f9fa',
-            borderRadius: '12px',
-            padding: '0.75rem',
-            maxHeight: '150px',
-            overflowY: 'auto',
-            border: '1px solid #e9ecef'
-          }}>
-            {allCompletions.length > 0 ? (
-              allCompletions.slice(0, 8).map((completion, index) => (
-                <div key={`${completion.playerId}-${completion.id}-${index}`} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.4rem 0.5rem',
-                  marginBottom: '0.3rem',
-                  background: completion.isSuccess ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)',
-                  borderRadius: '8px',
-                  fontSize: '0.8rem'
-                }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.5rem',
-                    flex: 1
-                  }}>
-                    <span style={{ fontSize: '1rem' }}>
-                      {completion.isSuccess ? '🎯' : '🚨'}
-                    </span>
-                    <div>
-                      <div style={{ fontWeight: '600', color: '#333' }}>
-                        {completion.playerName}
-                      </div>
-                      <div style={{ 
-                        fontSize: '0.7rem', 
-                        color: '#666',
-                        maxWidth: '200px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {completion.text}
-                      </div>
+      {/* Recent Activity */}
+      <div style={{ marginBottom: '1.25rem', textAlign: 'left' }}>
+        <h4 style={{ margin: '0 0 0.6rem', fontSize: '0.95rem', fontWeight: 700 }}>
+          📊 Recent activity
+        </h4>
+        <div style={{
+          background: 'rgba(0,0,0,0.03)',
+          borderRadius: 'var(--radius-sm)',
+          padding: '0.6rem',
+          maxHeight: '160px',
+          overflowY: 'auto',
+          border: '1px solid rgba(0,0,0,0.06)'
+        }}>
+          {allCompletions.length > 0 ? (
+            allCompletions.slice(0, 10).map((completion, index) => (
+              <div key={`${completion.playerId}-${completion.id}-${index}`} className="flex-between" style={{
+                padding: '0.4rem 0.5rem',
+                marginBottom: '0.3rem',
+                background: completion.isSuccess ? 'var(--success-soft)' : 'var(--danger-soft)',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                gap: '0.5rem'
+              }}>
+                <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0, flex: 1 }}>
+                  <span style={{ fontSize: '1rem' }} aria-hidden="true">
+                    {completion.isSuccess ? '🎯' : '🚨'}
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700 }}>
+                      {completion.playerName}
+                    </div>
+                    <div style={{
+                      fontSize: '0.72rem',
+                      color: 'var(--text-muted)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {completion.text}
                     </div>
                   </div>
-                  <div style={{ 
-                    fontSize: '0.75rem',
-                    fontWeight: '600',
-                    color: completion.isSuccess ? '#2e7d32' : '#c62828',
-                    textAlign: 'right'
-                  }}>
-                    {completion.isSuccess ? 'Got' : 'Caught by'}
-                    <br />
-                    <strong>{completion.targetName}</strong>
-                  </div>
                 </div>
-              ))
-            ) : (
-              <div style={{ 
-                textAlign: 'center', 
-                color: '#666', 
-                fontSize: '0.9rem',
-                padding: '1rem'
-              }}>
-                No completed tasks yet - game just started! 🎮
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Leaderboard Section */}
-        <div>
-          <h4 style={{ 
-            margin: '0 0 0.75rem 0',
-            color: '#333',
-            fontSize: '1rem',
-            fontWeight: '700',
-            textAlign: 'center'
-          }}>
-            🏆 Current Rankings
-          </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Top 3 Podium */}
-            {topThree.length > 0 && (
-              <div style={{ 
-                background: 'linear-gradient(135deg, #ffd700, #ffed4a)',
-                borderRadius: '16px',
-                padding: '1rem',
-                marginBottom: '0.5rem'
-              }}>
-                <h4 style={{ 
-                  margin: '0 0 0.75rem 0', 
-                  textAlign: 'center',
-                  color: '#8b4513',
-                  fontSize: '1rem',
-                  fontWeight: '700'
+                <div style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  color: completion.isSuccess ? 'var(--success-ink)' : 'var(--danger-ink)',
+                  textAlign: 'right',
+                  flexShrink: 0
                 }}>
-                  🏆 TOP PLAYERS
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {topThree.map((player, index) => (
-                    <div key={player.id} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '0.75rem',
-                      background: player.id === currentPlayerId 
-                        ? 'rgba(59, 130, 246, 0.2)' 
-                        : 'rgba(255, 255, 255, 0.7)',
-                      borderRadius: '12px',
-                      border: player.id === currentPlayerId 
-                        ? '2px solid #3b82f6' 
-                        : '1px solid rgba(139, 69, 19, 0.2)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ 
-                          fontSize: '2rem',
-                          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
-                        }}>
-                          {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                        </div>
-                        <PlayerAvatar player={player} size="medium" />
-                        <div>
-                          <div style={{ 
-                            fontWeight: '700',
-                            fontSize: '1.1rem',
-                            color: '#8b4513'
-                          }}>
-                            {player.name} {player.id === currentPlayerId && '(You)'}
-                          </div>
-                          <div style={{ fontSize: '0.85rem', color: '#a16207' }}>
-                            {player.tasks.filter(t => t.status === 'completed').length} tasks completed
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{
-                        fontSize: '1.5rem',
-                        fontWeight: '900',
-                        color: '#8b4513',
-                        background: 'rgba(255, 255, 255, 0.8)',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '8px',
-                        border: '2px solid rgba(139, 69, 19, 0.3)'
-                      }}>
-                        {player.score}
-                      </div>
-                    </div>
-                  ))}
+                  {completion.isSuccess ? 'got' : 'caught by'}
+                  <br />
+                  <strong>{completion.targetName}</strong>
                 </div>
               </div>
-            )}
-            
-            {/* Other Players */}
-            {others.length > 0 && (
-              <div>
-                <h4 style={{ 
-                  margin: '0 0 0.5rem 0',
-                  color: '#666',
-                  fontSize: '0.9rem',
-                  fontWeight: '600'
-                }}>
-                  OTHER PLAYERS
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                  {others.map((player, index) => (
-                    <div key={player.id} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '0.5rem 0.75rem',
-                      background: player.id === currentPlayerId 
-                        ? 'rgba(59, 130, 246, 0.1)' 
-                        : 'rgba(0,0,0,0.02)',
-                      borderRadius: '8px',
-                      border: player.id === currentPlayerId 
-                        ? '2px solid rgba(59, 130, 246, 0.3)' 
-                        : '1px solid rgba(0,0,0,0.1)'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <div style={{ 
-                          fontSize: '0.9rem',
-                          color: '#666',
-                          fontWeight: '600',
-                          minWidth: '24px'
-                        }}>
-                          {index + 4}.
-                        </div>
-                        <PlayerAvatar player={player} size="small" />
-                        <div>
-                          <div style={{ fontWeight: '600' }}>
-                            {player.name} {player.id === currentPlayerId && '(You)'}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#666' }}>
-                            {player.tasks.filter(t => t.status === 'completed').length} completed
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{
-                        fontSize: '1rem',
-                        fontWeight: '700',
-                        color: '#333'
-                      }}>
-                        {player.score}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+            ))
+          ) : (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', padding: '0.75rem' }}>
+              No gotchas yet — stay sneaky 🤫
+            </div>
+          )}
         </div>
       </div>
-    </div>
+
+      {/* Rankings */}
+      <div style={{ textAlign: 'left' }}>
+        <h4 style={{ margin: '0 0 0.6rem', fontSize: '0.95rem', fontWeight: 700 }}>
+          🏅 Current rankings
+        </h4>
+        <div className="flex-column gap-1">
+          {sortedPlayers.map((player, index) => {
+            const isYou = player.id === currentPlayerId;
+            return (
+              <div key={player.id} className="flex-between" style={{
+                padding: '0.6rem 0.75rem',
+                background: isYou ? 'rgba(139, 92, 246, 0.08)' : 'rgba(0,0,0,0.03)',
+                borderRadius: 'var(--radius-sm)',
+                border: isYou ? '2px solid rgba(139, 92, 246, 0.35)' : '2px solid transparent'
+              }}>
+                <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0 }}>
+                  <span style={{ fontSize: index < 3 ? '1.4rem' : '0.9rem', fontWeight: 700, minWidth: '28px', textAlign: 'center', color: 'var(--text-muted)' }} aria-hidden="true">
+                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                  </span>
+                  <PlayerAvatar player={player} size="small" />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {player.name} {isYou && '(You)'}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      {player.tasks.filter(t => t.status === 'completed').length} tasks completed
+                    </div>
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: '1.1rem',
+                  fontWeight: 800,
+                  color: 'var(--primary)',
+                  fontVariantNumeric: 'tabular-nums',
+                  flexShrink: 0
+                }}>
+                  {player.score}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </Modal>
   );
 };
-

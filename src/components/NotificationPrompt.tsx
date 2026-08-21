@@ -53,58 +53,12 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
     setShowPrompt(false);
   };
 
-  const handleReset = async () => {
-    localStorage.removeItem('notification-prompted');
-    if (Notification.permission === 'default') {
-      setShowPrompt(true);
-    } else {
-      await handleEnableNotifications();
-    }
-  };
-
   if (!('Notification' in window)) {
     return null; // Browser doesn't support notifications
   }
 
-  // Show compact enable button if notifications are denied/default but user hasn't been prompted
-  if (permission !== 'granted' && !showPrompt) {
-    return (
-      <button
-        onClick={handleReset}
-        style={{
-          background: 'linear-gradient(135deg, #f59e0b, #f97316)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '20px',
-          padding: '8px 16px',
-          fontSize: '12px',
-          fontWeight: '600',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
-          transition: 'all 0.3s ease',
-          margin: '10px 0'
-        }}
-        onMouseEnter={(e) => {
-          const target = e.target as HTMLButtonElement;
-          target.style.transform = 'translateY(-1px)';
-          target.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.4)';
-        }}
-        onMouseLeave={(e) => {
-          const target = e.target as HTMLButtonElement;
-          target.style.transform = 'translateY(0)';
-          target.style.boxShadow = '0 2px 8px rgba(245, 158, 11, 0.3)';
-        }}
-        title="Get notified when players complete tasks"
-      >
-        🔔 Enable Notifications
-      </button>
-    );
-  }
-
-  if (!showPrompt) {
+  // Respect the player's decision — once dismissed or decided, stay quiet.
+  if (!showPrompt || permission === 'granted') {
     return null;
   }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { Player } from '../types';
@@ -6,96 +6,119 @@ import NotificationPrompt from './NotificationPrompt';
 import ShareButton from './ShareButton';
 import PlayerAvatar from './PlayerAvatar';
 import QRCodeJoin from './QRCodeJoin';
+import { ConfirmationModal } from './common/ConfirmationModal';
 
+const RULES_SEEN_KEY = 'wgw-rules-seen';
 
+interface RuleCardProps {
+  icon: string;
+  title: string;
+  tone: 'danger' | 'info' | 'warning' | 'success';
+  children: React.ReactNode;
+}
 
+const toneStyles: Record<RuleCardProps['tone'], { bg: string; border: string; ink: string }> = {
+  danger: { bg: 'var(--danger-soft)', border: 'var(--danger)', ink: 'var(--danger-ink)' },
+  info: { bg: 'var(--info-soft)', border: 'var(--secondary)', ink: 'var(--info-ink)' },
+  warning: { bg: 'var(--warning-soft)', border: 'var(--warning)', ink: 'var(--warning-ink)' },
+  success: { bg: 'var(--success-soft)', border: 'var(--success)', ink: 'var(--success-ink)' },
+};
+
+const RuleCard: React.FC<RuleCardProps> = ({ icon, title, tone, children }) => {
+  const t = toneStyles[tone];
+  return (
+    <div style={{
+      padding: '1rem 1.1rem',
+      background: t.bg,
+      borderRadius: 'var(--radius-md)',
+      borderLeft: `5px solid ${t.border}`,
+    }}>
+      <div style={{ fontSize: '1rem', fontWeight: 700, color: t.ink, marginBottom: '0.4rem' }}>
+        {icon} {title}
+      </div>
+      <div style={{ fontSize: '0.9rem', color: t.ink, lineHeight: 1.55 }}>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+const ExampleBox: React.FC<{ title: string; hint: string }> = ({ title, hint }) => (
+  <div style={{
+    background: 'rgba(255,255,255,0.75)',
+    padding: '0.6rem 0.75rem',
+    borderRadius: '8px',
+    marginBottom: '8px',
+  }}>
+    <strong>{title}</strong>
+    <div style={{ fontStyle: 'italic', fontSize: '0.85em', marginTop: '2px' }}>{hint}</div>
+  </div>
+);
 
 export default function Lobby() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const { state, startGame, leaveGame } = useGame();
-  const [showPlayerList, setShowPlayerList] = useState(false);
-  const [showRules, setShowRules] = useState(true);
+  const [showRules, setShowRules] = useState(
+    () => localStorage.getItem(RULES_SEEN_KEY) !== 'true',
+  );
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
   const isHost = currentPlayer?.isHost || false;
-  const canStart = (currentGame?.players?.length || 0) >= 2;
-
-  // Debug logging for game type
-  useEffect(() => {
-    console.log('🏛️ Lobby loaded with game:', {
-      gameId: currentGame?.id,
-      gameType: currentGame?.gameType,
-      selectedPack: currentGame?.settings?.selectedPack,
-      isHost,
-      playerName: currentPlayer?.name
-    });
-  }, [currentGame, currentPlayer, isHost]);
-
-  // Microsoft Clarity tracking now handled via script tag in index.html
+  const players = currentGame?.players || [];
+  const playerCount = players.length;
+  const canStart = playerCount >= 2;
+  const isHoliday = currentGame?.gameType === 'holiday-challenge';
+  const hostName = players.find((p) => p.isHost)?.name || 'the host';
 
   useEffect(() => {
-    if (!gameId) {
-      navigate('/');
-      return;
-    }
-
-    // TODO: Join game if not already joined
-    if (!currentGame || currentGame.id !== gameId) {
-      // Auto-join logic here
-    }
-  }, [gameId, currentGame, navigate]);
+    if (!gameId) navigate('/');
+  }, [gameId, navigate]);
 
   useEffect(() => {
-    // Navigate to game when it starts
     if (currentGame?.status === 'live') {
       navigate(`/game/${gameId}`);
     }
   }, [currentGame?.status, gameId, navigate]);
 
   const handleStartGame = async () => {
-    if (!isHost || !canStart) return;
-    await startGame();
-  };
-
-  const handleLeaveGame = async () => {
-    const confirmed = window.confirm(
-      '🚪 Leave Game?\n\nYou will exit the lobby and return to the home screen.\n\nOther players will remain in the lobby.'
-    );
-    
-    if (confirmed) {
-      await leaveGame();
-      navigate('/');
+    if (!isHost || !canStart || isStarting) return;
+    setIsStarting(true);
+    try {
+      await startGame();
+    } catch {
+      // Errors surface via the global toast bridge.
+    } finally {
+      setIsStarting(false);
     }
   };
 
+  const handleLeaveGame = async () => {
+    setConfirmLeave(false);
+    try {
+      await leaveGame();
+    } catch {
+      // Leaving is best-effort; still return home.
+    }
+    navigate('/');
+  };
 
+  const dismissRules = () => {
+    localStorage.setItem(RULES_SEEN_KEY, 'true');
+    setShowRules(false);
+  };
 
   if (!currentGame || !currentPlayer) {
     return (
-      <div className="flex flex-center" style={{ minHeight: '100vh' }}>
-        <div className="card" style={{ textAlign: 'center' }}>
-          <h2>Loading...</h2>
-          <p style={{ marginBottom: '30px' }}>Connecting to game...</p>
-          
-          <button
-            onClick={() => navigate('/')}
-            style={{
-              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              padding: '12px 24px',
-              fontSize: '1em',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              margin: '0 auto'
-            }}
-          >
+      <div className="container flex-center">
+        <div className="card text-center" style={{ padding: '2.5rem 2rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'spin 2s linear infinite' }} aria-hidden="true">⏳</div>
+          <h2>Connecting…</h2>
+          <p style={{ marginBottom: '1.5rem' }}>Finding your game.</p>
+          <button className="btn btn-secondary" onClick={() => navigate('/')}>
             🏠 Back to Home
           </button>
         </div>
@@ -103,826 +126,250 @@ export default function Lobby() {
     );
   }
 
-  // Show rules first
+  // ---------- Rules interstitial (first visit only) ----------
   if (showRules) {
     return (
       <div className="container">
-        {/* Header */}
-        <div style={{ 
-          textAlign: 'center', 
-          marginBottom: '1.5rem',
-          padding: '1rem 0'
-        }}>
-          <h1 style={{ 
-            fontSize: '2rem', 
-            marginBottom: '0.5rem',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            fontWeight: '800'
-          }}>
-            Who Got Who
+        <header style={{ textAlign: 'center', margin: '0.5rem 0 1.25rem' }}>
+          <h1 style={{ fontSize: '1.9rem', marginBottom: '0.2rem' }}>
+            {isHoliday ? 'You Got Who?' : 'Who Got Who'}
           </h1>
-          <div style={{ color: '#666', fontSize: '1rem', fontWeight: '600' }}>
-            Game Rules • {currentGame?.players?.length || 0} player{(currentGame?.players?.length || 0) !== 1 ? 's' : ''} waiting
+          <div className="app-subtitle">
+            How to play · {playerCount} player{playerCount !== 1 ? 's' : ''} waiting
           </div>
-        </div>
+        </header>
 
-        {/* Game Rules */}
-        <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <h3 style={{ 
-            fontSize: '1.3rem', 
-            marginBottom: '1.5rem',
-            textAlign: 'center',
-            color: '#333'
-          }}>
-            📋 How to Play {currentGame?.gameType === 'holiday-challenge' ? 'YOU GOT WHO?' : 'WHO GOT WHO?'}
-          </h3>
-          
-          {currentGame?.gameType === 'holiday-challenge' ? (
-            // YOU GOT WHO? Rules
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-              
-              {/* Rule 1: Everyone Gets Same Challenges */}
-              <div style={{
-                padding: '1.2rem',
-                background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-                borderRadius: '15px',
-                border: '2px solid #ff6b9d'
-              }}>
-                <div style={{ 
-                  fontSize: '1rem', 
-                  fontWeight: '700',
-                  color: '#8b2635',
-                  marginBottom: '0.5rem'
-                }}>
-                  🏖️ Everyone Gets the Same 10 Challenges!
-                </div>
-                <div style={{ 
-                  fontSize: '0.9rem',
-                  color: '#8b2635',
-                  lineHeight: '1.5'
-                }}>
-                  Unlike regular WHO GOT WHO?, <strong>everyone sees the same challenges</strong>. Race to complete them!
-                </div>
-              </div>
+        <div className="card">
+          {isHoliday ? (
+            <div className="flex-column gap-2">
+              <RuleCard icon="🏖️" title="Everyone gets the same 10 challenges" tone="danger">
+                Unlike classic Who Got Who, <strong>everyone sees the same challenges</strong>.
+                Race to complete them first!
+              </RuleCard>
 
-              {/* Rule 2: Scoring */}
-              <div style={{
-                padding: '1.2rem',
-                background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                borderRadius: '15px',
-                border: '2px solid #48cae4'
-              }}>
-                <div style={{ 
-                  fontSize: '1rem', 
-                  fontWeight: '700',
-                  color: '#006466',
-                  marginBottom: '0.5rem'
-                }}>
-                  🏆 Scoring System
-                </div>
-                <div style={{ 
-                  fontSize: '0.9rem',
-                  color: '#006466',
-                  lineHeight: '1.5'
-                }}>
-                  🥇 <strong>First to complete a challenge:</strong> 3 Gold Points<br/>
-                  🥈 <strong>Next 2 players:</strong> 1 Silver Point each<br/>
-                  🎯 <strong>First to {currentGame?.settings?.holidayChallengeWinCondition || 18} points wins!</strong><br/>
-                  📸 Some challenges require photo proof<br/>
-                  ⚖️ <em>Win target scales with group size - more players = lower target!</em>
-                </div>
-              </div>
+              <RuleCard icon="🏆" title="Scoring" tone="info">
+                🥇 <strong>First to finish a challenge:</strong> 3 gold points<br />
+                🥈 <strong>Next 2 players:</strong> 1 silver point each<br />
+                🎯 <strong>First to {currentGame.settings?.holidayChallengeWinCondition || 18} points wins!</strong><br />
+                📸 Some challenges need photo proof<br />
+                <em>The target scales with group size — more players, lower target.</em>
+              </RuleCard>
 
-              {/* Rule 3: Social Challenges */}
-              <div style={{
-                padding: '1.2rem',
-                background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-                borderRadius: '15px',
-                border: '2px solid #ff8a65'
-              }}>
-                <div style={{ 
-                  fontSize: '1rem', 
-                  fontWeight: '700',
-                  color: '#d84315',
-                  marginBottom: '0.5rem'
-                }}>
-                  👥 Social Holiday Challenges
-                </div>
-                <div style={{ 
-                  fontSize: '0.9rem',
-                  color: '#d84315',
-                  lineHeight: '1.5'
-                }}>
-                  Interact with other holiday-goers, get photos, make friends! Perfect for vacation socializing.
-                </div>
-              </div>
+              <RuleCard icon="👥" title="Social holiday challenges" tone="warning">
+                Chat to other holiday-goers, snap photos, make friends. Perfect for vacation socialising.
+              </RuleCard>
 
-              {/* Example Challenges */}
-              <div style={{
-                padding: '1.2rem',
-                background: 'linear-gradient(135deg, #fff3e0 0%, #ffecb3 100%)',
-                borderRadius: '15px',
-                border: '2px solid #ff9800',
-                marginTop: '1rem'
-              }}>
-                <div style={{ 
-                  fontSize: '1rem', 
-                  fontWeight: '700',
-                  color: '#e65100',
-                  marginBottom: '0.8rem',
-                  textAlign: 'center'
-                }}>
-                  💡 Example Challenges
-                </div>
-                <div style={{ 
-                  fontSize: '0.85rem',
-                  color: '#bf360c',
-                  lineHeight: '1.4'
-                }}>
-                  <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
-                    <strong>"Get someone to take a group photo of your team"</strong> 📸<br/>
-                    <em>Requires photo proof</em>
-                  </div>
-                  <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
-                    <strong>"Borrow sunscreen from another group"</strong><br/>
-                    <em>Simple social interaction</em>
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
-                    <strong>"Make a new friend and learn their name"</strong><br/>
-                    <em>Holiday networking!</em>
-                  </div>
-                </div>
-              </div>
-
+              <RuleCard icon="💡" title="Example challenges" tone="warning">
+                <ExampleBox title="“Get someone to take a group photo of your team” 📸" hint="Requires photo proof" />
+                <ExampleBox title="“Borrow sunscreen from another group”" hint="A simple social mission" />
+                <ExampleBox title="“Make a new friend and learn their name”" hint="Holiday networking!" />
+              </RuleCard>
             </div>
           ) : (
-            // Traditional Who Got Who Rules
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-              
-              {/* Rule 1: Stealth */}
-              <div style={{
-                padding: '1.2rem',
-                background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-                borderRadius: '15px',
-                border: '2px solid #ff6b9d'
-              }}>
-                <div style={{ 
-                  fontSize: '1rem', 
-                  fontWeight: '700',
-                  color: '#8b2635',
-                  marginBottom: '0.5rem'
-                }}>
-                  🕵️ Stay Stealthy!
-                </div>
-                <div style={{ 
-                  fontSize: '0.9rem',
-                  color: '#8b2635',
-                  lineHeight: '1.5'
-                }}>
-                  Complete tasks <strong>without getting caught</strong>. If someone notices you attempting a task, it's an automatic fail!
-                </div>
-              </div>
+            <div className="flex-column gap-2">
+              <RuleCard icon="🕵️" title="Stay stealthy" tone="danger">
+                Complete tasks <strong>without getting caught</strong>. If someone spots you
+                attempting a task, it's an automatic fail!
+              </RuleCard>
 
-              {/* Rule 2: Tasks & Scoring */}
-              <div style={{
-                padding: '1.2rem',
-                background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                borderRadius: '15px',
-                border: '2px solid #48cae4'
-              }}>
-                <div style={{ 
-                  fontSize: '1rem', 
-                  fontWeight: '700',
-                  color: '#006466',
-                  marginBottom: '0.5rem'
-                }}>
-                  🎯 Complete Tasks & Score
-                </div>
-                <div style={{ 
-                  fontSize: '0.9rem',
-                  color: '#006466',
-                  lineHeight: '1.5'
-                }}>
-                  ✅ Mark tasks as <strong>PASSED</strong> when completed<br/>
-                  ❌ Mark as <strong>FAILED</strong> if caught<br/>
-                  🏆 <strong>First to {currentGame?.settings.targetScore || 4} points wins!</strong><br/>
-                  ⭐ <strong>+0.5 bonus</strong> for targeting someone new
-                </div>
-              </div>
+              <RuleCard icon="🎯" title="Complete tasks &amp; score" tone="info">
+                ✅ Mark a task <strong>Got it</strong> when you pull it off<br />
+                ❌ Mark it <strong>Caught</strong> if you get busted<br />
+                🏆 <strong>First to {currentGame.settings?.targetScore || 4} points wins!</strong><br />
+                ⭐ <strong>+0.5 bonus</strong> for targeting someone new
+              </RuleCard>
 
-              {/* Rule 3: Gotcha System */}
-              <div style={{
-                padding: '1.2rem',
-                background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-                borderRadius: '15px',
-                border: '2px solid #ff8a65'
-              }}>
-                <div style={{ 
-                  fontSize: '1rem', 
-                  fontWeight: '700',
-                  color: '#d84315',
-                  marginBottom: '0.5rem'
-                }}>
-                  📢 Say "Gotcha!" 
-                </div>
-                <div style={{ 
-                  fontSize: '0.9rem',
-                  color: '#d84315',
-                  lineHeight: '1.5'
-                }}>
-                  When you pass a task, choose who to target and say <strong>"Gotcha [Name]!"</strong> out loud. They can dispute if they disagree.
-                </div>
-              </div>
+              <RuleCard icon="📢" title={'Say "Gotcha!"'} tone="warning">
+                When you pull off a task, say <strong>"Gotcha [name]!"</strong> out loud, then
+                claim it in the app. Your target can accept — or dispute it and put it to a group vote.
+              </RuleCard>
 
-              {/* Rule 4: Swaps */}
-              <div style={{
-                padding: '1.2rem',
-                background: 'linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)',
-                borderRadius: '15px',
-                border: '2px solid #9c27b0'
-              }}>
-                <div style={{ 
-                  fontSize: '1rem', 
-                  fontWeight: '700',
-                  color: '#4a148c',
-                  marginBottom: '0.5rem'
-                }}>
-                  🔄 Task Swaps (2 per player)
-                </div>
-                <div style={{ 
-                  fontSize: '0.9rem',
-                  color: '#4a148c',
-                  lineHeight: '1.5'
-                }}>
-                  Don't like a task? Use the <strong>"Swap Task"</strong> button to get a new random one. Use them wisely!
-                </div>
-              </div>
+              <RuleCard icon="🔄" title={`Task swaps (${currentGame.settings?.swapsAllowed ?? 2} per player)`} tone="success">
+                Don't like a task? <strong>Swap</strong> it for a random new one. Use them wisely!
+              </RuleCard>
 
-              {/* Example Tasks */}
-              <div style={{
-                padding: '1.2rem',
-                background: 'linear-gradient(135deg, #fff3e0 0%, #ffecb3 100%)',
-                borderRadius: '15px',
-                border: '2px solid #ff9800',
-                marginTop: '1rem'
-              }}>
-                <div style={{ 
-                  fontSize: '1rem', 
-                  fontWeight: '700',
-                  color: '#e65100',
-                  marginBottom: '0.8rem',
-                  textAlign: 'center'
-                }}>
-                  💡 Example Tasks
-                </div>
-                <div style={{ 
-                  fontSize: '0.85rem',
-                  color: '#bf360c',
-                  lineHeight: '1.4'
-                }}>
-                  <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
-                    <strong>"Get a player to correct a movie quote"</strong><br/>
-                    <em>Say: "Peter, I am your father" → Wait for correction</em>
-                  </div>
-                  <div style={{ marginBottom: '8px', background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
-                    <strong>"Get someone to take a group selfie"</strong><br/>
-                    <em>Naturally suggest a photo without being obvious</em>
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.7)', padding: '8px', borderRadius: '6px' }}>
-                    <strong>"Get someone to scratch your back for 10 secs"</strong><br/>
-                    <em>Ask casually - "My back is killing me..."</em>
-                  </div>
-                </div>
-              </div>
+              <RuleCard icon="📊" title="The game scales with players" tone="success">
+                {playerCount >= 7 ? (
+                  <>🎯 <strong>Big group:</strong> {playerCount} players get <strong>8 tasks</strong> each and play to <strong>5 points</strong>.</>
+                ) : (
+                  <>🎯 <strong>Small group:</strong> everyone gets <strong>7 tasks</strong> and plays to <strong>4 points</strong>.</>
+                )}
+              </RuleCard>
 
+              <RuleCard icon="💡" title="Example tasks" tone="warning">
+                <ExampleBox title="“Get a player to correct a movie quote”" hint="Say: “Peter, I am your father” → wait for the correction" />
+                <ExampleBox title="“Get someone to take a group selfie”" hint="Suggest a photo without being obvious" />
+                <ExampleBox title="“Get someone to scratch your back for 10 secs”" hint="Ask casually — “my back is killing me…”" />
+              </RuleCard>
             </div>
           )}
         </div>
 
-        {/* Scaling Info - Only for Traditional Games */}
-        {currentGame?.gameType !== 'holiday-challenge' && (
-          <div style={{
-            padding: '1.2rem',
-            background: 'linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)',
-            borderRadius: '15px',
-            border: '2px solid #4caf50',
-            marginTop: '1rem'
-          }}>
-            <div style={{ 
-              fontSize: '1rem', 
-              fontWeight: '700',
-              color: '#2e7d32',
-              marginBottom: '0.5rem'
-            }}>
-              📊 Game Scales with Players
-            </div>
-            <div style={{ 
-              fontSize: '0.9rem',
-              color: '#2e7d32',
-              lineHeight: '1.5'
-            }}>
-              {currentGame && (currentGame.players?.length || 0) >= 7 ? (
-                <>🎯 <strong>Large game:</strong> {currentGame.players?.length || 0} players get <strong>8 tasks</strong> each, win at <strong>5 points</strong></>
-              ) : (
-                <>🎯 <strong>Small game:</strong> {currentGame?.players?.length || 0} players get <strong>7 tasks</strong> each, win at <strong>4 points</strong></>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Notification Prompt */}
         <NotificationPrompt />
 
-        {/* Next Button */}
-        <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <div style={{ textAlign: 'center' }}>
-            <button 
-              className="btn btn-primary"
-              onClick={() => setShowRules(false)}
-              style={{ 
-                fontSize: '1.2rem',
-                padding: '0.75rem 2rem',
-                fontWeight: '700',
-                width: '100%'
-              }}
-            >
-              ✓ Got It! Next →
-            </button>
-            <p style={{ 
-              fontSize: '0.8rem', 
-              color: '#666', 
-              marginTop: '0.5rem',
-              margin: '0.5rem 0 0 0'
-            }}>
-              Continue to lobby and wait for game to start
-            </p>
-          </div>
-        </div>
+        <button
+          className="btn btn-primary"
+          onClick={dismissRules}
+          style={{ fontSize: '1.1rem', marginTop: '0.5rem' }}
+        >
+          ✓ Got it — to the lobby
+        </button>
+        <p className="app-subtitle" style={{ marginTop: '0.6rem' }}>
+          You can reopen the rules from the lobby anytime.
+        </p>
       </div>
     );
   }
 
-  // Guest/Non-Host Layout - Simplified and focused
-  if (!isHost) {
-    return (
-      <div className="container">
-        {/* Compact Header */}
-        <div style={{ 
-          textAlign: 'center', 
-          marginBottom: '1rem',
-          padding: '0.5rem 0'
-        }}>
-          <h1 style={{ 
-            fontSize: '1.8rem', 
-            marginBottom: '0.3rem',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            fontWeight: '800'
-          }}>
-            Who Got Who
-          </h1>
-          <div style={{ color: '#666', fontSize: '0.9rem', fontWeight: '600' }}>
-            Lobby • {currentGame?.players?.length || 0} player{(currentGame?.players?.length || 0) !== 1 ? 's' : ''}
-          </div>
-        </div>
-
-        {/* Players List - Always Expanded for Guests */}
-        <div className="card" style={{ marginBottom: '1rem' }}>
-          <h3 style={{ 
-            fontSize: '1.2rem', 
-            margin: '0 0 1rem 0',
-            color: '#333',
-            textAlign: 'center'
-          }}>
-            👥 Players ({currentGame?.players?.length || 0})
-          </h3>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-            {(currentGame?.players || []).map((player: Player) => (
-              <div key={player.id} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '1rem',
-                background: player.id === currentPlayer.id ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.02)',
-                borderRadius: '12px',
-                border: player.id === currentPlayer.id ? '2px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(0,0,0,0.1)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <PlayerAvatar player={player} size="medium" />
-                  <div>
-                    <div style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '0.2rem' }}>
-                      {player.name} {player.id === currentPlayer.id && '(You)'}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: '#666' }}>
-                      {player.isHost ? 'Host - Will start the game' : 'Ready to play'}
-                    </div>
-                  </div>
-                </div>
-                <div style={{
-                  padding: '0.4rem 0.8rem',
-                  borderRadius: '12px',
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  textTransform: 'uppercase',
-                  background: '#10b981',
-                  color: 'white'
-                }}>
-                  Connected
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Tasks Banner */}
-        <div className="card" style={{ 
-          marginBottom: '1rem',
-          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-          border: '2px solid #0ea5e9',
-          textAlign: 'center'
-        }}>
-          <div style={{ 
-            fontSize: '2.5rem', 
-            marginBottom: '0.5rem' 
-          }}>
-            🎯
-          </div>
-          <h3 style={{ 
-            color: '#0c4a6e', 
-            marginBottom: '0.5rem',
-            fontSize: '1.2rem',
-            fontWeight: '700'
-          }}>
-            Your Secret Tasks Will Be Revealed Soon!
-          </h3>
-          <p style={{ 
-            color: '#0369a1', 
-            fontSize: '0.9rem',
-            margin: '0',
-            lineHeight: '1.4'
-          }}>
-            Host <strong>{currentGame.players.find(p => p.isHost)?.name}</strong> 👑 will start when ready
-          </p>
-        </div>
-
-        {/* Notification Prompt */}
-        <NotificationPrompt />
-
-        {/* Leave Game */}
-        <div className="card" style={{ marginBottom: '1rem' }}>
-          <div style={{ textAlign: 'center' }}>
-            <button
-              onClick={handleLeaveGame}
-              style={{
-                background: 'linear-gradient(135deg, #6c757d, #495057)',
-                border: 'none',
-                borderRadius: '12px',
-                color: 'white',
-                fontSize: '1rem',
-                fontWeight: '600',
-                padding: '0.75rem 2rem',
-                cursor: 'pointer',
-                width: '100%'
-              }}
-            >
-              🚪 Leave Game
-            </button>
-            <p style={{ 
-              fontSize: '0.8rem', 
-              color: '#666', 
-              margin: '0.5rem 0 0 0' 
-            }}>
-              Return to home screen
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Host Layout - Full functionality
+  // ---------- Lobby ----------
   return (
     <div className="container">
-      {/* Compact Header */}
-      <div style={{ 
-        textAlign: 'center', 
-        marginBottom: '1.5rem',
-        padding: '1rem 0'
-      }}>
-        <h1 style={{ 
-          fontSize: '2rem', 
-          marginBottom: '0.5rem',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          fontWeight: '800'
-        }}>
-          Who Got Who
+      <header style={{ textAlign: 'center', margin: '0.5rem 0 1.25rem' }}>
+        <h1 style={{ fontSize: '1.9rem', marginBottom: '0.2rem' }}>
+          {isHoliday ? 'You Got Who?' : 'Who Got Who'}
         </h1>
-        <div style={{ color: '#666', fontSize: '1rem', fontWeight: '600' }}>
-                      Lobby • {currentGame?.players?.length || 0} player{(currentGame?.players?.length || 0) !== 1 ? 's' : ''}
+        <div className="app-subtitle">
+          Lobby · {playerCount} player{playerCount !== 1 ? 's' : ''} ·{' '}
+          <button
+            onClick={() => setShowRules(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(255,255,255,0.9)',
+              textDecoration: 'underline',
+              fontWeight: 700,
+              fontSize: 'inherit',
+              padding: 0,
+            }}
+          >
+            📖 Rules
+          </button>
         </div>
-      </div>
+      </header>
 
-      {/* Compact Share Section for Host */}
-      <div className="card" style={{ 
-        marginBottom: '1rem',
-        background: 'linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%)',
-        border: '1px solid #3b82f6'
-      }}>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          gap: '1rem'
-        }}>
-          <div style={{ textAlign: 'center', flex: '0 0 auto' }}>
-            <div style={{ 
-              fontSize: '1.1rem',
-              fontWeight: '700',
-              color: '#1976D2',
-              marginBottom: '0.2rem'
-            }}>
+      {/* Invite */}
+      <div className="card" style={{ background: 'var(--info-soft)', border: '1px solid var(--info-border)', padding: '1.1rem 1.25rem' }}>
+        <div className="flex-between gap-2" style={{ flexWrap: 'wrap' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '2px', color: 'var(--info-ink)', fontVariantNumeric: 'tabular-nums' }}>
               {currentGame.id}
             </div>
-            <div style={{ 
-              fontSize: '0.7rem',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              color: '#1976D2'
-            }}>
-              Game ID
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--info-ink)', opacity: 0.8 }}>
+              Game code
             </div>
           </div>
-          
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flex: 1 }}>
-            <ShareButton 
-              gameId={currentGame.id}
-              size="small"
-              style={{
-                fontSize: '0.8rem',
-                padding: '0.6rem 1.2rem'
-              }}
-            />
+          <div className="flex gap-1" style={{ flex: 1, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            <ShareButton gameId={currentGame.id} gameType={currentGame.gameType} size="small" />
             <QRCodeJoin gameId={currentGame.id} gameType={currentGame.gameType} />
           </div>
         </div>
       </div>
 
-      {/* Combined Players & Game Control */}
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <h3 style={{ 
-          fontSize: '1.1rem', 
-          margin: '0 0 1rem 0',
-          color: '#333',
-          textAlign: 'center'
-        }}>
-          👥 Players ({currentGame?.players?.length || 0})
+      {/* Players */}
+      <div className="card">
+        <h3 style={{ textAlign: 'center', margin: '0 0 1rem' }}>
+          👥 Players ({playerCount})
         </h3>
-        
-        {/* Always show player list for host */}
-        <div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-            {(currentGame?.players || []).map((player: Player) => (
-              <div key={player.id} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '0.75rem',
-                background: player.id === currentPlayer.id ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.02)',
-                borderRadius: '8px',
-                border: player.id === currentPlayer.id ? '2px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(0,0,0,0.1)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <PlayerAvatar player={player} size="small" />
+        <div className="flex-column gap-1">
+          {players.map((player: Player) => {
+            const isYou = player.id === currentPlayer.id;
+            return (
+              <div
+                key={player.id}
+                className="flex-between"
+                style={{
+                  padding: '0.7rem 0.85rem',
+                  background: isYou ? 'rgba(139, 92, 246, 0.08)' : 'rgba(0,0,0,0.03)',
+                  borderRadius: 'var(--radius-sm)',
+                  border: isYou ? '2px solid rgba(139, 92, 246, 0.35)' : '2px solid transparent',
+                }}
+              >
+                <div className="flex gap-1" style={{ alignItems: 'center' }}>
+                  <PlayerAvatar player={player} size="medium" />
                   <div>
-                    <div style={{ fontWeight: '600' }}>
-                      {player.name} {player.id === currentPlayer.id && '(You)'}
+                    <div style={{ fontWeight: 700 }}>
+                      {player.name} {isYou && <span style={{ color: 'var(--primary)' }}>(You)</span>}
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#666' }}>
-                      Ready to play
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      {player.isHost ? 'Host — starts the game' : 'Ready to play'}
                     </div>
                   </div>
                 </div>
-                <div style={{
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '12px',
-                  fontSize: '0.7rem',
-                  fontWeight: '600',
-                  textTransform: 'uppercase',
-                  background: '#10b981',
-                  color: 'white'
-                }}>
-                  Connected
-                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
+      </div>
 
-        {/* Game Start Section */}
-        <div style={{ 
-          textAlign: 'center',
-          borderTop: '1px solid rgba(0, 0, 0, 0.1)',
-          paddingTop: '1rem'
-        }}>
-          {isHost ? (
-            <div style={{
-              background: canStart 
-                ? 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)' 
-                : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-              border: canStart 
-                ? '2px solid #16a34a' 
-                : '2px solid #f59e0b',
-              borderRadius: '12px',
-              padding: '1rem',
-              margin: '0.5rem 0'
-            }}>
-              <div style={{ 
-                fontSize: '1rem', 
-                fontWeight: '600',
-                color: canStart ? '#15803d' : '#92400e',
-                marginBottom: '0.5rem'
-              }}>
-                👑 You're the Host!
-              </div>
-              <p style={{ 
-                color: canStart ? '#166534' : '#a16207', 
-                fontSize: '0.85rem', 
-                margin: '0 0 0.75rem 0' 
-              }}>
-                {canStart 
-                  ? "Ready to start! Click below to reveal everyone's secret tasks"
-                  : "Need at least 2 players to start the game"
-                }
+      {/* Start / waiting */}
+      <div className="card">
+        {isHost ? (
+          canStart ? (
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ color: 'var(--success-ink)', fontWeight: 700, marginBottom: '0.75rem' }}>
+                👑 Everyone's in? Reveal the secret tasks!
               </p>
-              {canStart ? (
-                <button 
-                  className="btn btn-success"
-                  onClick={handleStartGame}
-                  style={{ 
-                    fontSize: '1.1rem',
-                    padding: '0.75rem 2rem',
-                    fontWeight: '700',
-                    width: '100%'
-                  }}
-                >
-                  🚀 Start Game
-                </button>
-              ) : (
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ 
-                    fontSize: '0.9rem', 
-                    color: '#a16207',
-                    fontStyle: 'italic',
-                    marginBottom: '1rem'
-                  }}>
-                    Waiting for more players to join...
-                  </div>
-                  
-                  {/* Show guidance when only host is present */}
-                  {(currentGame?.players?.length || 0) === 1 && (
-                    <div style={{
-                      background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                      border: '2px solid #f59e0b',
-                      borderRadius: '12px',
-                      padding: '1rem',
-                      marginTop: '0.5rem'
-                    }}>
-                      <div style={{ 
-                        fontSize: '1rem', 
-                        fontWeight: '600',
-                        color: '#92400e',
-                        marginBottom: '0.5rem'
-                      }}>
-                        👋 You're the host! Get others to join:
-                      </div>
-                      <div style={{ 
-                        fontSize: '0.85rem',
-                        color: '#a16207',
-                        lineHeight: '1.4',
-                        marginBottom: '0.8rem'
-                      }}>
-                        Share your game link or QR code with friends to start playing!
-                      </div>
-                      <div style={{ 
-                        display: 'flex', 
-                        gap: '0.5rem', 
-                        justifyContent: 'center',
-                        flexWrap: 'wrap'
-                      }}>
-                        <ShareButton gameId={currentGame.id} gameType={currentGame.gameType} />
-                        <QRCodeJoin gameId={currentGame.id} gameType={currentGame.gameType} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              <button
+                className="btn btn-success"
+                onClick={handleStartGame}
+                disabled={isStarting}
+                style={{ fontSize: '1.1rem' }}
+              >
+                {isStarting ? '⏳ Starting…' : '🚀 Start Game'}
+              </button>
             </div>
           ) : (
-            <div style={{
-              background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-              border: '2px solid #0ea5e9',
-              borderRadius: '12px',
-              padding: '1rem',
-              margin: '0.5rem 0'
-            }}>
-              <div style={{ 
-                fontSize: '1rem', 
-                fontWeight: '600',
-                color: '#0c4a6e',
-                marginBottom: '0.5rem'
-              }}>
-                ⏳ Waiting for Host to Start
-              </div>
-              <p style={{ color: '#0369a1', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>
-                Host <strong>{currentGame.players.find(p => p.isHost)?.name || 'Unknown'}</strong> 👑 will start the game when ready
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.4rem' }} aria-hidden="true">👋</div>
+              <p style={{ color: 'var(--warning-ink)', fontWeight: 700, marginBottom: '0.25rem' }}>
+                You need at least 2 players to start
               </p>
-              <p style={{ color: '#0284c7', fontSize: '0.8rem', margin: '0' }}>
-                Tasks will be revealed when the game begins!
+              <p style={{ fontSize: '0.85rem', margin: 0 }}>
+                Share the code or QR above and the game can begin.
               </p>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Task Preview */}
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <h2 style={{ 
-          fontSize: '1.2rem', 
-          marginBottom: '1rem',
-          textAlign: 'center',
-          color: '#333'
-        }}>
-          Your Secret Tasks
-        </h2>
-        
-        <div style={{
-          textAlign: 'center',
-          padding: '3rem 2rem',
-          background: 'linear-gradient(135deg, rgba(103, 126, 234, 0.1), rgba(118, 75, 162, 0.1))',
-          borderRadius: '20px',
-          border: '2px dashed rgba(103, 126, 234, 0.3)'
-        }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎯</div>
-          <h3 style={{ 
-            color: '#667eea', 
-            marginBottom: '0.5rem',
-            fontSize: '1.3rem',
-            fontWeight: '700'
-          }}>
-            Tasks Will Be Revealed
-          </h3>
-          <p style={{ 
-            color: '#666', 
-            fontSize: '1rem',
-            lineHeight: '1.6',
-            maxWidth: '300px',
-            margin: '0 auto'
-          }}>
-            Your secret missions will appear here once everyone locks in and the game starts!
-          </p>
-          <div style={{
-            marginTop: '1.5rem',
-            padding: '0.75rem 1.5rem',
-            background: 'rgba(103, 126, 234, 0.1)',
-            borderRadius: '25px',
-            fontSize: '0.9rem',
-            fontWeight: '600',
-            color: '#667eea'
-          }}>
-            🎲 You'll get {currentPlayer?.tasks?.length || 7} tasks to complete
+          )
+        ) : (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.4rem' }} aria-hidden="true">⏳</div>
+            <p style={{ color: 'var(--info-ink)', fontWeight: 700, marginBottom: '0.25rem' }}>
+              Waiting for {hostName} to start
+            </p>
+            <p style={{ fontSize: '0.85rem', margin: 0 }}>
+              Your secret tasks are revealed the moment the game begins.
+            </p>
           </div>
-        </div>
+        )}
       </div>
 
-
-
-
-
-
-
-      {/* Leave Game */}
-      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-        <button 
-          className="btn btn-secondary btn-small"
-          onClick={handleLeaveGame}
-          style={{ fontSize: '0.9rem' }}
-        >
-          🚪 Leave Game
-        </button>
-        <p style={{ 
-          fontSize: '0.8rem',
-          color: '#666',
-          marginTop: '0.5rem'
-        }}>
-          Return to home screen
+      {/* Task teaser */}
+      <div className="card" style={{ textAlign: 'center', border: '2px dashed rgba(139, 92, 246, 0.35)', background: 'rgba(255,255,255,0.7)' }}>
+        <div style={{ fontSize: '2.6rem', marginBottom: '0.4rem' }} aria-hidden="true">🎯</div>
+        <h3 style={{ color: 'var(--primary)', marginBottom: '0.3rem' }}>Your secret tasks land here</h3>
+        <p style={{ fontSize: '0.9rem', margin: 0 }}>
+          {isHoliday
+            ? 'Everyone races the same 10 challenges once the game starts.'
+            : `You'll get ${playerCount >= 7 ? 8 : 7} secret missions when the game starts. Tell no one. 🤫`}
         </p>
       </div>
+
+      <NotificationPrompt />
+
+      <div style={{ textAlign: 'center', marginTop: '0.75rem' }}>
+        <button className="btn btn-ghost btn-small" onClick={() => setConfirmLeave(true)}>
+          🚪 Leave game
+        </button>
+      </div>
+
+      <ConfirmationModal
+        isOpen={confirmLeave}
+        title="🚪 Leave game?"
+        message={'You\'ll return to the home screen.\nEveryone else stays in the lobby.'}
+        confirmLabel="Leave"
+        isDangerous
+        onConfirm={handleLeaveGame}
+        onCancel={() => setConfirmLeave(false)}
+      />
     </div>
   );
-} 
+}

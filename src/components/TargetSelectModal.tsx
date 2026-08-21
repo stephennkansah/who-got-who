@@ -1,6 +1,7 @@
 import React from 'react';
 import { Player } from '../types';
 import PlayerAvatar from './PlayerAvatar';
+import Modal from './common/Modal';
 
 interface TargetSelectModalProps {
   isOpen: boolean;
@@ -19,63 +20,53 @@ export default function TargetSelectModal({
   taskText,
   isReverse = false
 }: TargetSelectModalProps) {
-  if (!isOpen) return null;
-
   const title = isReverse ? '😅 Who Caught You?' : '🎯 Who Did You Get?';
   const instruction = isReverse
     ? 'Select the player who caught you trying this task:'
     : 'Select the player you completed this task on:';
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-          <h3 style={{ marginBottom: '1rem' }}>{title}</h3>
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.05)',
-            padding: '1rem',
-            borderRadius: '12px',
-            marginBottom: '1rem'
-          }}>
-            <p style={{ fontSize: '0.9rem', fontStyle: 'italic' }}>
-              "{taskText}"
-            </p>
-          </div>
-          <p className="text-small">
-            {instruction}
+    <Modal isOpen={isOpen} onClose={onClose} labelledBy="target-select-title">
+      <div style={{ marginBottom: '1.25rem', textAlign: 'center' }}>
+        <h3 id="target-select-title" style={{ marginBottom: '0.8rem' }}>{title}</h3>
+        <div style={{
+          background: 'rgba(0, 0, 0, 0.05)',
+          padding: '0.85rem 1rem',
+          borderRadius: 'var(--radius-sm)',
+          marginBottom: '0.8rem'
+        }}>
+          <p style={{ fontSize: '0.9rem', fontStyle: 'italic', margin: 0 }}>
+            "{taskText}"
           </p>
         </div>
-
-        <div style={{ marginBottom: '1.5rem' }}>
-          {availableTargets.map((player) => (
-            <button
-              key={player.id}
-              className="btn btn-secondary"
-              onClick={() => onSelectTarget(player.id)}
-              style={{
-                marginBottom: '0.5rem',
-                textAlign: 'left',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '12px 16px'
-              }}
-            >
-              <span style={{ fontSize: '1.2rem' }}>{isReverse ? '😅' : '🎯'}</span>
-              <PlayerAvatar player={player} size="small" showBorder={false} />
-              <span style={{ fontWeight: '600' }}>{player.name}</span>
-            </button>
-          ))}
-        </div>
-
-        <button
-          className="btn btn-danger"
-          onClick={onClose}
-          style={{ marginTop: '0.5rem' }}
-        >
-          ❌ Cancel
-        </button>
+        <p className="text-small" style={{ margin: 0 }}>
+          {instruction}
+        </p>
       </div>
-    </div>
+
+      <div style={{ marginBottom: '1rem' }}>
+        {availableTargets.map((player) => (
+          <button
+            key={player.id}
+            className="btn btn-secondary"
+            onClick={() => onSelectTarget(player.id)}
+            style={{
+              marginBottom: '0.5rem',
+              justifyContent: 'flex-start',
+              gap: '12px',
+              padding: '12px 16px'
+            }}
+          >
+            <span style={{ fontSize: '1.2rem' }} aria-hidden="true">{isReverse ? '😅' : '🎯'}</span>
+            <PlayerAvatar player={player} size="small" showBorder={false} />
+            <span style={{ fontWeight: 600 }}>{player.name}</span>
+          </button>
+        ))}
+      </div>
+
+      <button className="btn btn-ghost" onClick={onClose}>
+        Cancel
+      </button>
+    </Modal>
   );
-} 
+}

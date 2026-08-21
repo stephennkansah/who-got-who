@@ -40,8 +40,8 @@ export class NotificationService {
     }
 
     const defaultOptions: NotificationOptions = {
-      icon: '/logo192.png',
-      badge: '/logo192.png',
+      icon: '/logo512.png',
+      badge: '/logo512.png',
       ...options
     };
 
@@ -137,4 +137,4 @@ export class NotificationService {
   }
 }
 
-export default NotificationService; 
+export default NotificationService;

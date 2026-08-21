@@ -49,14 +49,6 @@ The form includes these categories:
 
 ## 🔄 Advanced Setup (Optional)
 
-### EmailJS Integration
-For a more seamless experience (no email client popup):
-
-1. Create account at [EmailJS.com](https://emailjs.com)
-2. Set up email service
-3. Update `FeedbackButton.tsx` with your EmailJS credentials
-4. Users can send feedback without leaving your app
-
 ### Email Templates
 You'll receive emails formatted like:
 ```
@@ -83,4 +75,4 @@ The swap button doesn't work on mobile...
 4. **Share updates** - Let them know when you fix things
 5. **Feature highlights** - Credit users for good suggestions
 
-Your feedback system is ready to go! 🎉 
+Your feedback system is ready to go! 🎉

@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom';
-import { FirebaseGameProvider } from './context/FirebaseGameContext';
+import React, { useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, useParams, useLocation } from 'react-router-dom';
+import { AwsGameProvider } from './context/AwsGameContext';
 import { useGame } from './hooks/useGame';
 import Home from './components/Home';
 import PackSelect from './components/PackSelect';
@@ -11,7 +11,7 @@ import Recap from './components/Recap';
 import InstallPrompt from './components/InstallPrompt';
 import FeedbackButton from './components/FeedbackButton';
 import ErrorBoundary from './components/ErrorBoundary';
-import './serviceWorkerRegistration';
+import ToastHost, { showToast } from './components/common/Toast';
 
 // Wrapper component to extract gameId from URL params
 const PackSelectWrapper: React.FC = () => {
@@ -21,13 +21,12 @@ const PackSelectWrapper: React.FC = () => {
 
 // Wrapper component to determine which game component to render
 const GameWrapper: React.FC = () => {
-  const { gameId } = useParams<{ gameId: string }>();
   const { state } = useGame();
-  
+
   if (!state.currentGame) {
     return <Game />; // Show loading/default game component if no game data yet
   }
-  
+
   // Determine which component to render based on game type
   if (state.currentGame.gameType === 'holiday-challenge') {
     return <HolidayChallengeGame />;
@@ -36,13 +35,41 @@ const GameWrapper: React.FC = () => {
   }
 };
 
-function App() {
-  // Microsoft Clarity is now loaded via script tag in index.html
+// Home renders errors inline; every other screen surfaces them as a toast.
+const ErrorToastBridge: React.FC = () => {
+  const { state } = useGame();
+  const location = useLocation();
+  const lastError = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (state.error && state.error !== lastError.current && location.pathname !== '/') {
+      showToast(state.error, 'error');
+    }
+    lastError.current = state.error;
+  }, [state.error, location.pathname]);
+
+  return null;
+};
+
+// Floating pills only where they belong — never over live gameplay.
+const FloatingWidgets: React.FC = () => {
+  const { pathname } = useLocation();
+  const showInstall = pathname === '/' || pathname.startsWith('/lobby');
+  const showFeedback = pathname === '/' || pathname.startsWith('/recap');
 
   return (
+    <>
+      {showInstall && <InstallPrompt />}
+      {showFeedback && <FeedbackButton />}
+    </>
+  );
+};
+
+function App() {
+  return (
     <ErrorBoundary>
-      <div className="container">
-        <FirebaseGameProvider>
+      <div style={{ height: '100%', width: '100%' }}>
+        <AwsGameProvider>
           <Router>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -51,32 +78,14 @@ function App() {
               <Route path="/game/:gameId" element={<GameWrapper />} />
               <Route path="/recap/:gameId" element={<Recap />} />
             </Routes>
+            <ErrorToastBridge />
+            <FloatingWidgets />
           </Router>
-        </FirebaseGameProvider>
-      
-      {/* Install Prompt */}
-      <InstallPrompt />
-      
-      {/* Feedback Button */}
-      <FeedbackButton />
-      
-      {/* Mode indicator */}
-      <div style={{
-        position: 'fixed',
-        bottom: '10px',
-        right: '10px',
-        background: 'rgba(0,0,0,0.7)',
-        color: 'white',
-        padding: '5px 10px',
-        borderRadius: '15px',
-        fontSize: '12px',
-        fontWeight: 'bold'
-      }}>
-        🔥 Firebase
+        </AwsGameProvider>
+        <ToastHost />
       </div>
-    </div>
     </ErrorBoundary>
   );
 }
 
-export default App; 
+export default App;

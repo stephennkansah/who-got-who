@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import imageCompression from 'browser-image-compression';
+import Modal from './common/Modal';
+import { showToast } from './common/Toast';
 
 interface AvatarPickerProps {
   selectedAvatar: string;
@@ -75,7 +77,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please check permissions or try uploading a photo instead.');
+      showToast('Camera unavailable — check permissions or upload a photo instead.', 'error');
     }
   };
 
@@ -137,7 +139,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
 
       } catch (error) {
         console.error('Error processing photo:', error);
-        alert('Error processing photo. Please try again.');
+        showToast('That photo could not be processed — try again.', 'error');
       } finally {
         setIsUploading(false);
       }
@@ -150,13 +152,13 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      showToast('Please choose an image file.', 'error');
       return;
     }
 
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      showToast('That image is too big — 10MB max.', 'error');
       return;
     }
 
@@ -186,7 +188,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
 
     } catch (error) {
       console.error('Error compressing image:', error);
-      alert('Error processing image. Please try again.');
+      showToast('That image could not be processed — try another one.', 'error');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -197,62 +199,17 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
 
   const isPhotoAvatar = selectedAvatar && selectedAvatar.startsWith('data:image');
 
+  const closePicker = () => {
+    stopCamera();
+    setShowPicker(false);
+  };
+
   if (showPicker) {
     return (
-      <div style={{ position: 'relative' }}>
-        {/* Backdrop */}
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px'
-          }}
-          onClick={() => setShowPicker(false)}
-        >
-          {/* Picker Modal */}
-          <div 
-            style={{
-              background: 'white',
-              borderRadius: '20px',
-              padding: '30px',
-              maxWidth: '500px',
-              width: '100%',
-              maxHeight: '80vh',
-              overflow: 'auto',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '20px'
-            }}>
-              <h3 style={{ margin: 0, color: '#1f2937', fontSize: '1.3em' }}>
-                🎭 Choose Your Avatar
-              </h3>
-              <button
-                onClick={() => setShowPicker(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '24px',
-                  cursor: 'pointer',
-                  color: '#6b7280'
-                }}
-              >
-                ✕
-              </button>
-            </div>
+      <Modal isOpen onClose={closePicker} ariaLabel="Choose your avatar" maxWidth={500} showClose>
+        <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.3em', textAlign: 'left' }}>
+          🎭 Choose Your Avatar
+        </h3>
 
             {/* Photo Capture Section */}
             <div style={{
@@ -422,9 +379,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                 ))}
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+      </Modal>
     );
   }
 
