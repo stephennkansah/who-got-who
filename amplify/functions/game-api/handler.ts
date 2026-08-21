@@ -26,6 +26,12 @@ type ResolverArguments = {
   payload?: unknown;
 };
 
+type ResolverEventShape = {
+  arguments?: ResolverArguments;
+  fieldName?: string;
+  info?: { fieldName?: string };
+};
+
 type GameEvent = { gameId: string; revision: number };
 
 const tableName = process.env.GAME_TABLE_NAME;
@@ -71,6 +77,14 @@ function requestToken(value: unknown): string {
     throw new GameRuleError('Invalid request identifier');
   }
   return value;
+}
+
+function resolverOperation(event: ResolverEventShape): string {
+  const explicitName = event.info?.fieldName || event.fieldName;
+  if (explicitName) return explicitName;
+  if (event.arguments?.action) return 'gameAction';
+  if (event.arguments?.gameId) return 'getGameView';
+  return 'unknown';
 }
 
 async function enforceRateLimit(
@@ -204,9 +218,10 @@ async function mutate(
 }
 
 export const handler: AppSyncResolverHandler<ResolverArguments, unknown> = async (event) => {
+  const operation = resolverOperation(event);
   try {
     const ownerIdentity = identityId(event.identity);
-    if (event.info.fieldName === 'getGameView') {
+    if (operation === 'getGameView') {
       await enforceRateLimit(ownerIdentity, 'read', 180, 60);
       const id = gameCode(event.arguments.gameId);
       const game = await getStoredGame(id);
@@ -220,7 +235,7 @@ export const handler: AppSyncResolverHandler<ResolverArguments, unknown> = async
       });
     }
 
-    if (event.info.fieldName !== 'gameAction') throw new GameRuleError('Unknown operation');
+    if (operation !== 'gameAction') throw new GameRuleError('Unknown operation');
     await enforceRateLimit(ownerIdentity, 'action', 120, 60);
     const action = event.arguments.action;
     const requestId = requestToken(event.arguments.requestId);
@@ -239,7 +254,7 @@ export const handler: AppSyncResolverHandler<ResolverArguments, unknown> = async
   } catch (error) {
     if (error instanceof GameRuleError) throw error;
     console.error('Unexpected game API failure', {
-      operation: event.info.fieldName,
+      operation,
       errorName: error instanceof Error ? error.name : 'UnknownError',
     });
     throw new Error('The game service is temporarily unavailable');
