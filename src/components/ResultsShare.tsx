@@ -48,26 +48,22 @@ Play: ${window.location.origin}`;
   const shareOptions = [
     {
       name: 'WhatsApp',
-      icon: '💬',
-      url: `https://wa.me/?text=${encodeURIComponent(generateResultsSummary())}`,
+            url: `https://wa.me/?text=${encodeURIComponent(generateResultsSummary())}`,
       color: '#25D366'
     },
     {
       name: 'SMS',
-      icon: '📱',
-      url: `sms:?body=${encodeURIComponent(generateResultsSummary())}`,
+            url: `sms:?body=${encodeURIComponent(generateResultsSummary())}`,
       color: '#007AFF'
     },
     {
       name: 'X / Twitter',
-      icon: '🐦',
-      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(generateResultsSummary())}`,
+            url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(generateResultsSummary())}`,
       color: '#1DA1F2'
     },
     {
       name: 'Copy Results',
-      icon: '📋',
-      action: 'copy',
+            action: 'copy',
       color: '#8E8E93'
     }
   ];
@@ -118,7 +114,7 @@ Play: ${window.location.origin}`;
         maxWidth={440}
         showClose
       >
-        <h3 style={{ margin: '0 0 1rem', textAlign: 'left' }}>🎉 Share Your Victory!</h3>
+        <h3 style={{ margin: '0 0 1rem', textAlign: 'left' }}>Share Your Victory</h3>
 
         <div style={{
           background: 'rgba(0,0,0,0.03)',
@@ -146,21 +142,15 @@ Play: ${window.location.origin}`;
               key={option.name}
               onClick={() => handleOptionClick(option)}
               style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
                 padding: '18px 12px',
                 border: 'none',
                 borderRadius: 'var(--radius-md)',
-                background: `${option.color}15`,
+                background: `${option.color}18`,
                 color: option.color,
-                fontSize: '0.9rem',
+                fontSize: '1rem',
                 fontWeight: 700,
               }}
             >
-              <div style={{ fontSize: '1.9rem', marginBottom: '6px' }} aria-hidden="true">
-                {option.icon}
-              </div>
               {option.name}
             </button>
           ))}

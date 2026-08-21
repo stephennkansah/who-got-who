@@ -208,7 +208,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
     return (
       <Modal isOpen onClose={closePicker} ariaLabel="Choose your avatar" maxWidth={500} showClose>
         <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.3em', textAlign: 'left' }}>
-          🎭 Choose Your Avatar
+          Choose Your Avatar
         </h3>
 
             {/* Photo Capture Section */}
@@ -221,7 +221,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
               textAlign: 'center'
             }}>
               <h4 style={{ margin: '0 0 14px 0', color: 'var(--info-ink)' }}>
-                📷 Take a Selfie
+                Take a Selfie
               </h4>
               
               {showCamera ? (
@@ -259,7 +259,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                         transition: 'all 0.3s ease'
                       }}
                     >
-                      {isUploading ? '📤 Processing...' : '📸 Capture'}
+                      {isUploading ? 'Processing…' : 'Capture'}
                     </button>
                     <button
                       onClick={stopCamera}
@@ -275,7 +275,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                         transition: 'all 0.3s ease'
                       }}
                     >
-                      ❌ Cancel
+                      Cancel
                     </button>
                   </div>
                 </div>
@@ -298,7 +298,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                       transition: 'all 0.3s ease'
                     }}
                   >
-                    📸 Take Photo
+                    Take a Photo
                   </button>
                   
                   <input
@@ -324,7 +324,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                       transition: 'all 0.3s ease'
                     }}
                   >
-                    📁 Or Upload Photo
+                    Or Upload a Photo
                   </button>
                 </div>
               )}
@@ -341,7 +341,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
             {/* Emoji Grid */}
             <div>
               <h4 style={{ margin: '0 0 15px 0' }}>
-                🎭 Or Pick an Emoji
+                Or Pick a Character
               </h4>
               <div style={{
                 display: 'grid',

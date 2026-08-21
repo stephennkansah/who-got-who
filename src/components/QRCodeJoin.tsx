@@ -34,7 +34,7 @@ const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, gameType, style }) => {
           ...style
         }}
       >
-        📱 QR Code
+        QR Code
       </button>
 
       <Modal
@@ -44,7 +44,7 @@ const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, gameType, style }) => {
         maxWidth={380}
         showClose
       >
-        <h3 style={{ margin: '0 0 1.1rem' }}>📱 Scan to Join</h3>
+        <h3 style={{ margin: '0 0 1.1rem' }}>Scan to Join</h3>
 
         <div style={{
           background: '#f9fafb',

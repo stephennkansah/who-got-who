@@ -95,32 +95,37 @@ const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
           }}
         />
       ) : (
-        <span style={{ 
+        <span style={{
           fontSize: config.fontSize,
-          lineHeight: '1'
+          lineHeight: '1',
+          fontFamily: player.avatar ? 'inherit' : 'var(--font-display)',
+          color: player.avatar ? 'inherit' : 'var(--paper-ink)',
         }}>
-          {player.avatar || '🎮'}
+          {player.avatar || player.name?.charAt(0)?.toUpperCase() || '?'}
         </span>
       )}
-      
+
       {/* Host indicator */}
       {player.isHost && (
-        <div style={{
-          position: 'absolute',
-          top: '-4px',
-          right: '-4px',
-          background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
-          borderRadius: '50%',
-          width: size === 'small' ? '16px' : '20px',
-          height: size === 'small' ? '16px' : '20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: size === 'small' ? '0.6em' : '0.7em',
-          border: '2px solid white',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          👑
+        <div
+          title="Host"
+          style={{
+            position: 'absolute',
+            top: '-4px',
+            right: '-4px',
+            background: 'linear-gradient(180deg, #e8b554, #d9a441)',
+            borderRadius: '50%',
+            width: size === 'small' ? '15px' : '18px',
+            height: size === 'small' ? '15px' : '18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: size === 'small' ? '9px' : '11px',
+            color: '#3a2b0c',
+            border: '2px solid var(--ink-0)',
+          }}
+        >
+          ★
         </div>
       )}
     </div>

@@ -33,7 +33,7 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
       onPermissionGranted?.();
       // Test notification
       NotificationService.showNotification(
-        '🎉 Notifications Enabled!',
+        'Notifications enabled!',
         {
           body: "You'll now get updates when players complete tasks",
           tag: 'welcome'
@@ -71,7 +71,6 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
       margin: '0 0 0.9rem',
       textAlign: 'center'
     }}>
-      <div style={{ fontSize: '24px', marginBottom: '8px' }} aria-hidden="true">🔔</div>
       <h3 style={{
         color: 'var(--warning-ink)',
         marginBottom: '8px',
@@ -111,7 +110,7 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
             target.style.transform = 'translateY(0)';
           }}
         >
-          ✅ Enable
+          Enable
         </button>
         <button
           onClick={handleDismiss}

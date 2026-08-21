@@ -70,26 +70,22 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   const shareOptions = [
     {
       name: 'WhatsApp',
-      icon: '💬',
-      url: `https://wa.me/?text=${encodeURIComponent(shareText)}`,
+            url: `https://wa.me/?text=${encodeURIComponent(shareText)}`,
       color: '#25D366'
     },
     {
       name: 'SMS',
-      icon: '📱',
-      url: `sms:?body=${encodeURIComponent(shareText)}`,
+            url: `sms:?body=${encodeURIComponent(shareText)}`,
       color: '#007AFF'
     },
     {
       name: 'Email',
-      icon: '📧',
-      url: `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareText)}`,
+            url: `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareText)}`,
       color: '#FF3B30'
     },
     {
       name: 'Copy Link',
-      icon: '🔗',
-      action: 'copy',
+            action: 'copy',
       color: '#8E8E93'
     }
   ];
@@ -144,7 +140,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
           ...style
         }}
       >
-        📤 Share Game
+        Share Game
       </button>
 
       <Modal
@@ -154,7 +150,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
         maxWidth={400}
         showClose
       >
-        <h3 style={{ margin: '0 0 1.25rem', textAlign: 'left' }}>📤 Share Game</h3>
+        <h3 style={{ margin: '0 0 1.25rem', textAlign: 'left' }}>Share Game</h3>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, 1fr)',
@@ -165,21 +161,15 @@ const ShareButton: React.FC<ShareButtonProps> = ({
               key={option.name}
               onClick={() => handleOptionClick(option)}
               style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
                 padding: '18px 12px',
                 border: 'none',
                 borderRadius: 'var(--radius-md)',
-                background: `${option.color}15`,
+                background: `${option.color}18`,
                 color: option.color,
-                fontSize: '0.9rem',
+                fontSize: '1rem',
                 fontWeight: 700,
               }}
             >
-              <div style={{ fontSize: '1.9rem', marginBottom: '6px' }} aria-hidden="true">
-                {option.icon}
-              </div>
               {option.name}
             </button>
           ))}

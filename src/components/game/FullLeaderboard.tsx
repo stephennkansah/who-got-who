@@ -27,12 +27,12 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
 
   return (
     <Modal isOpen onClose={onClose} showClose ariaLabel="Game summary" maxWidth={400}>
-      <h3 style={{ margin: '0 0 1rem', textAlign: 'left' }}>🏆 Game Summary</h3>
+      <h3 style={{ margin: '0 0 1rem', textAlign: 'left' }}>Game Summary</h3>
 
       {/* Recent Activity */}
       <div style={{ marginBottom: '1.25rem', textAlign: 'left' }}>
         <h4 style={{ margin: '0 0 0.6rem', fontSize: '0.95rem', fontWeight: 700 }}>
-          📊 Recent activity
+          Recent activity
         </h4>
         <div style={{
           background: 'rgba(0,0,0,0.03)',
@@ -54,7 +54,7 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
               }}>
                 <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0, flex: 1 }}>
                   <span style={{ fontSize: '1rem' }} aria-hidden="true">
-                    {completion.isSuccess ? '🎯' : '🚨'}
+                    {completion.isSuccess ? '✓' : '✕'}
                   </span>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 700 }}>
@@ -86,7 +86,7 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
             ))
           ) : (
             <div style={{ textAlign: 'center', color: 'var(--paper-dim)', fontSize: '0.85rem', padding: '0.75rem' }}>
-              No gotchas yet — stay sneaky 🤫
+              No gotchas yet — stay sneaky.
             </div>
           )}
         </div>
@@ -95,7 +95,7 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
       {/* Rankings */}
       <div style={{ textAlign: 'left' }}>
         <h4 style={{ margin: '0 0 0.6rem', fontSize: '0.95rem', fontWeight: 700 }}>
-          🏅 Current rankings
+          Current rankings
         </h4>
         <div className="flex-column gap-1">
           {sortedPlayers.map((player, index) => {
@@ -109,7 +109,7 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
               }}>
                 <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0 }}>
                   <span style={{ fontSize: index < 3 ? '1.4rem' : '0.9rem', fontWeight: 700, minWidth: '28px', textAlign: 'center', color: 'var(--paper-dim)' }} aria-hidden="true">
-                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                    {`${index + 1}.`}
                   </span>
                   <PlayerAvatar player={player} size="small" />
                   <div style={{ minWidth: 0 }}>

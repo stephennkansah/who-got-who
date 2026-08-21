@@ -46,7 +46,7 @@ class ErrorBoundary extends React.Component<Props, State> {
             textAlign: 'center',
             boxShadow: '0 6px 0 rgba(0, 0, 0, 0.5)'
           }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>💥</div>
+            
             <h2 style={{
               fontSize: '1.5rem',
               fontWeight: '700',
@@ -94,7 +94,7 @@ class ErrorBoundary extends React.Component<Props, State> {
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                🔄 Try Again
+                Try Again
               </button>
               <button
                 onClick={() => {
@@ -121,7 +121,7 @@ class ErrorBoundary extends React.Component<Props, State> {
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                🏠 Back to Home
+                Back to Home
               </button>
             </div>
             {process.env.NODE_ENV === 'development' && this.state.error && (

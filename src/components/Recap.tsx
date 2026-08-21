@@ -22,7 +22,7 @@ const ConfettiBurst: React.FC = () => {
   );
 
   return (
-    <div aria-hidden="true">
+    <div aria-hidden="true" className="no-rise">
       {pieces.map((piece, i) => (
         <span
           key={i}
@@ -150,12 +150,12 @@ export default function Recap() {
 
   const getAwardInfo = (awardType: AwardType) => {
     const awards = {
-      sneakiest: { name: 'Sneakiest', icon: '🥷', description: 'Most successful Gotchas' },
-      social: { name: 'Social Butterfly', icon: '🦋', description: 'Most unique targets' },
-      detective: { name: 'Detective', icon: '🕵️', description: 'Caught the most people' },
-      untouchable: { name: 'Untouchable', icon: '👻', description: 'Never got caught' },
-      jester: { name: 'Court Jester', icon: '🃏', description: 'Most failed attempts' },
-      chaos: { name: 'Chaos Agent', icon: '💥', description: 'Most disputes created' }
+      sneakiest: { name: 'Sneakiest', description: 'Most successful Gotchas' },
+      social: { name: 'Social Butterfly', description: 'Most unique targets' },
+      detective: { name: 'Detective', description: 'Caught the most people' },
+      untouchable: { name: 'Untouchable', description: 'Never got caught' },
+      jester: { name: 'Court Jester', description: 'Most failed attempts' },
+      chaos: { name: 'Chaos Agent', description: 'Most disputes created' }
     };
     return awards[awardType];
   };
@@ -189,7 +189,7 @@ export default function Recap() {
           <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'spin 2s linear infinite' }} aria-hidden="true">⏳</div>
           <h2>Loading results…</h2>
           <button className="btn btn-secondary" onClick={() => navigate('/')} style={{ marginTop: '1rem' }}>
-            🏠 Back to Home
+            Back to Home
           </button>
         </div>
       </div>
@@ -240,23 +240,12 @@ export default function Recap() {
             </p>
           </>
         )}
-        {isWinner && (
-          <div style={{
-            position: 'absolute',
-            top: '10px',
-            right: '12px',
-            fontSize: '2.2rem',
-            animation: 'float 2s ease-in-out infinite'
-          }} aria-hidden="true">
-            🎊
-          </div>
-        )}
       </div>
 
       {/* Final Rankings */}
       <div className="card">
         <div className="card-header">
-          <h3 style={{ margin: 0 }}>🏅 Final standings</h3>
+          <h3 style={{ margin: 0 }}>Final standings</h3>
         </div>
 
         <div className="flex-column gap-1">
@@ -273,7 +262,7 @@ export default function Recap() {
               }}>
                 <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0, flex: 1 }}>
                   <span style={{ fontSize: index < 3 ? '1.5rem' : '1rem', fontWeight: 700, minWidth: '30px', textAlign: 'center', color: 'var(--text-muted)' }} aria-hidden="true">
-                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                    {`${index + 1}.`}
                   </span>
                   <PlayerAvatar player={player} size="medium" />
                   <div style={{ minWidth: 0 }}>
@@ -283,7 +272,7 @@ export default function Recap() {
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       {isHoliday
                         ? `${player.challengeCompletions?.length || 0} challenges`
-                        : `🎯 ${player.stats?.gothcas || 0} gotcha${(player.stats?.gothcas || 0) === 1 ? '' : 's'}`}
+                        : `${player.stats?.gothcas || 0} gotcha${(player.stats?.gothcas || 0) === 1 ? '' : 's'}`}
                     </div>
                     {awards.length > 0 && (
                       <div style={{ marginTop: '0.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
@@ -299,7 +288,7 @@ export default function Recap() {
                               fontWeight: 700,
                               padding: '2px 8px',
                             }}>
-                              {award.icon} {award.name}
+                              {award.name}
                             </span>
                           );
                         })}
@@ -325,15 +314,15 @@ export default function Recap() {
       {/* Game Stats */}
       <div className="card">
         <div className="card-header">
-          <h3 style={{ margin: 0 }}>📊 Game stats</h3>
+          <h3 style={{ margin: 0 }}>Game stats</h3>
         </div>
         <div className="flex-column gap-1" style={{ fontSize: '0.9rem' }}>
           <div className="flex-between">
-            <span style={{ color: 'var(--text-muted)' }}>🎮 Mode</span>
-            <strong>{isHoliday ? '🏖️ You Got Who?' : '🕵️ Who Got Who'}</strong>
+            <span style={{ color: 'var(--text-muted)' }}>Mode</span>
+            <strong>{isHoliday ? 'You Got Who?' : 'Who Got Who'}</strong>
           </div>
           <div className="flex-between">
-            <span style={{ color: 'var(--text-muted)' }}>👥 Players</span>
+            <span style={{ color: 'var(--text-muted)' }}>Players</span>
             <strong>{currentGame.players.length}</strong>
           </div>
           <div className="flex-between">
@@ -341,7 +330,7 @@ export default function Recap() {
             <strong>{durationMinutes} min</strong>
           </div>
           <div className="flex-between">
-            <span style={{ color: 'var(--text-muted)' }}>{isHoliday ? '🏁 Challenges completed' : '🎯 Total gotchas'}</span>
+            <span style={{ color: 'var(--text-muted)' }}>{isHoliday ? 'Challenges completed' : 'Total gotchas'}</span>
             <strong>{totalGotchas}</strong>
           </div>
         </div>
@@ -351,7 +340,7 @@ export default function Recap() {
       {!isHoliday && (
         <div className="card">
           <div className="flex-between" style={{ marginBottom: showTimeline ? '1rem' : 0 }}>
-            <h3 style={{ margin: 0 }}>📅 Timeline</h3>
+            <h3 style={{ margin: 0 }}>Timeline</h3>
             <button
               className="btn btn-secondary btn-small"
               onClick={() => setShowTimeline(!showTimeline)}
@@ -393,7 +382,7 @@ export default function Recap() {
                 if (allGotchas.length === 0) {
                   return (
                     <p style={{ textAlign: 'center', margin: 0 }}>
-                      A quiet game — no gotchas were claimed. 🤫
+                      A quiet game — no gotchas were claimed.
                     </p>
                   );
                 }
@@ -411,7 +400,7 @@ export default function Recap() {
                       marginBottom: '0.15rem',
                       color: gotcha.isCaught ? 'var(--danger-ink)' : 'var(--success-ink)',
                     }}>
-                      {gotcha.isCaught ? '🚨' : '🎯'} {gotcha.playerName}{' '}
+                      {gotcha.playerName}{' '}
                       {gotcha.isCaught ? 'got caught by' : 'got'} {gotcha.targetName}
                     </div>
                     <div className="type" style={{ fontSize: '0.76rem', color: 'var(--paper-dim)' }}>
@@ -427,7 +416,7 @@ export default function Recap() {
 
       {/* Action Buttons */}
       <div className="card">
-        <h3 style={{ textAlign: 'center' }}>🚀 What's next?</h3>
+        <h3 style={{ textAlign: 'center' }}>What's next?</h3>
 
         <div className="flex-column gap-1">
           <button
@@ -435,7 +424,7 @@ export default function Recap() {
             onClick={handleNewGame}
             disabled={state.isLoading}
           >
-            🔄 Start a new lobby
+            Start a New Lobby
           </button>
           <p className="text-small" style={{ textAlign: 'center', margin: '-0.25rem 0 0.25rem' }}>
             You'll get a fresh code to share with the group.
@@ -447,7 +436,7 @@ export default function Recap() {
             className="btn btn-ghost"
             onClick={handleNewGroup}
           >
-            🏠 Back to home
+            Back to home
           </button>
         </div>
       </div>

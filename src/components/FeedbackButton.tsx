@@ -75,7 +75,7 @@ ${formData.message}
         }}
         aria-label="Send feedback"
       >
-        💬 Feedback
+        Feedback
       </button>
 
       <Modal
@@ -86,12 +86,12 @@ ${formData.message}
         showClose
       >
         <h2 style={{ margin: '0 0 1rem', fontSize: '1.3rem', textAlign: 'left' }}>
-          💬 Send Feedback
+          Send Feedback
         </h2>
 
         {submitStatus === 'success' ? (
           <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--success-ink)' }}>
-            <div style={{ fontSize: '46px', marginBottom: '12px' }} aria-hidden="true">📧</div>
+            <div style={{ fontSize: '46px', marginBottom: '12px' }} aria-hidden="true">✉</div>
             <h3>Almost there!</h3>
             <p>
               Your email app just opened with the message ready — hit <strong>send</strong> there
@@ -132,11 +132,11 @@ ${formData.message}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                 style={fieldStyle}
               >
-                <option value="suggestion">💡 Suggestion</option>
-                <option value="bug">🐛 Bug Report</option>
-                <option value="feature">✨ Feature Request</option>
-                <option value="question">❓ Question</option>
-                <option value="other">💬 Other</option>
+                <option value="suggestion">Suggestion</option>
+                <option value="bug">Bug Report</option>
+                <option value="feature">Feature Request</option>
+                <option value="question">Question</option>
+                <option value="other">Other</option>
               </select>
             </div>
 
@@ -168,7 +168,7 @@ ${formData.message}
                 disabled={!formData.message.trim()}
                 style={{ flex: 1.4, padding: '0.8rem', borderRadius: '10px' }}
               >
-                📤 Open in email
+                Open in Email
               </button>
             </div>
           </form>

@@ -10,7 +10,6 @@ interface PackSelectProps {
 type PackId = 'core' | 'remote' | 'holiday-challenge';
 
 interface PackTileProps {
-  icon: string;
   name: string;
   description: string;
   example: string;
@@ -21,7 +20,7 @@ interface PackTileProps {
 }
 
 const PackTile: React.FC<PackTileProps> = ({
-  icon, name, description, example, selected, dimmed, clickable, onSelect,
+  name, description, example, selected, dimmed, clickable, onSelect,
 }) => (
   <button
     onClick={onSelect}
@@ -39,7 +38,6 @@ const PackTile: React.FC<PackTileProps> = ({
       outlineOffset: '2px',
     }}
   >
-    <div style={{ fontSize: '2.2rem', marginBottom: '0.35rem' }} aria-hidden="true">{icon}</div>
     <div style={{
       fontFamily: 'var(--font-display)',
       fontSize: '1.5rem',
@@ -95,11 +93,11 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
     return (
       <div className="container flex-center">
         <div className="card text-center" style={{ padding: '2.5rem 2rem' }}>
-          <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }} aria-hidden="true">🚫</div>
+          <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }} aria-hidden="true">✕</div>
           <h2>Game not found</h2>
           <p style={{ marginBottom: '1.5rem' }}>This game doesn't exist or has ended.</p>
           <button className="btn btn-primary" onClick={() => navigate('/')}>
-            🏠 Back to Home
+            Back to Home
           </button>
         </div>
       </div>
@@ -118,7 +116,7 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
   return (
     <div className="container">
       <header style={{ textAlign: 'center', margin: '0.5rem 0 1.25rem' }}>
-        <h1 style={{ fontSize: '1.9rem', marginBottom: '0.2rem' }}>🎮 Choose Your Game</h1>
+        <h1 style={{ fontSize: '1.9rem', marginBottom: '0.2rem' }}>Choose Your Game</h1>
         <div className="app-subtitle">
           {packAlreadySelected
             ? `Pack selected: ${selectedName || 'Unknown pack'}`
@@ -130,7 +128,7 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
 
       <div className="card">
         <div style={{ textAlign: 'center', marginBottom: '0.9rem' }}>
-          <h3 style={{ margin: '0 0 0.15rem' }}>🕵️ Who Got Who?</h3>
+          <h3 style={{ margin: '0 0 0.15rem' }}>Who Got Who?</h3>
           <p style={{ fontSize: '0.82rem', margin: 0 }}>
             Everyone gets <strong>different secret tasks</strong> — complete yours without getting caught.
           </p>
@@ -138,17 +136,15 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
 
         <div className="flex-column gap-1">
           <PackTile
-            icon="🏠"
             name="Core Pack"
             description="Classic stealth missions for in-person groups — parties, dinners, game nights."
-            example="💡 “Get a player to scratch your back for 10 seconds”"
+            example="e.g. “Get a player to scratch your back for 10 seconds”"
             {...tile('core')}
           />
           <PackTile
-            icon="📱"
             name="Remote Pack"
             description="Stealth missions built for group chats and long-distance friends."
-            example="💡 “Get a player to send you a voice note”"
+            example="e.g. “Get a player to send you a voice note”"
             {...tile('remote')}
           />
         </div>
@@ -156,24 +152,23 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
 
       <div className="card">
         <div style={{ textAlign: 'center', marginBottom: '0.9rem' }}>
-          <h3 style={{ margin: '0 0 0.15rem' }}>🏁 You Got Who?</h3>
+          <h3 style={{ margin: '0 0 0.15rem' }}>You Got Who?</h3>
           <p style={{ fontSize: '0.82rem', margin: 0 }}>
             Everyone races the <strong>same 10 challenges</strong> — no stealth, all speed.
           </p>
         </div>
 
         <PackTile
-          icon="🏖️"
           name="Holiday Challenge Pack"
           description="Social challenges perfect for holidays, trips, and big gatherings."
-          example="💡 “Get someone to take a group photo of your team” 📸"
+          example="e.g. “Get someone to take a group photo of your team”"
           {...tile('holiday-challenge')}
         />
       </div>
 
       {isLoading && (
         <p className="app-subtitle" style={{ marginBottom: '0.75rem' }}>
-          ⏳ Setting up your pack…
+          Setting up your pack…
         </p>
       )}
 
@@ -183,7 +178,7 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
           onClick={() => navigate('/')}
           style={{ color: 'rgba(255,255,255,0.9)' }}
         >
-          ← Back to home
+          Back to home
         </button>
       </div>
     </div>

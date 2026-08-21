@@ -58,12 +58,22 @@ export default function HolidayChallengeGame() {
   if (!currentGame || !currentPlayer) {
     return (
       <div className="container flex-center">
-        <div className="card text-center" style={{ padding: '2.5rem 2rem' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'spin 2s linear infinite' }} aria-hidden="true">⏳</div>
-          <h2>Connecting…</h2>
-          <p style={{ marginBottom: '1.5rem' }}>Loading the holiday challenge.</p>
-          <button className="btn btn-secondary" onClick={() => navigate('/')}>
-            🏠 Back to Home
+        <div className="text-center">
+          <div
+            aria-hidden="true"
+            style={{
+              width: '44px',
+              height: '44px',
+              margin: '0 auto 1.1rem',
+              borderRadius: '50%',
+              border: '3px solid var(--line)',
+              borderTopColor: 'var(--amber)',
+              animation: 'spin 0.9s linear infinite',
+            }}
+          />
+          <p className="type" style={{ fontSize: '0.85rem', marginBottom: '1.25rem' }}>loading the challenge…</p>
+          <button className="btn btn-ghost" onClick={() => navigate('/')}>
+            Back to home
           </button>
         </div>
       </div>
@@ -77,7 +87,7 @@ export default function HolidayChallengeGame() {
           <h2>Wrong game type</h2>
           <p style={{ marginBottom: '1.5rem' }}>This screen is only for You Got Who? games.</p>
           <button className="btn btn-primary" onClick={() => navigate(`/game/${gameId}`)}>
-            🎮 Go to your game
+            Go to Your Game
           </button>
         </div>
       </div>
@@ -153,35 +163,33 @@ export default function HolidayChallengeGame() {
           className="rank-badge"
           aria-label="Show leaderboard"
         >
-          <div style={{ fontSize: '1.05rem', lineHeight: 1 }} aria-hidden="true">
-            {myRank === 0 ? '🥇' : myRank === 1 ? '🥈' : myRank === 2 ? '🥉' : `#${myRank + 1}`}
+          <div style={{ fontSize: '1.3rem', lineHeight: 1 }}>{currentPlayer.challengeScore || 0}</div>
+          <div style={{ fontSize: '0.55rem', letterSpacing: '0.2em', opacity: 0.8 }}>
+            #{myRank + 1} OF {sortedPlayers.length}
           </div>
-          <div style={{ fontSize: '0.85rem' }}>{currentPlayer.challengeScore || 0}</div>
         </button>
 
         <div className="header-title" style={{ textAlign: 'center' }}>
-          <h1>🏖️ You Got Who?</h1>
+          <h1>You Got Who?</h1>
           <div className="player-count">FIRST TO {winCondition} POINTS</div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
           {currentPlayer.isHost && (
             <button
               onClick={() => setConfirmAction('end')}
-              className="btn-icon danger"
+              className="chip-btn danger"
               aria-label="End game for everyone"
-              title="End Game"
             >
-              🏁
+              End
             </button>
           )}
           <button
             onClick={() => setConfirmAction('leave')}
-            className="btn-icon"
+            className="chip-btn"
             aria-label="Leave game"
-            title="Leave Game"
           >
-            🚪
+            Exit
           </button>
         </div>
       </div>
@@ -194,10 +202,10 @@ export default function HolidayChallengeGame() {
         textAlign: 'center'
       }}>
         <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--warning-ink)', marginBottom: '0.2rem' }}>
-          🥇 First to finish: {goldPoints} pts · 🥈 next {currentGame.settings.holidayMaxSilverPerChallenge || 2}: {silverPoints} pt each
+          Gold for first: {goldPoints} pts · silver for the next {currentGame.settings.holidayMaxSilverPerChallenge || 2}: {silverPoints} pt each
         </div>
         <div style={{ color: 'var(--warning-ink)', fontSize: '0.78rem', fontWeight: 600, opacity: 0.85 }}>
-          📸 Only upload photo proof with permission from everyone shown.
+          Only upload photo proof with permission from everyone shown.
         </div>
       </div>
 
@@ -216,7 +224,7 @@ export default function HolidayChallengeGame() {
                 className={`leaderboard-card ${player.id === currentPlayer.id ? 'is-me' : ''}`}
               >
                 <span className="medal" aria-hidden="true">
-                  {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                  {index === 0 ? '1st' : index === 1 ? '2nd' : '3rd'}
                 </span>
                 <span className="player-name">
                   {player.id === currentPlayer.id ? `${player.name} (You)` : player.name}
@@ -275,8 +283,8 @@ export default function HolidayChallengeGame() {
                       {challenge.text}
                     </div>
                     {challenge.requiresProof && (
-                      <div style={{ fontSize: '0.72rem', color: 'var(--paper-dim)', fontStyle: 'italic' }}>
-                        📸 Requires photo proof
+                      <div className="type" style={{ fontSize: '0.7rem', color: 'var(--paper-dim)' }}>
+                        requires photo proof
                       </div>
                     )}
                     {status.awardsClosed && !status.completed && (
@@ -286,17 +294,26 @@ export default function HolidayChallengeGame() {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-                    <div style={{ fontSize: '1.4rem' }} aria-hidden="true">
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, gap: '0.1rem' }}>
+                    <div style={{
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '0.78rem',
+                      letterSpacing: '0.14em',
+                      color: status.awardsClosed && !status.completed
+                        ? 'var(--paper-dim)'
+                        : (status.completed ? status.type === 'gold' : !status.goldTaken)
+                          ? 'var(--warning-deep)'
+                          : 'var(--paper-dim)',
+                    }}>
                       {status.completed
-                        ? (status.type === 'gold' ? '🥇' : '🥈')
+                        ? (status.type === 'gold' ? 'Gold' : 'Silver')
                         : status.awardsClosed
-                          ? '🔒'
-                          : (status.goldTaken ? '🥈' : '🥇')}
+                          ? 'Closed'
+                          : (status.goldTaken ? 'Silver' : 'Gold')}
                     </div>
                     <div style={{
-                      fontSize: '0.75rem',
-                      fontWeight: 800,
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '1.05rem',
                       color: status.completed || !status.goldTaken ? 'var(--warning-ink)' : 'var(--paper-dim)',
                     }}>
                       {status.completed
@@ -316,11 +333,11 @@ export default function HolidayChallengeGame() {
       {/* Confirm a no-proof completion — one mistap shouldn't claim gold */}
       <ConfirmationModal
         isOpen={!!confirmChallenge}
-        title="Done it? 🎉"
+        title="Done it?"
         message={confirmChallenge
-          ? `"${confirmChallenge.text}"\n\nClaim ${getChallengeStatus(confirmChallenge.id).goldTaken ? `🥈 ${silverPoints} point${silverPoints === 1 ? '' : 's'}` : `🥇 ${goldPoints} points`} — everyone will see it.`
+          ? `"${confirmChallenge.text}"\n\nClaim ${getChallengeStatus(confirmChallenge.id).goldTaken ? `silver (${silverPoints} pt)` : `gold (${goldPoints} pts)`} — everyone will see it.`
           : ''}
-        confirmLabel={isCompleting ? 'Claiming…' : 'Yes, claim it!'}
+        confirmLabel={isCompleting ? 'Claiming…' : 'Yes, claim it'}
         cancelLabel="Not yet"
         onConfirm={() => confirmChallenge && handleCompleteChallenge(confirmChallenge, null)}
         onCancel={() => { setConfirmChallenge(null); setSelectedChallenge(null); }}
@@ -333,7 +350,7 @@ export default function HolidayChallengeGame() {
         ariaLabel="Upload photo proof"
         showClose
       >
-        <h3 style={{ margin: '0 0 0.75rem' }}>📸 Photo proof</h3>
+        <h2 style={{ margin: '0 0 0.75rem' }}>Photo Proof</h2>
 
         <div style={{
           background: 'rgba(0,0,0,0.04)',
@@ -364,7 +381,7 @@ export default function HolidayChallengeGame() {
           className="btn btn-secondary"
           style={{ marginBottom: '0.75rem', cursor: 'pointer' }}
         >
-          {imagePreview ? '🔁 Choose a different photo' : '📷 Take or choose a photo'}
+          {imagePreview ? 'Choose a Different Photo' : 'Take or Choose a Photo'}
           <input
             type="file"
             accept="image/*"
@@ -383,7 +400,7 @@ export default function HolidayChallengeGame() {
             disabled={!selectedImage || isCompleting}
             style={{ flex: 1.4 }}
           >
-            {isCompleting ? '⏳ Uploading…' : '✅ Complete it!'}
+            {isCompleting ? 'Uploading…' : 'Complete It'}
           </button>
         </div>
       </Modal>
@@ -391,7 +408,7 @@ export default function HolidayChallengeGame() {
       {/* Leaderboard Modal */}
       {showLeaderboard && (
         <Modal isOpen onClose={() => setShowLeaderboard(false)} showClose ariaLabel="Full rankings" maxWidth={400}>
-          <h3 style={{ margin: '0 0 1rem', textAlign: 'left' }}>🏆 Full rankings</h3>
+          <h3 style={{ margin: '0 0 1rem', textAlign: 'left' }}>Full Rankings</h3>
           <div className="flex-column gap-1">
             {sortedPlayers.map((player, index) => {
               const isYou = player.id === currentPlayer.id;
@@ -404,7 +421,7 @@ export default function HolidayChallengeGame() {
                 }}>
                   <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0 }}>
                     <span style={{ fontSize: index < 3 ? '1.4rem' : '0.9rem', fontWeight: 700, minWidth: '28px', textAlign: 'center', color: 'var(--paper-dim)' }} aria-hidden="true">
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                      {`${index + 1}.`}
                     </span>
                     <PlayerAvatar player={player} size="small" />
                     <div style={{ minWidth: 0 }}>
@@ -429,7 +446,7 @@ export default function HolidayChallengeGame() {
       {/* End / leave confirmations */}
       <ConfirmationModal
         isOpen={confirmAction === 'end'}
-        title="🏁 End the game?"
+        title="End the game?"
         message={'This ends the game for ALL players and shows the final results.\nIt can\'t be undone.'}
         confirmLabel="End game"
         isDangerous
@@ -446,7 +463,7 @@ export default function HolidayChallengeGame() {
       />
       <ConfirmationModal
         isOpen={confirmAction === 'leave'}
-        title="🚪 Leave game?"
+        title="Leave the game?"
         message={'You\'ll return to the home screen.\nEveryone else keeps playing.'}
         confirmLabel="Leave"
         isDangerous

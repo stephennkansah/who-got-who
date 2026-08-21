@@ -106,7 +106,7 @@ const InstallPrompt: React.FC = () => {
           gap: '6px',
         }}
       >
-        📱 Install App
+        Install App
       </button>
       <button
         onClick={handleDismiss}
