@@ -1,4 +1,4 @@
-const CACHE_NAME = 'who-got-who-shell-v3';
+const CACHE_NAME = 'who-got-who-shell-v4';
 const SHELL_URLS = ['/', '/manifest.json', '/logo512.png'];
 
 self.addEventListener('install', (event) => {
