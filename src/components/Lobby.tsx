@@ -7,11 +7,11 @@ import ShareButton from './ShareButton';
 import PlayerAvatar from './PlayerAvatar';
 import QRCodeJoin from './QRCodeJoin';
 import { ConfirmationModal } from './common/ConfirmationModal';
+import { showToast } from './common/Toast';
 
 const RULES_SEEN_KEY = 'wgw-rules-seen';
 
 interface RuleCardProps {
-  icon: string;
   title: string;
   tone: 'danger' | 'info' | 'warning' | 'success';
   children: React.ReactNode;
@@ -24,7 +24,7 @@ const toneStyles: Record<RuleCardProps['tone'], { bg: string; border: string; in
   success: { bg: 'var(--success-soft)', border: 'var(--success)', ink: 'var(--success-ink)' },
 };
 
-const RuleCard: React.FC<RuleCardProps> = ({ icon, title, tone, children }) => {
+const RuleCard: React.FC<RuleCardProps> = ({ title, tone, children }) => {
   const t = toneStyles[tone];
   return (
     <div style={{
@@ -33,8 +33,14 @@ const RuleCard: React.FC<RuleCardProps> = ({ icon, title, tone, children }) => {
       borderRadius: 'var(--radius-md)',
       borderLeft: `5px solid ${t.border}`,
     }}>
-      <div style={{ fontSize: '1rem', fontWeight: 700, color: t.ink, marginBottom: '0.4rem' }}>
-        {icon} {title}
+      <div style={{
+        fontFamily: 'var(--font-display)',
+        fontSize: '1.1rem',
+        letterSpacing: '0.07em',
+        color: t.ink,
+        marginBottom: '0.4rem',
+      }}>
+        {title}
       </div>
       <div style={{ fontSize: '0.9rem', color: t.ink, lineHeight: 1.55 }}>
         {children}
@@ -111,15 +117,40 @@ export default function Lobby() {
     setShowRules(false);
   };
 
+  const copyCode = async () => {
+    if (!currentGame) return;
+    try {
+      await navigator.clipboard.writeText(currentGame.id);
+    } catch {
+      const area = document.createElement('textarea');
+      area.value = currentGame.id;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand('copy');
+      document.body.removeChild(area);
+    }
+    showToast('Code copied — send it to your crew', 'success');
+  };
+
   if (!currentGame || !currentPlayer) {
     return (
       <div className="container flex-center">
-        <div className="card text-center" style={{ padding: '2.5rem 2rem' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'spin 2s linear infinite' }} aria-hidden="true">⏳</div>
-          <h2>Connecting…</h2>
-          <p style={{ marginBottom: '1.5rem' }}>Finding your game.</p>
-          <button className="btn btn-secondary" onClick={() => navigate('/')}>
-            🏠 Back to Home
+        <div className="text-center">
+          <div
+            aria-hidden="true"
+            style={{
+              width: '44px',
+              height: '44px',
+              margin: '0 auto 1.1rem',
+              borderRadius: '50%',
+              border: '3px solid var(--line)',
+              borderTopColor: 'var(--amber)',
+              animation: 'spin 0.9s linear infinite',
+            }}
+          />
+          <p className="type" style={{ fontSize: '0.85rem', marginBottom: '1.25rem' }}>finding your game…</p>
+          <button className="btn btn-ghost" onClick={() => navigate('/')}>
+            Back to home
           </button>
         </div>
       </div>
@@ -142,61 +173,61 @@ export default function Lobby() {
         <div className="card">
           {isHoliday ? (
             <div className="flex-column gap-2">
-              <RuleCard icon="🏖️" title="Everyone gets the same 10 challenges" tone="danger">
+              <RuleCard title="Everyone gets the same 10 challenges" tone="danger">
                 Unlike classic Who Got Who, <strong>everyone sees the same challenges</strong>.
                 Race to complete them first!
               </RuleCard>
 
-              <RuleCard icon="🏆" title="Scoring" tone="info">
-                🥇 <strong>First to finish a challenge:</strong> 3 gold points<br />
-                🥈 <strong>Next 2 players:</strong> 1 silver point each<br />
-                🎯 <strong>First to {currentGame.settings?.holidayChallengeWinCondition || 18} points wins!</strong><br />
-                📸 Some challenges need photo proof<br />
+              <RuleCard title="Scoring" tone="info">
+                <strong>First to finish a challenge:</strong> 3 gold points<br />
+                <strong>Next 2 players:</strong> 1 silver point each<br />
+                <strong>First to {currentGame.settings?.holidayChallengeWinCondition || 18} points wins.</strong><br />
+                Some challenges need photo proof.<br />
                 <em>The target scales with group size — more players, lower target.</em>
               </RuleCard>
 
-              <RuleCard icon="👥" title="Social holiday challenges" tone="warning">
+              <RuleCard title="Social holiday challenges" tone="warning">
                 Chat to other holiday-goers, snap photos, make friends. Perfect for vacation socialising.
               </RuleCard>
 
-              <RuleCard icon="💡" title="Example challenges" tone="warning">
-                <ExampleBox title="“Get someone to take a group photo of your team” 📸" hint="Requires photo proof" />
+              <RuleCard title="Example challenges" tone="warning">
+                <ExampleBox title="“Get someone to take a group photo of your team”" hint="Requires photo proof" />
                 <ExampleBox title="“Borrow sunscreen from another group”" hint="A simple social mission" />
                 <ExampleBox title="“Make a new friend and learn their name”" hint="Holiday networking!" />
               </RuleCard>
             </div>
           ) : (
             <div className="flex-column gap-2">
-              <RuleCard icon="🕵️" title="Stay stealthy" tone="danger">
+              <RuleCard title="Stay stealthy" tone="danger">
                 Complete tasks <strong>without getting caught</strong>. If someone spots you
                 attempting a task, it's an automatic fail!
               </RuleCard>
 
-              <RuleCard icon="🎯" title="Complete tasks &amp; score" tone="info">
-                ✅ Mark a task <strong>Got it</strong> when you pull it off<br />
-                ❌ Mark it <strong>Caught</strong> if you get busted<br />
-                🏆 <strong>First to {currentGame.settings?.targetScore || 4} points wins!</strong><br />
-                ⭐ <strong>+0.5 bonus</strong> for targeting someone new
+              <RuleCard title="Complete tasks &amp; score" tone="info">
+                Mark a task <strong>Got it</strong> when you pull it off.<br />
+                Mark it <strong>Caught</strong> if you get busted.<br />
+                <strong>First to {currentGame.settings?.targetScore || 4} points wins</strong> —
+                with a <strong>+0.5 bonus</strong> for targeting someone new.
               </RuleCard>
 
-              <RuleCard icon="📢" title={'Say "Gotcha!"'} tone="warning">
+              <RuleCard title={'Say "Gotcha!"'} tone="warning">
                 When you pull off a task, say <strong>"Gotcha [name]!"</strong> out loud, then
                 claim it in the app. Your target can accept — or dispute it and put it to a group vote.
               </RuleCard>
 
-              <RuleCard icon="🔄" title={`Task swaps (${currentGame.settings?.swapsAllowed ?? 2} per player)`} tone="success">
+              <RuleCard title={`Task swaps — ${currentGame.settings?.swapsAllowed ?? 2} per player`} tone="success">
                 Don't like a task? <strong>Swap</strong> it for a random new one. Use them wisely!
               </RuleCard>
 
-              <RuleCard icon="📊" title="The game scales with players" tone="success">
+              <RuleCard title="The game scales with players" tone="success">
                 {playerCount >= 7 ? (
-                  <>🎯 <strong>Big group:</strong> {playerCount} players get <strong>8 tasks</strong> each and play to <strong>5 points</strong>.</>
+                  <><strong>Big group:</strong> {playerCount} players get <strong>8 tasks</strong> each and play to <strong>5 points</strong>.</>
                 ) : (
-                  <>🎯 <strong>Small group:</strong> everyone gets <strong>7 tasks</strong> and plays to <strong>4 points</strong>.</>
+                  <><strong>Small group:</strong> everyone gets <strong>7 tasks</strong> and plays to <strong>4 points</strong>.</>
                 )}
               </RuleCard>
 
-              <RuleCard icon="💡" title="Example tasks" tone="warning">
+              <RuleCard title="Example tasks" tone="warning">
                 <ExampleBox title="“Get a player to correct a movie quote”" hint="Say: “Peter, I am your father” → wait for the correction" />
                 <ExampleBox title="“Get someone to take a group selfie”" hint="Suggest a photo without being obvious" />
                 <ExampleBox title="“Get someone to scratch your back for 10 secs”" hint="Ask casually — “my back is killing me…”" />
@@ -210,9 +241,9 @@ export default function Lobby() {
         <button
           className="btn btn-primary"
           onClick={dismissRules}
-          style={{ fontSize: '1.1rem', marginTop: '0.5rem' }}
+          style={{ marginTop: '0.5rem' }}
         >
-          ✓ Got it — to the lobby
+          Got It — to the Lobby
         </button>
         <p className="app-subtitle" style={{ marginTop: '0.6rem' }}>
           You can reopen the rules from the lobby anytime.
@@ -224,52 +255,40 @@ export default function Lobby() {
   // ---------- Lobby ----------
   return (
     <div className="container">
+      {/* Masthead: the code IS the hero */}
       <header style={{ textAlign: 'center', margin: '0.5rem 0 1.25rem' }}>
-        <h1 style={{ fontSize: '1.9rem', marginBottom: '0.2rem' }}>
-          {isHoliday ? 'You Got Who?' : 'Who Got Who'}
-        </h1>
-        <div className="app-subtitle">
-          Lobby · {playerCount} player{playerCount !== 1 ? 's' : ''} ·{' '}
-          <button
-            onClick={() => setShowRules(true)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'rgba(255,255,255,0.9)',
-              textDecoration: 'underline',
-              fontWeight: 700,
-              fontSize: 'inherit',
-              padding: 0,
-            }}
-          >
-            📖 Rules
-          </button>
+        <div className="overline" style={{ marginBottom: '0.6rem' }}>
+          {isHoliday ? 'You Got Who? · Operation' : 'Who Got Who · Operation'}
+        </div>
+        <button
+          onClick={copyCode}
+          aria-label={`Game code ${currentGame.id} — tap to copy`}
+          style={{ background: 'none', border: 'none', color: 'var(--text-main)', width: '100%', padding: 0 }}
+        >
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(3.4rem, 18vw, 4.8rem)',
+            letterSpacing: '0.16em',
+            lineHeight: 1,
+            textIndent: '0.16em',
+          }}>
+            {currentGame.id}
+          </div>
+          <div className="app-subtitle" style={{ marginTop: '0.3rem' }}>
+            tap code to copy · {playerCount} agent{playerCount !== 1 ? 's' : ''} in
+          </div>
+        </button>
+        <div className="flex gap-1" style={{ justifyContent: 'center', marginTop: '0.9rem' }}>
+          <ShareButton gameId={currentGame.id} gameType={currentGame.gameType} size="small" />
+          <QRCodeJoin gameId={currentGame.id} gameType={currentGame.gameType} />
         </div>
       </header>
 
-      {/* Invite */}
-      <div className="card" style={{ background: 'var(--info-soft)', border: '1px solid var(--info-border)', padding: '1.1rem 1.25rem' }}>
-        <div className="flex-between gap-2" style={{ flexWrap: 'wrap' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '2px', color: 'var(--info-ink)', fontVariantNumeric: 'tabular-nums' }}>
-              {currentGame.id}
-            </div>
-            <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--info-ink)', opacity: 0.8 }}>
-              Game code
-            </div>
-          </div>
-          <div className="flex gap-1" style={{ flex: 1, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-            <ShareButton gameId={currentGame.id} gameType={currentGame.gameType} size="small" />
-            <QRCodeJoin gameId={currentGame.id} gameType={currentGame.gameType} />
-          </div>
-        </div>
-      </div>
-
       {/* Players */}
       <div className="card">
-        <h3 style={{ textAlign: 'center', margin: '0 0 1rem' }}>
-          👥 Players ({playerCount})
-        </h3>
+        <div className="overline" style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          The roster
+        </div>
         <div className="flex-column gap-1">
           {players.map((player: Player) => {
             const isYou = player.id === currentPlayer.id;
@@ -307,22 +326,21 @@ export default function Lobby() {
           canStart ? (
             <div style={{ textAlign: 'center' }}>
               <p style={{ color: 'var(--text-main)', fontWeight: 700, marginBottom: '0.75rem' }}>
-                👑 Everyone's in? Unseal the missions.
+                Everyone's in? Unseal the missions.
               </p>
               <button
                 className="btn btn-success"
                 onClick={handleStartGame}
                 disabled={isStarting}
-                style={{ fontSize: '1.1rem' }}
+                style={{ fontSize: '1.35rem' }}
               >
-                {isStarting ? '⏳ Starting…' : '🚀 Start Game'}
+                {isStarting ? 'Starting…' : 'Start the Game'}
               </button>
             </div>
           ) : (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.4rem' }} aria-hidden="true">👋</div>
               <p style={{ color: 'var(--amber)', fontWeight: 700, marginBottom: '0.25rem' }}>
-                You need at least 2 players to start
+                You need at least 2 agents to start
               </p>
               <p style={{ fontSize: '0.85rem', margin: 0 }}>
                 Share the code or QR above and the game can begin.
@@ -331,7 +349,6 @@ export default function Lobby() {
           )
         ) : (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.4rem' }} aria-hidden="true">⏳</div>
             <p style={{ color: 'var(--text-main)', fontWeight: 700, marginBottom: '0.25rem' }}>
               Waiting for {hostName} to start
             </p>
@@ -367,15 +384,18 @@ export default function Lobby() {
 
       <NotificationPrompt />
 
-      <div style={{ textAlign: 'center', marginTop: '0.75rem' }}>
+      <div className="flex gap-2" style={{ justifyContent: 'center', marginTop: '0.75rem' }}>
+        <button className="btn btn-ghost btn-small" onClick={() => setShowRules(true)}>
+          Rules
+        </button>
         <button className="btn btn-ghost btn-small" onClick={() => setConfirmLeave(true)}>
-          🚪 Leave game
+          Leave game
         </button>
       </div>
 
       <ConfirmationModal
         isOpen={confirmLeave}
-        title="🚪 Leave game?"
+        title="Leave the game?"
         message={'You\'ll return to the home screen.\nEveryone else stays in the lobby.'}
         confirmLabel="Leave"
         isDangerous

@@ -136,7 +136,7 @@ export default function Game() {
         // Check if we already showed this notification
         if (!seenNotifications.current.has(notificationId) && task.playerId !== currentPlayer.id) {
           seenNotifications.current.add(notificationId);
-          const message = `🎯 ${task.playerName} got ${task.targetName}!`;
+          const message = `${task.playerName} got ${task.targetName}!`;
           
           setNotifications(prev => [...prev, {
             id: notificationId,
@@ -169,8 +169,8 @@ export default function Game() {
 
     setConfirmation({
       isOpen: true,
-      title: '🔄 Swap task?',
-      message: `Replace this task with a random new one?\n\nSwaps left after this: ${currentPlayer.swapsLeft - 1}/${swapsTotal}`,
+      title: 'Swap this task?',
+      message: `Replace it with a random new one?\n\nSwaps left after this: ${currentPlayer.swapsLeft - 1}/${swapsTotal}`,
       onConfirm: async () => {
         setConfirmation(prev => ({ ...prev, isOpen: false }));
         try {
@@ -186,15 +186,25 @@ export default function Game() {
   const handleTargetSelect = async (targetId: string) => {
     if (selectedTask) {
       const resultType = (selectedTask as any)?.resultType;
-      
-      if (resultType === 'failed') {
-        // Task failed - use special failure handling
-        await claimGotcha(selectedTask.id, `caught:${targetId}`);
-      } else {
-        // Task passed - mark as completed with target
-        await claimGotcha(selectedTask.id, targetId);
+
+      try {
+        if (resultType === 'failed') {
+          // Task failed - use special failure handling
+          await claimGotcha(selectedTask.id, `caught:${targetId}`);
+        } else {
+          // Task passed - mark as completed with target
+          await claimGotcha(selectedTask.id, targetId);
+          const targetName = currentGame?.players.find(p => p.id === targetId)?.name || 'them';
+          setSlam({
+            title: 'Gotcha!',
+            subtitle: `claim filed on ${targetName} — waiting for their call`,
+            tone: 'success',
+          });
+        }
+      } catch {
+        // Errors surface via the global toast bridge.
       }
-      
+
       setShowTargetModal(false);
       setSelectedTask(null);
     }
@@ -213,8 +223,8 @@ export default function Game() {
   const handleEndGame = async () => {
     setConfirmation({
       isOpen: true,
-      title: '🏁 End Game?',
-      message: 'This will end the game for ALL players and show final results.\n\nThis action cannot be undone.',
+      title: 'End the game?',
+      message: 'This ends the game for ALL players and shows the final results.\n\nIt cannot be undone.',
       isDangerous: true,
       confirmLabel: 'End Game',
       onConfirm: async () => {
@@ -228,8 +238,8 @@ export default function Game() {
   const handleLeaveGame = async () => {
     setConfirmation({
       isOpen: true,
-      title: '🚪 Leave Game?',
-      message: 'You will exit the current game and return to the home screen.\n\nOther players can continue without you.',
+      title: 'Leave the game?',
+      message: 'You will return to the home screen.\n\nThe others keep playing without you.',
       isDangerous: true,
       confirmLabel: 'Leave Game',
       onConfirm: async () => {
@@ -243,15 +253,22 @@ export default function Game() {
   if (!currentGame || !currentPlayer) {
     return (
       <div className="container flex-center">
-        <div className="card" style={{ textAlign: 'center', padding: '2.5rem 2rem' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'spin 2s linear infinite' }} aria-hidden="true">⏳</div>
-          <h2>Connecting…</h2>
-          <p style={{ marginBottom: '1.5rem' }}>Loading your game.</p>
-          <button
-            onClick={() => navigate('/')}
-            className="btn btn-secondary"
-          >
-            🏠 Back to Home
+        <div className="text-center">
+          <div
+            aria-hidden="true"
+            style={{
+              width: '44px',
+              height: '44px',
+              margin: '0 auto 1.1rem',
+              borderRadius: '50%',
+              border: '3px solid var(--line)',
+              borderTopColor: 'var(--amber)',
+              animation: 'spin 0.9s linear infinite',
+            }}
+          />
+          <p className="type" style={{ fontSize: '0.85rem', marginBottom: '1.25rem' }}>decrypting your game…</p>
+          <button onClick={() => navigate('/')} className="btn btn-ghost">
+            Back to home
           </button>
         </div>
       </div>
@@ -268,28 +285,7 @@ export default function Game() {
         onShowLeaderboard={() => setShowLeaderboard(true)}
       />
 
-      {/* Standing orders */}
-      <div className="card" style={{
-        marginBottom: '1rem',
-        textAlign: 'center',
-        padding: '0.8rem 1.1rem'
-      }}>
-        <div className="type" style={{
-          fontSize: '0.82rem',
-          marginBottom: '0.15rem',
-          color: 'var(--text-main)'
-        }}>
-          complete missions in the field · say "Gotcha!" when you land one
-        </div>
-        <div className="type" style={{
-          color: 'var(--danger)',
-          fontSize: '0.78rem',
-        }}>
-          get noticed = mission failed. stay invisible.
-        </div>
-      </div>
-
-      <LeaderboardWidget 
+      <LeaderboardWidget
         players={currentGame.players}
         currentPlayerId={currentPlayer.id}
         onShowLeaderboard={() => setShowLeaderboard(true)}
@@ -299,14 +295,14 @@ export default function Game() {
         <VotingBanner key={dispute.id} dispute={dispute} />
       ))}
 
-      {/* Task Cards */}
-      <div className="card" style={{ marginBottom: '1rem' }}>
-        <div className="overline" style={{ textAlign: 'center', marginBottom: '0.25rem' }}>
-          Eyes only
+      {/* Mission dossiers — straight on the desk */}
+      <section style={{ marginTop: '0.5rem' }}>
+        <div className="flex-between" style={{ marginBottom: '0.7rem', padding: '0 0.15rem' }}>
+          <span className="overline">Your missions · eyes only</span>
+          <span className="overline" style={{ color: 'var(--danger)' }}>
+            stay invisible
+          </span>
         </div>
-        <h2 style={{ marginBottom: '1rem' }}>
-          Your Missions
-        </h2>
 
         <TaskListView
           tasks={currentPlayer.tasks}
@@ -318,7 +314,7 @@ export default function Game() {
           activeDisputes={state.activeDisputes}
           currentPlayerId={currentPlayer.id}
         />
-      </div>
+      </section>
 
       <GameNotifications notifications={notifications} />
 
@@ -362,6 +358,25 @@ export default function Game() {
         isDangerous={confirmation.isDangerous}
         confirmLabel={confirmation.confirmLabel}
       />
+
+      {showIntro && (
+        <StampSplash
+          title="Missions Live"
+          subtitle={`case file ${currentGame.id} · trust no one`}
+          tone="amber"
+          durationMs={1900}
+          onDone={() => setShowIntro(false)}
+        />
+      )}
+
+      {slam && (
+        <StampSplash
+          title={slam.title}
+          subtitle={slam.subtitle}
+          tone={slam.tone}
+          onDone={() => setSlam(null)}
+        />
+      )}
     </div>
   );
 }

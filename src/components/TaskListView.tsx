@@ -145,8 +145,8 @@ export default function TaskListView({
                 textAlign: 'center',
               }}>
                 {dispute.phase === 'voting'
-                  ? '⚖ disputed — the group is voting…'
-                  : `⏳ awaiting ${playerName(dispute.targetId)}'s response…`}
+                  ? 'disputed — the group is voting…'
+                  : `awaiting ${playerName(dispute.targetId)}'s response…`}
               </div>
             )}
 

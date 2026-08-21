@@ -29,8 +29,8 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({ players, c
               key={player.id}
               className={`leaderboard-card ${player.id === currentPlayerId ? 'is-me' : ''}`}
             >
-              <span className="medal" aria-hidden="true">
-                {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+              <span className="medal">
+                {index === 0 ? '1st' : index === 1 ? '2nd' : '3rd'}
               </span>
               <span className="player-name">
                 {player.id === currentPlayerId ? `${player.name} (You)` : player.name}

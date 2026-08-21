@@ -4,9 +4,16 @@
   "description": "Perfect for parties, dinner guests, trips away, and family gatherings. The ultimate party game of stealth tasks and social challenges.",
   "icons": [
     {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",

@@ -6,6 +6,7 @@ import PlayerAvatar from './PlayerAvatar';
 import Modal from './common/Modal';
 import { ConfirmationModal } from './common/ConfirmationModal';
 import { showToast } from './common/Toast';
+import StampSplash from './common/StampSplash';
 
 export default function HolidayChallengeGame() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -19,6 +20,8 @@ export default function HolidayChallengeGame() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'end' | 'leave' | null>(null);
+  const [slam, setSlam] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
 
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
@@ -40,6 +43,17 @@ export default function HolidayChallengeGame() {
       navigate(`/recap/${gameId}`);
     }
   }, [currentGame?.status, gameId, navigate]);
+
+  // One-time "challenges live" splash per game on this device
+  useEffect(() => {
+    if (currentGame?.status === 'live' && currentPlayer && gameId) {
+      const key = `wgw-intro-${gameId}`;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        setShowIntro(true);
+      }
+    }
+  }, [currentGame?.status, currentPlayer, gameId]);
 
   if (!currentGame || !currentPlayer) {
     return (
@@ -105,7 +119,7 @@ export default function HolidayChallengeGame() {
       setConfirmChallenge(null);
       setShowImageUpload(false);
       setSelectedImage(null);
-      showToast('Challenge complete! 🎉', 'success');
+      setSlam(true);
     } catch (error) {
       showToast(
         error instanceof Error ? error.message : 'That challenge could not be completed — try again.',
@@ -447,6 +461,25 @@ export default function HolidayChallengeGame() {
         }}
         onCancel={() => setConfirmAction(null)}
       />
+
+      {showIntro && (
+        <StampSplash
+          title="Challenges Live"
+          subtitle={`first to ${winCondition} points takes the trip`}
+          tone="amber"
+          durationMs={1900}
+          onDone={() => setShowIntro(false)}
+        />
+      )}
+
+      {slam && (
+        <StampSplash
+          title="Claimed!"
+          subtitle="points banked — check the board"
+          tone="amber"
+          onDone={() => setSlam(false)}
+        />
+      )}
     </div>
   );
 }

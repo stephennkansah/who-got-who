@@ -58,9 +58,6 @@ export default function ToastHost() {
           className={`toast ${toast.type}`}
           onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
         >
-          <span aria-hidden="true">
-            {toast.type === 'success' ? '✅' : toast.type === 'error' ? '⚠️' : '💬'}
-          </span>
           <span>{toast.message}</span>
         </div>
       ))}

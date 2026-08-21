@@ -67,7 +67,15 @@ export default function VotingBanner({ dispute }: VotingBannerProps) {
       border: '2px solid var(--warning)',
     }}>
       <div className="flex-between" style={{ marginBottom: '0.6rem' }}>
-        <h3 style={{ margin: 0, color: 'var(--warning-ink)' }}>⚖️ Group vote!</h3>
+        <h3 style={{
+          margin: 0,
+          color: 'var(--warning-ink)',
+          fontFamily: 'var(--font-display)',
+          fontSize: '1.3rem',
+          letterSpacing: '0.08em',
+        }}>
+          Group Vote
+        </h3>
         <span className={`timer ${timeLeft <= 15 ? 'urgent' : ''}`}>{formatTime(timeLeft)}</span>
       </div>
 
@@ -109,7 +117,7 @@ export default function VotingBanner({ dispute }: VotingBannerProps) {
               disabled={state.isLoading}
               style={{ padding: '0.75rem' }}
             >
-              ✅ It counts
+              It Counts
             </button>
             <button
               className="btn btn-danger"
@@ -117,7 +125,7 @@ export default function VotingBanner({ dispute }: VotingBannerProps) {
               disabled={state.isLoading}
               style={{ padding: '0.75rem' }}
             >
-              ❌ It fails
+              It Fails
             </button>
           </div>
           <p className="text-small" style={{ margin: 0, color: 'var(--warning-ink)' }}>
@@ -134,7 +142,7 @@ export default function VotingBanner({ dispute }: VotingBannerProps) {
           borderRadius: 'var(--radius-sm)',
           fontWeight: 700,
         }}>
-          ✅ Vote in! {uphold} count it · {fail} fail it — waiting for the rest…
+          Vote in! {uphold} count it · {fail} fail it — waiting for the rest…
         </div>
       )}
     </div>

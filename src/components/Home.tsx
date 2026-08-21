@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { validateGameInput } from '../utils/validation';
 import AvatarPicker from './AvatarPicker';
+import Modal from './common/Modal';
 import { showToast } from './common/Toast';
 
 function Home() {
@@ -15,6 +16,7 @@ function Home() {
   const [selectedAvatar, setSelectedAvatar] = useState('😎');
   const [avatarType, setAvatarType] = useState<'emoji' | 'photo'>('emoji');
   const [mode, setMode] = useState<'join' | 'welcome'>('welcome');
+  const [showBriefing, setShowBriefing] = useState(false);
 
   // Initialization effects...
   useEffect(() => {
@@ -93,7 +95,7 @@ function Home() {
   if (state.isLoading) {
     return (
       <div className="container flex-center">
-        <div className="card text-center" style={{ padding: '2.5rem 2rem' }}>
+        <div className="text-center">
           <div
             aria-hidden="true"
             style={{
@@ -106,169 +108,158 @@ function Home() {
               animation: 'spin 0.9s linear infinite',
             }}
           />
-          <h2>Setting up…</h2>
-          <p className="type" style={{ fontSize: '0.85rem' }}>establishing secure channel</p>
+          <p className="type" style={{ fontSize: '0.85rem' }}>establishing secure channel…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container">
-      {/* Hero */}
-      <header style={{ textAlign: 'center', margin: '1.25rem 0 1.5rem', position: 'relative' }}>
-        <div className="overline" style={{ marginBottom: '0.6rem' }}>
+    <div className="container" style={{ justifyContent: 'space-between', textAlign: 'center' }}>
+      {/* Masthead */}
+      <header style={{ position: 'relative', paddingTop: '9vh' }}>
+        <div className="overline" style={{ marginBottom: '0.7rem' }}>
           Classified · Party Ops
         </div>
-        <h1 style={{ fontSize: '4rem' }}>
-          Who Got Who
+        <h1 style={{ fontSize: 'clamp(4rem, 22vw, 5.5rem)', marginBottom: '0.5rem' }}>
+          Who<br />Got Who
         </h1>
-        <p className="type" style={{ color: 'var(--text-muted)', fontSize: '0.92rem', marginTop: '0.4rem' }}>
-          secret tasks. stealth claims. plausible deniability.
+        <p className="type" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          secret tasks. stealth claims.<br />plausible deniability.
         </p>
         <div
           className="stamp danger"
           aria-hidden="true"
           style={{
             position: 'absolute',
-            top: '-8px',
-            right: '6px',
-            fontSize: '0.78rem',
-            opacity: 0.85,
-            transform: 'rotate(9deg)',
+            top: 'calc(9vh + 30px)',
+            right: '2px',
+            fontSize: '0.75rem',
+            opacity: 0.9,
+            transform: 'rotate(10deg)',
           }}
         >
           Top Secret
         </div>
       </header>
 
-      {/* Recruitment card */}
-      <div className="card" style={{ textAlign: 'center', padding: '1.5rem 1.25rem' }}>
+      {/* Action zone */}
+      <div style={{ margin: '2rem 0' }}>
         {state.error && (
           <div role="alert" className="game-error" style={{ marginBottom: '1rem' }}>
             {state.error}
           </div>
         )}
 
-        <div className="overline" style={{ marginBottom: '1rem' }}>Agent profile</div>
-
-        <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'center' }}>
+        {/* Agent identity: one row */}
+        <div className="flex gap-1" style={{ alignItems: 'center', marginBottom: '1rem' }}>
           <AvatarPicker
             selectedAvatar={selectedAvatar}
             onAvatarChange={(avatar, isPhoto) => {
               setSelectedAvatar(avatar);
               setAvatarType(isPhoto ? 'photo' : 'emoji');
             }}
+            style={{ width: '58px', height: '58px', flexShrink: 0 }}
+          />
+          <input
+            aria-label="Player name"
+            type="text"
+            placeholder="Your agent name"
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            style={{ textAlign: 'left', paddingLeft: '1.1rem' }}
           />
         </div>
 
-        <input
-          aria-label="Player name"
-          type="text"
-          placeholder="Your agent name"
-          value={playerName}
-          onChange={(e) => setPlayerName(e.target.value)}
-          style={{ marginBottom: '0.9rem' }}
-        />
-
-        {mode === 'welcome' && (
+        {mode === 'welcome' ? (
           <div className="flex-column gap-1">
             <button
               className="btn btn-primary"
               onClick={handleStartGame}
               disabled={!playerName.trim() || state.isLoading}
+              style={{ fontSize: '1.4rem', padding: '1.05rem' }}
             >
               Start a New Game
             </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => setMode('join')}
-            >
-              Join a Game
+            <button className="btn btn-secondary" onClick={() => setMode('join')}>
+              I Have a Code
             </button>
           </div>
-        )}
-
-        {mode === 'join' && (
+        ) : (
           <div className="flex-column gap-1">
             <input
               aria-label="Game code"
               type="text"
               className="type"
-              placeholder="GAME CODE · e.g. ABC234"
+              placeholder="GAME CODE"
               value={gameId}
               onChange={(e) => setGameId(e.target.value.toUpperCase())}
               maxLength={6}
-              style={{ textTransform: 'uppercase', letterSpacing: '4px' }}
+              style={{ textTransform: 'uppercase', letterSpacing: '6px', fontSize: '1.15rem' }}
             />
             <button
               className="btn btn-primary"
               onClick={handleJoinGame}
               disabled={gameId.length !== 6 || !playerName.trim() || state.isLoading}
+              style={{ fontSize: '1.4rem', padding: '1.05rem' }}
             >
               Join the Party
             </button>
-            <button
-              className="btn btn-ghost"
-              onClick={() => setMode('welcome')}
-            >
+            <button className="btn btn-ghost" onClick={() => setMode('welcome')}>
               ← Back
             </button>
           </div>
         )}
       </div>
 
-      {/* Deployment scenarios */}
-      <div className="card" style={{ padding: '1.1rem 1.25rem' }}>
-        <div className="overline" style={{ textAlign: 'center', marginBottom: '0.9rem' }}>
-          Field-tested at
-        </div>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '0.6rem',
-          textAlign: 'center'
-        }}>
-          {[
-            ['🏠', 'House parties'],
-            ['🍽️', 'Dinners'],
-            ['🍻', 'Pre-drinks'],
-            ['🎲', 'Game nights'],
-          ].map(([icon, label]) => (
-            <div key={label} className="feature-item">
-              <div style={{ fontSize: '1.6rem', marginBottom: '0.15rem' }} aria-hidden="true">{icon}</div>
-              <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-main)' }}>{label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Foot */}
+      <footer style={{ paddingBottom: '0.5rem' }}>
+        <button
+          className="btn btn-ghost"
+          onClick={() => setShowBriefing(true)}
+          style={{ textDecoration: 'underline', textUnderlineOffset: '4px' }}
+        >
+          How does it work?
+        </button>
+        <p style={{ fontSize: '0.72rem', margin: '0.4rem 0 0' }}>
+          <a href="/privacy.html" style={{ color: 'var(--text-muted)' }}>Privacy</a>
+          {' · '}Only upload photos with everyone&apos;s permission.
+        </p>
+      </footer>
 
-      {/* The briefing */}
-      <div className="paper-card" style={{ padding: '1.25rem 1.25rem 1.1rem', marginBottom: '0.9rem' }}>
+      {/* The briefing, on request */}
+      <Modal
+        isOpen={showBriefing}
+        onClose={() => setShowBriefing(false)}
+        ariaLabel="How the game works"
+        showClose
+        maxWidth={420}
+      >
         <div className="type" style={{
           fontSize: '0.7rem',
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
           color: 'var(--paper-dim)',
-          marginBottom: '0.8rem',
+          marginBottom: '1rem',
           display: 'flex',
           justifyContent: 'space-between',
         }}>
           <span>Briefing № 001</span>
           <span>Eyes only</span>
         </div>
-        <div className="flex-column" style={{ gap: '0.7rem' }}>
+        <div className="flex-column" style={{ gap: '0.8rem', textAlign: 'left', marginBottom: '1.25rem' }}>
           <Step number="1" text="Every agent receives secret tasks to pull off on the others." />
           <Step number="2" text="Complete yours without being noticed. Suspicion is failure." />
-          <Step number="3" text={'Say "Gotcha!" out loud, then claim it in the app.'} />
+          <Step number="3" text={'Say "Gotcha!" out loud, then claim it in the app. Your target can accept — or dispute it to a group vote.'} />
           <Step number="4" text="First to the target score takes the game." />
         </div>
-      </div>
-
-      <p style={{ textAlign: 'center', margin: '0.5rem 0 1rem', fontSize: '0.78rem' }}>
-        <a href="/privacy.html" style={{ color: 'var(--text-muted)' }}>Privacy</a>
-        {' · '}Only upload photos with everyone&apos;s permission.
-      </p>
+        <div className="type" style={{ fontSize: '0.78rem', color: 'var(--paper-dim)', marginBottom: '1.25rem' }}>
+          field-tested at house parties, dinners, pre-drinks &amp; game nights
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowBriefing(false)}>
+          Understood
+        </button>
+      </Modal>
     </div>
   );
 }

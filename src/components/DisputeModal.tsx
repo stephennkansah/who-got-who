@@ -61,11 +61,11 @@ export default function DisputeModal({
 
   return (
     <Modal isOpen dismissible={false} role="alertdialog" ariaLabel="Gotcha claim response">
-      <h3 style={{ marginBottom: '0.75rem' }}>⚡ Gotcha Claimed!</h3>
+      <h2 style={{ marginBottom: '0.75rem' }}>Gotcha Claimed</h2>
 
       <div style={{ marginBottom: '1rem' }}>
         <span className={`timer ${timeLeft <= 30 ? 'urgent' : ''}`} role="timer" aria-label={`Time to respond: ${formatTime(timeLeft)}`}>
-          ⏱️ {formatTime(timeLeft)}
+          {formatTime(timeLeft)}
         </span>
       </div>
 
@@ -92,12 +92,12 @@ export default function DisputeModal({
 
       <div className="flex-column gap-1" style={{ marginBottom: '0.75rem' }}>
         <button className="btn btn-success" onClick={onAccept}>
-          ✅ Fair and square — accept
+          Fair &amp; Square — Accept
         </button>
 
         {!showReason ? (
           <button className="btn btn-danger" onClick={() => setShowReason(true)}>
-            ❌ No way — dispute it
+            No Way — Dispute It
           </button>
         ) : (
           <div className="flex-column gap-1" style={{
@@ -117,7 +117,7 @@ export default function DisputeModal({
               style={{ fontSize: '0.9rem', padding: '0.7rem 1rem' }}
             />
             <button className="btn btn-danger" onClick={() => onDispute(reason)}>
-              ⚖️ Send to a group vote
+              Send It to the Vote
             </button>
           </div>
         )}

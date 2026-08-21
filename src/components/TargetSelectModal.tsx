@@ -20,7 +20,7 @@ export default function TargetSelectModal({
   taskText,
   isReverse = false
 }: TargetSelectModalProps) {
-  const title = isReverse ? '😅 Who Caught You?' : '🎯 Who Did You Get?';
+  const title = isReverse ? 'Who Caught You?' : 'Who Did You Get?';
   const instruction = isReverse
     ? 'Select the player who caught you trying this task:'
     : 'Select the player you completed this task on:';
@@ -28,7 +28,7 @@ export default function TargetSelectModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} labelledBy="target-select-title">
       <div style={{ marginBottom: '1.25rem', textAlign: 'center' }}>
-        <h3 id="target-select-title" style={{ marginBottom: '0.8rem' }}>{title}</h3>
+        <h2 id="target-select-title" style={{ marginBottom: '0.8rem' }}>{title}</h2>
         <div style={{
           background: 'rgba(0, 0, 0, 0.05)',
           padding: '0.85rem 1rem',
@@ -57,7 +57,6 @@ export default function TargetSelectModal({
               padding: '12px 16px'
             }}
           >
-            <span style={{ fontSize: '1.2rem' }} aria-hidden="true">{isReverse ? '😅' : '🎯'}</span>
             <PlayerAvatar player={player} size="small" showBorder={false} />
             <span style={{ fontWeight: 600 }}>{player.name}</span>
           </button>

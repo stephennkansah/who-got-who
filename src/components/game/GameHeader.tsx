@@ -25,39 +25,37 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         className="rank-badge"
         aria-label="Show leaderboard"
       >
-        <div style={{ fontSize: '1.05rem', lineHeight: 1 }} aria-hidden="true">🏆</div>
-        <div style={{ fontSize: '0.85rem' }}>
+        <div style={{ fontSize: '1.3rem', lineHeight: 1 }}>
           <AnimatedScore value={currentPlayer?.score || 0} />
         </div>
+        <div style={{ fontSize: '0.55rem', letterSpacing: '0.2em', opacity: 0.8 }}>PTS</div>
       </button>
 
       {/* Center: Title */}
       <div className="header-title" style={{ textAlign: 'center' }}>
         <h1>Who Got Who</h1>
         <div className="player-count">
-          {playerCount} PLAYERS
+          {playerCount} AGENTS
         </div>
       </div>
 
       {/* Right: Game Controls */}
-      <div style={{ display: 'flex', gap: '0.6rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
         {currentPlayer?.isHost && (
           <button
             onClick={onEndGame}
-            className="btn-icon danger"
+            className="chip-btn danger"
             aria-label="End game for everyone"
-            title="End Game"
           >
-            🏁
+            End
           </button>
         )}
         <button
           onClick={onLeaveGame}
-          className="btn-icon"
+          className="chip-btn"
           aria-label="Leave game"
-          title="Leave Game"
         >
-          🚪
+          Exit
         </button>
       </div>
     </div>
