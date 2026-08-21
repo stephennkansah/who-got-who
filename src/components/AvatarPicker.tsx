@@ -213,13 +213,14 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
 
             {/* Photo Capture Section */}
             <div style={{
-              background: 'linear-gradient(135deg, #e0f2fe, #b3e5fc)',
-              borderRadius: '15px',
-              padding: '20px',
-              marginBottom: '25px',
+              background: 'var(--info-soft)',
+              border: '1px solid var(--info-border)',
+              borderRadius: 'var(--radius-md)',
+              padding: '18px',
+              marginBottom: '22px',
               textAlign: 'center'
             }}>
-              <h4 style={{ margin: '0 0 15px 0', color: '#0277bd' }}>
+              <h4 style={{ margin: '0 0 14px 0', color: 'var(--info-ink)' }}>
                 📷 Take a Selfie
               </h4>
               
@@ -247,7 +248,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                       onClick={capturePhoto}
                       disabled={isUploading}
                       style={{
-                        background: isUploading ? '#6b7280' : 'linear-gradient(135deg, #10b981, #059669)',
+                        background: isUploading ? '#6b7280' : 'var(--success-gradient)',
                         color: 'white',
                         border: 'none',
                         borderRadius: '12px',
@@ -284,7 +285,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                     onClick={startCamera}
                     disabled={isUploading}
                     style={{
-                      background: isUploading ? '#6b7280' : 'linear-gradient(135deg, #10b981, #059669)',
+                      background: isUploading ? '#6b7280' : 'var(--success-gradient)',
                       color: 'white',
                       border: 'none',
                       borderRadius: '12px',
@@ -311,7 +312,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
                     style={{
-                      background: isUploading ? '#6b7280' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                      background: isUploading ? '#6b7280' : 'var(--primary-gradient)',
                       color: 'white',
                       border: 'none',
                       borderRadius: '12px',
@@ -331,7 +332,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
               <p style={{ 
                 margin: '10px 0 0 0', 
                 fontSize: '0.8em', 
-                color: '#0288d1' 
+                color: 'var(--paper-dim)' 
               }}>
                 Auto-compressed to 100KB for fast loading
               </p>
@@ -339,7 +340,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
 
             {/* Emoji Grid */}
             <div>
-              <h4 style={{ margin: '0 0 15px 0', color: '#1f2937' }}>
+              <h4 style={{ margin: '0 0 15px 0' }}>
                 🎭 Or Pick an Emoji
               </h4>
               <div style={{
@@ -352,8 +353,8 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                     key={emoji}
                     onClick={() => handleEmojiSelect(emoji)}
                     style={{
-                      background: selectedAvatar === emoji ? '#e5e7eb' : 'transparent',
-                      border: selectedAvatar === emoji ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                      background: selectedAvatar === emoji ? 'rgba(229, 72, 77, 0.1)' : 'transparent',
+                      border: selectedAvatar === emoji ? '2px solid var(--primary)' : '1px solid var(--paper-line)',
                       borderRadius: '12px',
                       padding: '15px',
                       fontSize: '2em',
@@ -364,7 +365,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                     onMouseEnter={(e) => {
                       if (selectedAvatar !== emoji) {
                         const target = e.target as HTMLButtonElement;
-                        target.style.background = '#f3f4f6';
+                        target.style.background = 'rgba(35, 32, 20, 0.06)';
                       }
                     }}
                     onMouseLeave={(e) => {
@@ -387,8 +388,8 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
     <button
       onClick={() => setShowPicker(true)}
       style={{
-        background: 'transparent',
-        border: '3px solid #e5e7eb',
+        background: 'var(--ink-2)',
+        border: '3px solid var(--line-strong)',
         borderRadius: '50%',
         width: '80px',
         height: '80px',
@@ -403,12 +404,12 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
       }}
       onMouseEnter={(e) => {
         const target = e.target as HTMLButtonElement;
-        target.style.borderColor = '#3b82f6';
+        target.style.borderColor = 'var(--amber)';
         target.style.transform = 'scale(1.05)';
       }}
       onMouseLeave={(e) => {
         const target = e.target as HTMLButtonElement;
-        target.style.borderColor = '#e5e7eb';
+        target.style.borderColor = 'var(--line-strong)';
         target.style.transform = 'scale(1)';
       }}
       title="Click to choose avatar"
@@ -433,7 +434,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          color: '#6b7280',
+          color: 'var(--text-muted)',
           fontSize: '0.7em',
           fontWeight: '600'
         }}>

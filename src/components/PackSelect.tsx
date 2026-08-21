@@ -26,34 +26,41 @@ const PackTile: React.FC<PackTileProps> = ({
   <button
     onClick={onSelect}
     disabled={!clickable}
+    className="paper-card"
     style={{
       display: 'block',
       width: '100%',
       textAlign: 'center',
-      background: selected ? 'var(--primary-gradient)' : 'white',
-      color: selected ? 'white' : 'var(--text-main)',
-      border: selected ? '3px solid var(--primary)' : '2px solid #e5e7eb',
-      borderRadius: 'var(--radius-md)',
       padding: '1.25rem 1rem',
-      opacity: dimmed ? 0.45 : 1,
+      opacity: dimmed ? 0.4 : 1,
       cursor: clickable ? 'pointer' : 'default',
-      transition: 'transform 0.1s ease, box-shadow 0.15s ease',
-      boxShadow: selected ? '0 6px 18px rgba(139, 92, 246, 0.35)' : '0 2px 8px rgba(0,0,0,0.06)',
+      transition: 'transform 0.08s ease',
+      outline: selected ? '3px solid var(--primary)' : 'none',
+      outlineOffset: '2px',
     }}
   >
-    <div style={{ fontSize: '2.4rem', marginBottom: '0.4rem' }} aria-hidden="true">{icon}</div>
-    <div style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '0.3rem' }}>
-      {name} {selected && '✓'}
+    <div style={{ fontSize: '2.2rem', marginBottom: '0.35rem' }} aria-hidden="true">{icon}</div>
+    <div style={{
+      fontFamily: 'var(--font-display)',
+      fontSize: '1.5rem',
+      letterSpacing: '0.06em',
+      color: 'var(--paper-ink)',
+      marginBottom: '0.3rem',
+    }}>
+      {name}
     </div>
-    <div style={{ fontSize: '0.85rem', opacity: 0.85, lineHeight: 1.4, marginBottom: '0.6rem' }}>
+    {selected && (
+      <div className="stamp danger" style={{ marginBottom: '0.4rem' }}>Selected</div>
+    )}
+    <div style={{ fontSize: '0.85rem', color: '#4c4636', lineHeight: 1.45, marginBottom: '0.6rem' }}>
       {description}
     </div>
-    <div style={{
+    <div className="type" style={{
       fontSize: '0.78rem',
-      fontStyle: 'italic',
+      color: 'var(--paper-dim)',
       padding: '0.5rem 0.7rem',
-      background: selected ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)',
-      borderRadius: '8px',
+      background: 'rgba(35, 32, 20, 0.05)',
+      borderRadius: '6px',
     }}>
       {example}
     </div>

@@ -5,7 +5,7 @@ import { Player, AwardType } from '../types';
 import ResultsShare from './ResultsShare';
 import PlayerAvatar from './PlayerAvatar';
 
-const CONFETTI_COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
+const CONFETTI_COLORS = ['#e5484d', '#e8b554', '#3f9b5b', '#efe5c6', '#d13c41', '#c9ac68'];
 
 /** One-shot celebratory confetti (CSS-driven, honors prefers-reduced-motion). */
 const ConfettiBurst: React.FC = () => {
@@ -204,33 +204,38 @@ export default function Recap() {
     <div className="container">
       {isWinner && <ConfettiBurst />}
 
-      {/* Winner Banner */}
-      <div className="card text-center" style={{
-        background: isWinner
-          ? 'linear-gradient(135deg, #fde68a, #fbbf24)'
-          : 'var(--glass-bg)',
+      {/* Debrief banner */}
+      <div className="paper-card text-center" style={{
         position: 'relative',
         overflow: 'hidden',
-        paddingTop: '2rem',
-        paddingBottom: '1.75rem',
+        padding: '1.75rem 1.25rem 1.5rem',
+        marginBottom: '0.9rem',
       }}>
-        <h1 style={{
-          fontSize: '2.2rem',
-          margin: '0 0 0.5rem',
-          color: 'var(--text-main)',
-          textShadow: 'none',
+        <div className="type" style={{
+          fontSize: '0.68rem',
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase',
+          color: 'var(--paper-dim)',
+          marginBottom: '0.6rem',
         }}>
-          {isWinner ? '🎉 You won! 🎉' : '🏁 Game over'}
+          Final debrief · case closed
+        </div>
+        <h1 style={{
+          fontSize: '2.6rem',
+          margin: '0 0 0.75rem',
+          color: 'var(--paper-ink)',
+        }}>
+          {isWinner ? 'You Won' : 'Game Over'}
         </h1>
         {winner && (
           <>
-            <div className="flex-center gap-1" style={{ marginBottom: '0.5rem' }}>
+            <div className="flex-center gap-1" style={{ marginBottom: '0.6rem' }}>
               <PlayerAvatar player={winner} size="large" />
             </div>
-            <h2 style={{ margin: '0 0 0.25rem' }}>
-              {isWinner ? 'Champion of stealth!' : `${winner.name} wins!`}
-            </h2>
-            <p style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: isWinner ? '#92400e' : 'var(--text-muted)' }}>
+            <div className="stamp success big" style={{ marginBottom: '0.6rem' }}>
+              {isWinner ? 'Top Agent' : `${winner.name} wins`}
+            </div>
+            <p className="type" style={{ fontSize: '1rem', margin: 0, color: 'var(--paper-ink)' }}>
               <CountUpScore value={scoreOf(winner)} /> points
             </p>
           </>
@@ -238,9 +243,9 @@ export default function Recap() {
         {isWinner && (
           <div style={{
             position: 'absolute',
-            top: '12px',
-            right: '14px',
-            fontSize: '2.4rem',
+            top: '10px',
+            right: '12px',
+            fontSize: '2.2rem',
             animation: 'float 2s ease-in-out infinite'
           }} aria-hidden="true">
             🎊
@@ -262,8 +267,8 @@ export default function Recap() {
               <div key={player.id} className="flex-between" style={{
                 padding: '0.75rem 0.85rem',
                 borderRadius: 'var(--radius-sm)',
-                background: isYou ? 'rgba(139, 92, 246, 0.08)' : 'rgba(0,0,0,0.03)',
-                border: isYou ? '2px solid rgba(139, 92, 246, 0.35)' : '2px solid transparent',
+                background: isYou ? 'var(--me-bg)' : 'rgba(241, 237, 224, 0.04)',
+                border: isYou ? '1.5px solid var(--me-border)' : '1.5px solid transparent',
                 gap: '0.6rem',
               }}>
                 <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0, flex: 1 }}>
@@ -273,7 +278,7 @@ export default function Recap() {
                   <PlayerAvatar player={player} size="medium" />
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {player.name} {isYou && <span style={{ color: 'var(--primary)' }}>(You)</span>}
+                      {player.name} {isYou && <span style={{ color: 'var(--amber)' }}>(You)</span>}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       {isHoliday
@@ -303,9 +308,9 @@ export default function Recap() {
                   </div>
                 </div>
                 <div style={{
-                  fontSize: '1.25rem',
-                  fontWeight: 800,
-                  color: 'var(--primary)',
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.5rem',
+                  color: 'var(--amber)',
                   fontVariantNumeric: 'tabular-nums',
                   flexShrink: 0,
                 }}>
@@ -401,11 +406,15 @@ export default function Recap() {
                     borderRadius: '0 8px 8px 0',
                     marginBottom: '0.5rem',
                   }}>
-                    <div style={{ fontWeight: 700, marginBottom: '0.15rem' }}>
+                    <div style={{
+                      fontWeight: 700,
+                      marginBottom: '0.15rem',
+                      color: gotcha.isCaught ? 'var(--danger-ink)' : 'var(--success-ink)',
+                    }}>
                       {gotcha.isCaught ? '🚨' : '🎯'} {gotcha.playerName}{' '}
                       {gotcha.isCaught ? 'got caught by' : 'got'} {gotcha.targetName}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                    <div className="type" style={{ fontSize: '0.76rem', color: 'var(--paper-dim)' }}>
                       "{gotcha.text}" · {gotcha.gotAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>

@@ -61,8 +61,8 @@ const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: isPhotoAvatar ? 'transparent' : '#f8fafc',
-        border: showBorder ? `${config.borderWidth} solid #e5e7eb` : 'none',
+        background: isPhotoAvatar ? 'transparent' : 'var(--paper)',
+        border: showBorder ? `${config.borderWidth} solid rgba(168, 161, 144, 0.55)` : 'none',
         overflow: 'hidden',
         position: 'relative',
         cursor: onClick ? 'pointer' : 'default',
@@ -79,7 +79,7 @@ const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
       onMouseLeave={(e) => {
         if (onClick) {
           e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.borderColor = '#e5e7eb';
+          e.currentTarget.style.borderColor = 'rgba(168, 161, 144, 0.55)';
         }
       }}
     >
@@ -141,7 +141,7 @@ const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
       <div style={{
         fontSize: config.nameFontSize,
         fontWeight: '600',
-        color: '#374151',
+        color: 'inherit',
         textAlign: 'center',
         maxWidth: '80px',
         overflow: 'hidden',

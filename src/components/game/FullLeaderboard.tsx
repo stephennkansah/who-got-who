@@ -62,7 +62,7 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
                     </div>
                     <div style={{
                       fontSize: '0.72rem',
-                      color: 'var(--text-muted)',
+                      color: 'var(--paper-dim)',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
@@ -85,7 +85,7 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
               </div>
             ))
           ) : (
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', padding: '0.75rem' }}>
+            <div style={{ textAlign: 'center', color: 'var(--paper-dim)', fontSize: '0.85rem', padding: '0.75rem' }}>
               No gotchas yet — stay sneaky 🤫
             </div>
           )}
@@ -103,12 +103,12 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
             return (
               <div key={player.id} className="flex-between" style={{
                 padding: '0.6rem 0.75rem',
-                background: isYou ? 'rgba(139, 92, 246, 0.08)' : 'rgba(0,0,0,0.03)',
+                background: isYou ? 'var(--me-bg)' : 'rgba(35, 32, 20, 0.04)',
                 borderRadius: 'var(--radius-sm)',
-                border: isYou ? '2px solid rgba(139, 92, 246, 0.35)' : '2px solid transparent'
+                border: isYou ? '1.5px solid var(--me-border)' : '1.5px solid transparent'
               }}>
                 <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0 }}>
-                  <span style={{ fontSize: index < 3 ? '1.4rem' : '0.9rem', fontWeight: 700, minWidth: '28px', textAlign: 'center', color: 'var(--text-muted)' }} aria-hidden="true">
+                  <span style={{ fontSize: index < 3 ? '1.4rem' : '0.9rem', fontWeight: 700, minWidth: '28px', textAlign: 'center', color: 'var(--paper-dim)' }} aria-hidden="true">
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
                   </span>
                   <PlayerAvatar player={player} size="small" />
@@ -116,7 +116,7 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
                     <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {player.name} {isYou && '(You)'}
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--paper-dim)' }}>
                       {player.tasks.filter(t => t.status === 'completed').length} tasks completed
                     </div>
                   </div>

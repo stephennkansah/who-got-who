@@ -1,51 +1,72 @@
 /* ============================================================
-   Who Got Who — global design system
-   One palette, one button set, one modal scaffold, one toast.
+   WHO GOT WHO — "Classified at midnight"
+   Ink-black ground, manila mission dossiers, rubber stamps.
+   One committed look: dark app, paper documents, stamp red.
    ============================================================ */
 :root {
-  /* Background */
-  --bg-gradient: linear-gradient(135deg, #4338ca 0%, #3b82f6 50%, #8b5cf6 100%);
+  /* Ground */
+  --ink-0: #12100c;   /* page */
+  --ink-1: #1a1712;   /* panel */
+  --ink-2: #23201a;   /* elevated */
+  --line: rgba(241, 237, 224, 0.14);
+  --line-strong: rgba(241, 237, 224, 0.28);
 
-  /* Cards */
-  --glass-bg: rgba(255, 255, 255, 0.88);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  /* Paper (mission documents) */
+  --paper: #efe5c6;
+  --paper-2: #e5d8b1;
+  --paper-ink: #232014;
+  --paper-dim: #6b6350;
+  --paper-line: rgba(35, 32, 20, 0.22);
 
-  /* Actions */
-  --primary: #8b5cf6;
-  --primary-gradient: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-  --secondary: #3b82f6;
-  --success: #10b981;
-  --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  --danger: #ef4444;
-  --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  --warning: #f59e0b;
-  --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  /* Text on ink */
+  --text-main: #f1ede0;
+  --text-muted: #a8a190;
+  --text-light: #f1ede0;
 
-  /* Text */
-  --text-main: #1f2937;
-  --text-muted: #6b7280;
-  --text-light: #f3f4f6;
+  /* Stamps */
+  --primary: #e5484d;           /* stamp red — the act color */
+  --primary-deep: #a83337;
+  --primary-gradient: linear-gradient(180deg, #e5484d 0%, #d13c41 100%);
+  --secondary: #e8b554;         /* signal amber */
+  --success: #3f9b5b;
+  --success-deep: #2e7444;
+  --success-gradient: linear-gradient(180deg, #46a763 0%, #3f9b5b 100%);
+  --danger: #e5484d;
+  --danger-deep: #a83337;
+  --danger-gradient: linear-gradient(180deg, #e5484d 0%, #d13c41 100%);
+  --warning: #e8b554;
+  --warning-deep: #b98c36;
+  --warning-gradient: linear-gradient(180deg, #e8b554 0%, #d9a441 100%);
+  --amber: #e8b554;
 
-  /* Soft status surfaces */
-  --success-soft: #ecfdf5;
-  --success-border: #a7f3d0;
-  --success-ink: #065f46;
-  --danger-soft: #fef2f2;
-  --danger-border: #fecaca;
-  --danger-ink: #991b1b;
-  --warning-soft: #fffbeb;
-  --warning-border: #fde68a;
-  --warning-ink: #92400e;
-  --info-soft: #eff6ff;
-  --info-border: #bfdbfe;
-  --info-ink: #1e40af;
+  /* Opaque paper-tone status surfaces — legible on ink and on paper */
+  --success-soft: #dfe9d3;
+  --success-border: #8fb492;
+  --success-ink: #2e5a38;
+  --danger-soft: #f0d9d2;
+  --danger-border: #cf8d87;
+  --danger-ink: #8a2a2e;
+  --warning-soft: #f0e4c2;
+  --warning-border: #c9ac68;
+  --warning-ink: #74561b;
+  --info-soft: #e3e0d2;
+  --info-border: #a7a28c;
+  --info-ink: #3c382b;
 
-  /* Spacing & Shape */
-  --radius-lg: 24px;
-  --radius-md: 16px;
-  --radius-sm: 12px;
-  --radius-pill: 9999px;
+  /* "You" highlight */
+  --me-bg: rgba(232, 181, 84, 0.10);
+  --me-border: rgba(232, 181, 84, 0.55);
+
+  /* Shape */
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+
+  /* Type */
+  --font-display: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  --font-type: 'Special Elite', 'Courier New', monospace;
+  --font-ui: 'Outfit', -apple-system, 'Segoe UI', sans-serif;
 
   /* Safe areas */
   --safe-top: env(safe-area-inset-top, 0px);
@@ -58,21 +79,21 @@
   box-sizing: border-box;
 }
 
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
-  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--bg-gradient);
-  background-size: 200% 200%;
-  animation: gradientBG 15s ease infinite;
+  font-family: var(--font-ui);
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(232, 181, 84, 0.05), transparent 55%),
+    var(--ink-0);
   color: var(--text-main);
   height: 100%;
   width: 100%;
   overflow: hidden;
   position: fixed; /* Prevent iOS elastic bounce */
-}
-
-html {
-  height: 100%;
-  overflow: hidden;
 }
 
 #root {
@@ -81,11 +102,22 @@ html {
   overflow: hidden;
 }
 
+/* Film grain over everything */
+#root::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4000;
+  background-image: radial-gradient(rgba(241, 237, 224, 0.035) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+
 /* Container */
 .container {
   max-width: 480px;
   margin: 0 auto;
-  padding: calc(1.25rem + var(--safe-top)) 1.5rem calc(2rem + var(--safe-bottom));
+  padding: calc(1.25rem + var(--safe-top)) 1.25rem calc(2.25rem + var(--safe-bottom));
   height: 100%;
   width: 100%;
   display: flex;
@@ -94,93 +126,148 @@ html {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  animation: routeIn 0.25s ease-out;
+  animation: routeIn 0.28s ease-out;
 }
 
-/* Cards */
+/* ---------- Surfaces ---------- */
+
+/* Default card: dark panel */
 .card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
+  background: var(--ink-1);
+  border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  box-shadow: var(--glass-shadow);
+  padding: 1.25rem;
+  margin-bottom: 0.9rem;
   flex-shrink: 0;
 }
 
 .card-header {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--line);
   padding-bottom: 0.6rem;
   margin-bottom: 1rem;
 }
 
-.card-yellow { background: #fffbeb; border-color: #fcd34d; }
-.card-blue { background: #eff6ff; border-color: #bfdbfe; }
+/* Manila document */
+.paper-card {
+  position: relative;
+  background:
+    linear-gradient(100deg, rgba(35, 32, 20, 0.045) 0%, transparent 30%),
+    var(--paper);
+  color: var(--paper-ink);
+  border: 1px solid var(--paper-2);
+  border-radius: 6px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+}
 
-/* Typography */
+/* ---------- Typography ---------- */
+
 h1, h2, h3 {
   color: var(--text-main);
-  font-weight: 800;
 }
 
 h1 {
-  font-size: 2.2rem;
-  margin-bottom: 0.5rem;
-  color: white;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 3rem;
+  line-height: 0.95;
+  letter-spacing: 0.04em;
   text-align: center;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  margin-bottom: 0.4rem;
 }
 
-h2 { font-size: 1.4rem; margin-bottom: 0.8rem; text-align: center; }
-h3 { font-size: 1.1rem; margin-bottom: 0.8rem; }
+h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.6rem;
+  letter-spacing: 0.06em;
+  text-align: center;
+  margin-bottom: 0.8rem;
+}
+
+h3 {
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+}
 
 p {
   color: var(--text-muted);
   font-size: 0.95rem;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
-/* One brand lockup for headers on the gradient */
-.app-title {
-  color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  font-weight: 800;
-  text-align: center;
+/* Typewriter — mission briefing text */
+.type,
+input.type,
+textarea.type {
+  font-family: var(--font-type);
+  letter-spacing: 0.01em;
+}
+
+/* Small caps label */
+.overline {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .app-subtitle {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-muted);
   font-size: 0.85rem;
   font-weight: 600;
   text-align: center;
 }
 
-/* Inputs */
+/* Redacted secret */
+.redacted {
+  display: inline-block;
+  background: var(--paper-ink);
+  color: transparent;
+  border-radius: 2px;
+  transform: skewX(-6deg);
+  user-select: none;
+  line-height: 1;
+}
+
+/* ---------- Inputs ---------- */
+
 input[type="text"],
-input[type="email"] {
+input[type="email"],
+textarea,
+select {
   width: 100%;
-  padding: 1rem 1.5rem;
-  border: 2px solid #e5e7eb;
-  border-radius: var(--radius-pill);
-  background: white;
+  padding: 0.9rem 1.2rem;
+  border: 2px solid var(--paper-2);
+  border-bottom-color: rgba(35, 32, 20, 0.45);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-main);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: var(--font-ui);
+  color: var(--paper-ink);
+  transition: border-color 0.15s, box-shadow 0.15s;
   text-align: center;
-  font-family: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--paper-dim);
+  font-weight: 500;
 }
 
 input[type="text"]:focus,
-input[type="email"]:focus {
+input[type="email"]:focus,
+textarea:focus,
+select:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+  border-color: var(--amber);
+  box-shadow: 0 0 0 4px rgba(232, 181, 84, 0.18);
 }
 
-/* Buttons */
+/* ---------- Buttons ---------- */
+
 button {
   font-family: inherit;
   cursor: pointer;
@@ -192,52 +279,67 @@ button {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible {
-  outline: 3px solid #fde047;
+  outline: 3px solid var(--amber);
   outline-offset: 3px;
 }
 
+/* Every tap gets feedback, even on one-off inline buttons */
+button:not(:disabled):active {
+  filter: brightness(0.92);
+}
+
+/* App-like scroll: no visible scrollbar */
+.container::-webkit-scrollbar { width: 0; height: 0; }
+.container { scrollbar-width: none; }
+
 .btn {
   width: 100%;
-  padding: 1rem;
-  border-radius: var(--radius-pill);
-  font-weight: 700;
-  font-size: 1rem;
+  padding: 0.95rem 1.1rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.25rem;
+  letter-spacing: 0.09em;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: transform 0.1s ease, filter 0.15s ease;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
 }
 
-.btn:active { transform: scale(0.97); }
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: default;
-  transform: none;
 }
 
+/* The stamp press */
 .btn-primary {
   background: var(--primary-gradient);
-  color: white;
+  color: #fdf6ec;
+  box-shadow: 0 4px 0 var(--primary-deep);
 }
-
-.btn-secondary {
-  background: white;
-  color: var(--primary);
-  border: 2px solid #e5e7eb;
-}
-.btn-secondary:hover { background: #f9fafb; }
+.btn-primary:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--primary-deep); }
 
 .btn-success {
   background: var(--success-gradient);
-  color: white;
+  color: #f0f7ee;
+  box-shadow: 0 4px 0 var(--success-deep);
 }
+.btn-success:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--success-deep); }
 
 .btn-danger {
   background: var(--danger-gradient);
-  color: white;
+  color: #fdf6ec;
+  box-shadow: 0 4px 0 var(--danger-deep);
 }
+.btn-danger:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--danger-deep); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-main);
+  border: 2px solid var(--line-strong);
+}
+.btn-secondary:active:not(:disabled) { transform: scale(0.98); background: rgba(241, 237, 224, 0.06); }
 
 .btn-ghost {
   background: transparent;
@@ -245,13 +347,28 @@ input:focus-visible {
   box-shadow: none;
   border: none;
   padding: 0.5rem;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
 }
 
 .btn-small {
   width: auto;
-  padding: 0.55rem 1.1rem;
-  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
 }
+
+/* Paper context (inside modals / paper cards) */
+.modal .btn-secondary,
+.paper-card .btn-secondary {
+  color: var(--paper-ink);
+  border-color: rgba(35, 32, 20, 0.4);
+}
+.modal .btn-secondary:active:not(:disabled),
+.paper-card .btn-secondary:active:not(:disabled) { background: rgba(35, 32, 20, 0.06); }
+.modal .btn-ghost,
+.paper-card .btn-ghost { color: var(--paper-dim); }
 
 /* Round icon buttons (game headers) */
 .btn-icon {
@@ -261,34 +378,108 @@ input:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
-  transition: transform 0.1s ease;
+  font-size: 1.1rem;
+  background: var(--ink-2);
+  color: var(--text-main);
+  border: 1px solid var(--line-strong);
+  transition: transform 0.08s ease;
 }
 .btn-icon:active { transform: scale(0.92); }
-.btn-icon.danger { background: var(--danger-gradient); }
+.btn-icon.danger { background: var(--danger-gradient); border-color: transparent; }
 
-/* Score / rank badge (game header, tappable) */
+/* Score / rank badge — amber stamp */
 .rank-badge {
-  min-width: 52px;
-  height: 52px;
-  padding: 0 0.5rem;
-  border-radius: var(--radius-pill);
+  min-width: 54px;
+  height: 54px;
+  padding: 0 0.55rem;
+  border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #78350f;
-  font-weight: 800;
-  line-height: 1.1;
-  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.35);
-  transition: transform 0.1s ease;
+  background: var(--warning-gradient);
+  color: #3a2b0c;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+  box-shadow: 0 4px 0 var(--warning-deep);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
-.rank-badge:active { transform: scale(0.94); }
+.rank-badge:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--warning-deep); }
 
-/* Utility */
+/* ---------- Stamps ---------- */
+
+.stamp {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  padding: 0.15rem 0.55rem 0.05rem;
+  border: 2.5px solid currentColor;
+  border-radius: 4px;
+  transform: rotate(-4deg);
+  animation: stampIn 0.25s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.stamp.success { color: var(--success); }
+.stamp.danger { color: var(--danger); }
+.stamp.warning { color: var(--warning-deep); }
+.stamp.big { font-size: 2rem; border-width: 4px; padding: 0.2rem 0.9rem 0.05rem; }
+
+/* Full-screen stamp moment — the Gotcha slam */
+.slam-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  background: rgba(10, 9, 6, 0.86);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.slam-stamp {
+  font-family: var(--font-display);
+  font-size: clamp(3.2rem, 19vw, 5.5rem);
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 0.55rem 1.4rem 0.25rem;
+  border: 6px solid currentColor;
+  border-radius: 12px;
+  transform: rotate(-7deg);
+  background: var(--paper);
+  animation: slamIn 0.42s cubic-bezier(0.16, 1.4, 0.4, 1);
+  max-width: 92vw;
+  text-align: center;
+}
+
+.slam-stamp.success { color: var(--success); }
+.slam-stamp.danger { color: var(--danger); }
+.slam-stamp.amber { color: var(--warning-deep); }
+
+.slam-sub {
+  font-family: var(--font-type);
+  color: var(--paper);
+  font-size: 0.95rem;
+  text-align: center;
+  max-width: 80vw;
+  animation: fadeIn 0.4s ease-out 0.18s both;
+}
+
+@keyframes slamIn {
+  0% { transform: rotate(-7deg) scale(3); opacity: 0; }
+  55% { transform: rotate(-7deg) scale(0.92); opacity: 1; }
+  75% { transform: rotate(-7deg) scale(1.06); }
+  100% { transform: rotate(-7deg) scale(1); }
+}
+
+/* ---------- Utility ---------- */
+
 .flex { display: flex; }
 .flex-center { display: flex; align-items: center; justify-content: center; }
 .flex-between { display: flex; align-items: center; justify-content: space-between; }
@@ -313,7 +504,7 @@ input:focus-visible {
 
 .game-error {
   padding: 0.75rem 1rem;
-  border: 2px solid #dc2626;
+  border: 2px solid var(--danger-border);
   border-radius: var(--radius-sm);
   background: var(--danger-soft);
   color: var(--danger-ink);
@@ -328,56 +519,63 @@ input:focus-visible {
   font-weight: 800;
   font-size: 0.9rem;
   background: var(--success-gradient);
-  color: white;
+  color: #f0f7ee;
 }
 
 .timer {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.35rem 0.9rem;
-  border-radius: var(--radius-pill);
-  background: #1f2937;
-  color: white;
-  font-weight: 800;
+  padding: 0.3rem 0.85rem;
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  border: 1.5px solid rgba(35, 32, 20, 0.35);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
 }
 
 .timer.urgent {
   background: var(--danger-gradient);
+  color: #fdf6ec;
   animation: pulse 1s ease-in-out infinite;
 }
 
-/* Game Header */
+/* ---------- Game header ---------- */
+
 .game-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.1rem;
 }
 
 .header-title h1 {
-  font-size: 1.4rem;
+  font-size: 1.7rem;
   margin: 0;
+  letter-spacing: 0.07em;
 }
 
 .player-count {
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.2em;
 }
 
-/* Leaderboard widget (in-game) */
-.leaderboard-widget { padding: 1rem; }
+/* ---------- Leaderboard widget ---------- */
+
+.leaderboard-widget { padding: 0.9rem; }
 
 .leaderboard-label {
   text-align: center;
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: 0.66rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.22em;
   color: var(--text-muted);
   margin-bottom: 0.6rem;
 }
@@ -395,17 +593,17 @@ input:focus-visible {
   gap: 0.15rem;
   padding: 0.5rem 0.3rem;
   border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.03);
-  border: 2px solid transparent;
+  background: var(--ink-2);
+  border: 1.5px solid transparent;
   min-width: 0;
 }
 
 .leaderboard-card.is-me {
-  background: rgba(139, 92, 246, 0.08);
-  border-color: rgba(139, 92, 246, 0.35);
+  background: var(--me-bg);
+  border-color: var(--me-border);
 }
 
-.leaderboard-card .medal { font-size: 1.3rem; line-height: 1; }
+.leaderboard-card .medal { font-size: 1.25rem; line-height: 1; }
 
 .leaderboard-card .player-name {
   font-size: 0.72rem;
@@ -418,38 +616,43 @@ input:focus-visible {
 }
 
 .leaderboard-card .player-score {
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.05em;
+  color: var(--amber);
   font-variant-numeric: tabular-nums;
 }
 
-/* Task list */
+/* ---------- Mission dossiers (task list) ---------- */
+
 .task-list-item {
   position: relative;
-  border-radius: var(--radius-md);
-  padding: 1rem;
-  margin-bottom: 0.75rem;
+  border-radius: 6px;
+  padding: 1rem 1rem 0.9rem;
+  margin-bottom: 0.8rem;
   animation: taskReveal 0.35s ease-out both;
 }
 
-/* Home feature grid */
+/* ---------- Home feature grid ---------- */
+
 .feature-item {
-  padding: 0.6rem 0.25rem;
+  padding: 0.7rem 0.25rem;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--ink-2);
+  border: 1px solid var(--line);
 }
 
-/* Modals */
+/* ---------- Modals: paper sheets ---------- */
+
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(17, 24, 39, 0.65);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  background: rgba(10, 9, 6, 0.78);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -457,26 +660,34 @@ input:focus-visible {
   padding: 1rem;
   padding-top: calc(1rem + var(--safe-top));
   padding-bottom: calc(1rem + var(--safe-bottom));
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.18s ease-out;
 }
 
 .modal {
-  background: white;
-  border-radius: 20px;
-  padding: 1.5rem;
+  background:
+    linear-gradient(100deg, rgba(35, 32, 20, 0.05) 0%, transparent 35%),
+    var(--paper);
+  color: var(--paper-ink);
+  border-radius: 8px;
+  border: 1px solid var(--paper-2);
+  padding: 1.4rem;
   width: 100%;
   max-width: 360px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.5), 0 24px 60px rgba(0, 0, 0, 0.55);
   animation: scaleIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   text-align: center;
   max-height: 85vh;
   overflow-y: auto;
 }
 
+.modal h1, .modal h2, .modal h3, .modal h4 { color: var(--paper-ink); }
+.modal p { color: #4c4636; }
+.modal .text-small { color: var(--paper-dim); }
+
 .modal-close {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 4px;
+  right: 4px;
   width: 44px;
   height: 44px;
   display: flex;
@@ -484,13 +695,14 @@ input:focus-visible {
   justify-content: center;
   background: none;
   border: none;
-  font-size: 1.4rem;
-  color: var(--text-muted);
+  font-size: 1.3rem;
+  color: var(--paper-dim);
   border-radius: 50%;
 }
-.modal-close:active { background: rgba(0, 0, 0, 0.06); }
+.modal-close:active { background: rgba(35, 32, 20, 0.08); }
 
-/* Toasts */
+/* ---------- Toasts: paper slips ---------- */
+
 .toast-stack {
   position: fixed;
   top: calc(14px + var(--safe-top));
@@ -511,24 +723,24 @@ input:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.8rem 1.1rem;
-  border-radius: var(--radius-md);
-  background: rgba(31, 41, 55, 0.96);
-  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--paper-ink);
   font-weight: 700;
   font-size: 0.9rem;
   line-height: 1.35;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  border-left: 5px solid var(--primary);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45), 0 12px 30px rgba(0, 0, 0, 0.4);
+  border-left: 6px solid var(--amber);
   animation: toastIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   cursor: pointer;
 }
 
 .toast.success { border-left-color: var(--success); }
 .toast.error { border-left-color: var(--danger); }
-.toast.info { border-left-color: var(--secondary); }
+.toast.info { border-left-color: var(--amber); }
 
-/* Gotcha feed toasts (in-game) */
+/* Gotcha feed (in-game) */
 .notification-stack {
   position: fixed;
   top: calc(14px + var(--safe-top));
@@ -541,27 +753,22 @@ input:focus-visible {
 }
 
 .notification-toast {
-  background: var(--success-gradient);
-  color: white;
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-  font-size: 0.9rem;
-  font-weight: 600;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: var(--paper);
+  color: var(--paper-ink);
+  padding: 0.7rem 0.9rem;
+  border-radius: 6px;
+  border-left: 6px solid var(--primary);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+  font-size: 0.88rem;
+  font-weight: 700;
   animation: slideInRight 0.3s ease-out;
 }
 
-/* Animations */
-@keyframes gradientBG {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
+/* ---------- Animations ---------- */
 
 @keyframes scorePop {
   0% { transform: scale(1); }
-  50% { transform: scale(1.3); color: var(--success); }
+  50% { transform: scale(1.35); color: var(--amber); }
   100% { transform: scale(1); }
 }
 
@@ -576,7 +783,7 @@ input:focus-visible {
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0.9); opacity: 0; }
+  from { transform: scale(0.92); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
 
@@ -611,8 +818,14 @@ input:focus-visible {
 }
 
 @keyframes taskReveal {
-  from { opacity: 0; transform: translateY(12px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(12px) rotate(0.4deg); }
+  to { opacity: 1; transform: translateY(0) rotate(0deg); }
+}
+
+@keyframes stampIn {
+  0% { transform: rotate(-4deg) scale(1.7); opacity: 0; }
+  60% { transform: rotate(-4deg) scale(0.95); opacity: 1; }
+  100% { transform: rotate(-4deg) scale(1); opacity: 1; }
 }
 
 @keyframes feedbackPulse {
@@ -622,9 +835,9 @@ input:focus-visible {
 }
 
 @keyframes feedbackScale {
-  0% { transform: scale(0.6); }
-  60% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+  0% { transform: rotate(-4deg) scale(0.5); }
+  60% { transform: rotate(-4deg) scale(1.12); }
+  100% { transform: rotate(-4deg) scale(1); }
 }
 
 @keyframes confettiFall {

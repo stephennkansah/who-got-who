@@ -41,7 +41,7 @@ function Home() {
       if (state.currentGame.status === 'draft') {
         const packSelected = state.currentGame.settings?.selectedPack;
         const isHost = state.currentPlayer?.isHost;
-        
+
         if (packSelected || !isHost) {
           navigate(`/lobby/${state.currentGame.id}`);
         } else {
@@ -93,9 +93,21 @@ function Home() {
   if (state.isLoading) {
     return (
       <div className="container flex-center">
-        <div className="card text-center" style={{ padding: '3rem' }}>
-          <div style={{ fontSize: '3em', marginBottom: '1rem', animation: 'spin 2s linear infinite' }}>⏳</div>
-          <h2>Setting up...</h2>
+        <div className="card text-center" style={{ padding: '2.5rem 2rem' }}>
+          <div
+            aria-hidden="true"
+            style={{
+              width: '44px',
+              height: '44px',
+              margin: '0 auto 1.1rem',
+              borderRadius: '50%',
+              border: '3px solid var(--line)',
+              borderTopColor: 'var(--amber)',
+              animation: 'spin 0.9s linear infinite',
+            }}
+          />
+          <h2>Setting up…</h2>
+          <p className="type" style={{ fontSize: '0.85rem' }}>establishing secure channel</p>
         </div>
       </div>
     );
@@ -103,27 +115,44 @@ function Home() {
 
   return (
     <div className="container">
-      {/* Hero Header */}
-      <div style={{ textAlign: 'center', marginBottom: '2rem', paddingTop: '1rem' }}>
-        <h1>WHO GOT WHO</h1>
-        <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem', fontWeight: '600' }}>
-          Secret tasks. Stealth claims. The life of the party.
+      {/* Hero */}
+      <header style={{ textAlign: 'center', margin: '1.25rem 0 1.5rem', position: 'relative' }}>
+        <div className="overline" style={{ marginBottom: '0.6rem' }}>
+          Classified · Party Ops
+        </div>
+        <h1 style={{ fontSize: '4rem' }}>
+          Who Got Who
+        </h1>
+        <p className="type" style={{ color: 'var(--text-muted)', fontSize: '0.92rem', marginTop: '0.4rem' }}>
+          secret tasks. stealth claims. plausible deniability.
         </p>
-      </div>
+        <div
+          className="stamp danger"
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: '-8px',
+            right: '6px',
+            fontSize: '0.78rem',
+            opacity: 0.85,
+            transform: 'rotate(9deg)',
+          }}
+        >
+          Top Secret
+        </div>
+      </header>
 
-      {/* Welcome / Action Card */}
-      <div className="card" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
+      {/* Recruitment card */}
+      <div className="card" style={{ textAlign: 'center', padding: '1.5rem 1.25rem' }}>
         {state.error && (
           <div role="alert" className="game-error" style={{ marginBottom: '1rem' }}>
             {state.error}
           </div>
         )}
-        <div style={{ marginBottom: '1.5rem' }}>
-          <h2 style={{ marginBottom: '0.5rem' }}>Welcome!</h2>
-          <p>Choose your look</p>
-        </div>
 
-        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'center' }}>
+        <div className="overline" style={{ marginBottom: '1rem' }}>Agent profile</div>
+
+        <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'center' }}>
           <AvatarPicker
             selectedAvatar={selectedAvatar}
             onAvatarChange={(avatar, isPhoto) => {
@@ -136,47 +165,48 @@ function Home() {
         <input
           aria-label="Player name"
           type="text"
-          placeholder="Enter your name"
+          placeholder="Your agent name"
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
-          style={{ marginBottom: '1rem' }}
+          style={{ marginBottom: '0.9rem' }}
         />
 
         {mode === 'welcome' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+          <div className="flex-column gap-1">
             <button
               className="btn btn-primary"
               onClick={handleStartGame}
               disabled={!playerName.trim() || state.isLoading}
             >
-              🚀 Start New Game
+              Start a New Game
             </button>
             <button
               className="btn btn-secondary"
               onClick={() => setMode('join')}
             >
-              🎮 Join Existing Game
+              Join a Game
             </button>
           </div>
         )}
 
         {mode === 'join' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+          <div className="flex-column gap-1">
             <input
               aria-label="Game code"
               type="text"
-              placeholder="Game Code (e.g. ABC234)"
+              className="type"
+              placeholder="GAME CODE · e.g. ABC234"
               value={gameId}
               onChange={(e) => setGameId(e.target.value.toUpperCase())}
               maxLength={6}
-              style={{ textTransform: 'uppercase', letterSpacing: '2px' }}
+              style={{ textTransform: 'uppercase', letterSpacing: '4px' }}
             />
             <button
               className="btn btn-primary"
               onClick={handleJoinGame}
               disabled={gameId.length !== 6 || !playerName.trim() || state.isLoading}
             >
-              Join Party
+              Join the Party
             </button>
             <button
               className="btn btn-ghost"
@@ -188,47 +218,55 @@ function Home() {
         )}
       </div>
 
-      {/* Perfect For... */}
-      <div className="card" style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.6)' }}>
-        <h3 style={{ textAlign: 'center', marginBottom: '1.2rem', color: '#4b5563' }}>Perfect For...</h3>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: '1fr 1fr', 
-          gap: '1rem',
-          textAlign: 'center' 
+      {/* Deployment scenarios */}
+      <div className="card" style={{ padding: '1.1rem 1.25rem' }}>
+        <div className="overline" style={{ textAlign: 'center', marginBottom: '0.9rem' }}>
+          Field-tested at
+        </div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '0.6rem',
+          textAlign: 'center'
         }}>
-          <div className="feature-item">
-            <div style={{ fontSize: '2rem', marginBottom: '0.2rem' }}>🏠</div>
-            <div style={{ fontWeight: '700', fontSize: '0.9rem', color: '#374151' }}>House Parties</div>
-          </div>
-          <div className="feature-item">
-            <div style={{ fontSize: '2rem', marginBottom: '0.2rem' }}>🍽️</div>
-            <div style={{ fontWeight: '700', fontSize: '0.9rem', color: '#374151' }}>Dinner</div>
-          </div>
-          <div className="feature-item">
-            <div style={{ fontSize: '2rem', marginBottom: '0.2rem' }}>🍻</div>
-            <div style={{ fontWeight: '700', fontSize: '0.9rem', color: '#374151' }}>Pre-Drinks</div>
-          </div>
-          <div className="feature-item">
-            <div style={{ fontSize: '2rem', marginBottom: '0.2rem' }}>🎲</div>
-            <div style={{ fontWeight: '700', fontSize: '0.9rem', color: '#374151' }}>Game Night</div>
-          </div>
+          {[
+            ['🏠', 'House parties'],
+            ['🍽️', 'Dinners'],
+            ['🍻', 'Pre-drinks'],
+            ['🎲', 'Game nights'],
+          ].map(([icon, label]) => (
+            <div key={label} className="feature-item">
+              <div style={{ fontSize: '1.6rem', marginBottom: '0.15rem' }} aria-hidden="true">{icon}</div>
+              <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-main)' }}>{label}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* How to Play */}
-      <div className="card card-yellow">
-        <h3 style={{ textAlign: 'center', color: '#92400e', marginBottom: '1rem' }}>How to Play</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          <Step number="1" text="Each player gets secret tasks to complete on others" />
-          <Step number="2" text="Complete tasks without being obvious - it's your mission" />
-          <Step number="3" text="Say 'Gotcha!' and claim your win in the app" />
-          <Step number="4" text="First to reach the target score wins!" />
+      {/* The briefing */}
+      <div className="paper-card" style={{ padding: '1.25rem 1.25rem 1.1rem', marginBottom: '0.9rem' }}>
+        <div className="type" style={{
+          fontSize: '0.7rem',
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase',
+          color: 'var(--paper-dim)',
+          marginBottom: '0.8rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+        }}>
+          <span>Briefing № 001</span>
+          <span>Eyes only</span>
+        </div>
+        <div className="flex-column" style={{ gap: '0.7rem' }}>
+          <Step number="1" text="Every agent receives secret tasks to pull off on the others." />
+          <Step number="2" text="Complete yours without being noticed. Suspicion is failure." />
+          <Step number="3" text={'Say "Gotcha!" out loud, then claim it in the app.'} />
+          <Step number="4" text="First to the target score takes the game." />
         </div>
       </div>
 
-      <p style={{ textAlign: 'center', margin: '1.25rem 0', fontSize: '0.8rem' }}>
-        <a href="/privacy.html" style={{ color: '#fff' }}>Privacy</a>
+      <p style={{ textAlign: 'center', margin: '0.5rem 0 1rem', fontSize: '0.78rem' }}>
+        <a href="/privacy.html" style={{ color: 'var(--text-muted)' }}>Privacy</a>
         {' · '}Only upload photos with everyone&apos;s permission.
       </p>
     </div>
@@ -236,23 +274,20 @@ function Home() {
 }
 
 const Step = ({ number, text }: { number: string, text: string }) => (
-  <div style={{ display: 'flex', gap: '1rem', alignItems: 'start' }}>
-    <div style={{ 
-      background: '#f59e0b', 
-      color: 'white', 
-      borderRadius: '50%', 
-      width: '24px', 
-      height: '24px', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      fontWeight: 'bold',
+  <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'baseline' }}>
+    <div style={{
+      fontFamily: 'var(--font-display)',
+      fontSize: '1.2rem',
+      color: 'var(--primary)',
       flexShrink: 0,
-      marginTop: '2px'
-    }}>
+      width: '18px',
+      textAlign: 'center',
+    }} aria-hidden="true">
       {number}
     </div>
-    <p style={{ color: '#78350f', margin: 0, fontWeight: '500' }}>{text}</p>
+    <p className="type" style={{ color: 'var(--paper-ink)', margin: 0, fontSize: '0.88rem', lineHeight: 1.5 }}>
+      {text}
+    </p>
   </div>
 );
 

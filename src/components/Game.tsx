@@ -13,6 +13,7 @@ import { LeaderboardWidget } from './game/LeaderboardWidget';
 import { GameNotifications } from './game/GameNotifications';
 import { FullLeaderboard } from './game/FullLeaderboard';
 import { ConfirmationModal } from './common/ConfirmationModal';
+import StampSplash from './common/StampSplash';
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -30,6 +31,8 @@ export default function Game() {
   const [showTargetModal, setShowTargetModal] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [notifications, setNotifications] = useState<Array<{id: string, message: string, type: string}>>([]);
+  const [slam, setSlam] = useState<{ title: string; subtitle?: string; tone: 'success' | 'danger' | 'amber' } | null>(null);
+  const [showIntro, setShowIntro] = useState(false);
   const seenNotifications = useRef(new Set<string>());
   
   // Confirmation Modal State
@@ -86,6 +89,17 @@ export default function Game() {
       navigate(`/recap/${gameId}`);
     }
   }, [currentGame?.status, gameId, navigate]);
+
+  // One-time "missions live" splash per game on this device
+  useEffect(() => {
+    if (currentGame?.status === 'live' && currentPlayer && gameId) {
+      const key = `wgw-intro-${gameId}`;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        setShowIntro(true);
+      }
+    }
+  }, [currentGame?.status, currentPlayer, gameId]);
 
   // Watch for completed tasks and show notifications
   useEffect(() => {
@@ -254,26 +268,24 @@ export default function Game() {
         onShowLeaderboard={() => setShowLeaderboard(true)}
       />
 
-      {/* Combined Game Info */}
+      {/* Standing orders */}
       <div className="card" style={{
         marginBottom: '1rem',
         textAlign: 'center',
-        padding: '0.9rem 1.25rem'
+        padding: '0.8rem 1.1rem'
       }}>
-        <div style={{
-          fontSize: '0.9rem',
-          marginBottom: '0.2rem',
-          fontWeight: 700,
+        <div className="type" style={{
+          fontSize: '0.82rem',
+          marginBottom: '0.15rem',
           color: 'var(--text-main)'
         }}>
-          🎮 Complete stealth tasks · say "Gotcha!" when you succeed
+          complete missions in the field · say "Gotcha!" when you land one
         </div>
-        <div style={{
+        <div className="type" style={{
           color: 'var(--danger)',
-          fontSize: '0.8rem',
-          fontWeight: 700
+          fontSize: '0.78rem',
         }}>
-          🕵️ Don't get caught or it's an auto-fail — stay sneaky! 🤫
+          get noticed = mission failed. stay invisible.
         </div>
       </div>
 
@@ -289,14 +301,11 @@ export default function Game() {
 
       {/* Task Cards */}
       <div className="card" style={{ marginBottom: '1rem' }}>
-        <h2 style={{
-          fontSize: '1.05rem',
-          marginBottom: '1rem',
-          textAlign: 'center',
-          textTransform: 'uppercase',
-          letterSpacing: '2px'
-        }}>
-          🤫 Your Secret Tasks
+        <div className="overline" style={{ textAlign: 'center', marginBottom: '0.25rem' }}>
+          Eyes only
+        </div>
+        <h2 style={{ marginBottom: '1rem' }}>
+          Your Missions
         </h2>
 
         <TaskListView

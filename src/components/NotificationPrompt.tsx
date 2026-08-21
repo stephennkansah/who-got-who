@@ -64,29 +64,29 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-      border: '2px solid #f59e0b',
-      borderRadius: '15px',
-      padding: '20px',
-      margin: '15px 0',
+      background: 'var(--warning-soft)',
+      border: '1px solid var(--warning-border)',
+      borderRadius: 'var(--radius-md)',
+      padding: '18px',
+      margin: '0 0 0.9rem',
       textAlign: 'center'
     }}>
-      <div style={{ fontSize: '24px', marginBottom: '10px' }}>🔔</div>
-      <h3 style={{ 
-        color: '#92400e', 
-        marginBottom: '10px', 
-        fontSize: '1.1em',
-        fontWeight: '700'
+      <div style={{ fontSize: '24px', marginBottom: '8px' }} aria-hidden="true">🔔</div>
+      <h3 style={{
+        color: 'var(--warning-ink)',
+        marginBottom: '8px',
+        fontSize: '1.05em',
+        fontWeight: 700
       }}>
-        Stay Updated!
+        Stay in the loop
       </h3>
-      <p style={{ 
-        color: '#78350f', 
-        marginBottom: '15px', 
-        fontSize: '0.9em',
-        lineHeight: '1.4'
+      <p style={{
+        color: 'var(--warning-ink)',
+        marginBottom: '14px',
+        fontSize: '0.88em',
+        lineHeight: 1.45
       }}>
-        Get notifications when players complete tasks or get caught. Perfect for background gameplay!
+        Get a ping when someone claims a gotcha or gets caught — perfect for background play.
       </p>
       <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
         <button
@@ -116,26 +116,17 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
         <button
           onClick={handleDismiss}
           style={{
-            background: '#f3f4f6',
-            color: '#6b7280',
-            border: 'none',
-            borderRadius: '12px',
+            background: 'transparent',
+            color: 'var(--warning-ink)',
+            border: '2px solid var(--warning-border)',
+            borderRadius: 'var(--radius-sm)',
             padding: '10px 20px',
             fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            const target = e.target as HTMLButtonElement;
-            target.style.background = '#e5e7eb';
-          }}
-          onMouseLeave={(e) => {
-            const target = e.target as HTMLButtonElement;
-            target.style.background = '#f3f4f6';
+            fontWeight: 700,
+            cursor: 'pointer'
           }}
         >
-          Maybe Later
+          Maybe later
         </button>
       </div>
     </div>

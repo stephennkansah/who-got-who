@@ -21,17 +21,16 @@ const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, gameType, style }) => {
       <button
         onClick={() => setIsOpen(true)}
         style={{
-          background: 'linear-gradient(135deg, #ec4899, #db2777)',
-          color: 'white',
-          border: 'none',
-          borderRadius: 'var(--radius-pill)',
+          background: 'var(--ink-2)',
+          color: 'var(--text-main)',
+          border: '2px solid var(--line-strong)',
+          borderRadius: 'var(--radius-sm)',
           padding: '8px 16px',
           fontSize: '0.85rem',
           fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
-          boxShadow: '0 2px 8px rgba(236, 72, 153, 0.3)',
           ...style
         }}
       >

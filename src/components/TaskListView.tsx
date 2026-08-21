@@ -56,104 +56,79 @@ export default function TaskListView({
 
   const playerName = (id?: string) => players.find(p => p.id === id)?.name || 'Unknown';
 
-  const statusTheme = (status: TaskInstance['status']) => {
+  const stampFor = (status: TaskInstance['status']) => {
     switch (status) {
-      case 'completed':
-        return { border: 'var(--success)', chipBg: 'var(--success-gradient)', chip: '✅ GOT IT' };
-      case 'failed':
-        return { border: 'var(--danger)', chipBg: 'var(--danger-gradient)', chip: '🚨 CAUGHT' };
-      case 'disputed':
-        return { border: 'var(--warning)', chipBg: 'var(--warning-gradient)', chip: '⚖️ IN DISPUTE' };
-      default:
-        return { border: 'rgba(0,0,0,0.08)', chipBg: '', chip: '' };
+      case 'completed': return { cls: 'stamp success', label: "Got 'em" };
+      case 'failed': return { cls: 'stamp danger', label: 'Busted' };
+      case 'disputed': return { cls: 'stamp warning', label: 'Disputed' };
+      default: return null;
     }
   };
 
   return (
     <div>
       {tasks.map((task, index) => {
-        const theme = statusTheme(task.status);
+        const stamp = stampFor(task.status);
         const dispute = disputeForTask(task.id);
         const feedback = taskFeedback[task.id];
         const isPending = task.status === 'pending';
+        const missionNo = String(index + 1).padStart(2, '0');
 
         return (
           <div
             key={task.id}
-            className="task-list-item"
+            className="task-list-item paper-card"
             style={{
-              background: 'white',
-              borderLeft: `5px solid ${theme.border}`,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              opacity: isPending || task.status === 'disputed' ? 1 : 0.88,
+              opacity: isPending || task.status === 'disputed' ? 1 : 0.82,
               animationDelay: `${Math.min(index * 60, 420)}ms`,
+              transform: `rotate(${index % 2 === 0 ? '-0.35' : '0.35'}deg)`,
             }}
           >
-            {/* Optimistic "sending" overlay — clears as soon as the claim lands */}
+            {/* Optimistic "sending" overlay — a stamp slamming down */}
             {feedback && (
               <div style={{
                 position: 'absolute',
                 inset: 0,
-                background: feedback === 'passed'
-                  ? 'rgba(16, 185, 129, 0.95)'
-                  : 'rgba(239, 68, 68, 0.95)',
-                borderRadius: 'var(--radius-md)',
+                background: 'rgba(35, 32, 20, 0.82)',
+                borderRadius: '6px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.25rem',
+                gap: '0.4rem',
                 zIndex: 10,
-                animation: 'feedbackPulse 0.6s ease-out'
+                animation: 'feedbackPulse 0.5s ease-out'
               }}>
-                <div style={{
-                  color: 'white',
-                  fontSize: '2rem',
-                  fontWeight: 900,
-                  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                  animation: 'feedbackScale 0.5s ease-out'
-                }}>
-                  {feedback === 'passed' ? '✅ GOT IT' : '🚨 CAUGHT'}
+                <div
+                  className={`stamp big ${feedback === 'passed' ? 'success' : 'danger'}`}
+                  style={{ animation: 'feedbackScale 0.45s ease-out', background: 'var(--paper)' }}
+                >
+                  {feedback === 'passed' ? "Got 'em" : 'Busted'}
                 </div>
-                <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.8rem', fontWeight: 700 }}>
-                  Sending…
+                <div className="type" style={{ color: 'var(--paper)', fontSize: '0.75rem' }}>
+                  filing report…
                 </div>
               </div>
             )}
 
-            {/* Header row: number + status chip */}
-            <div className="flex-between" style={{ marginBottom: '0.6rem' }}>
-              <div style={{
-                fontSize: '0.75rem',
-                color: 'var(--text-muted)',
-                fontWeight: 700,
-                background: 'rgba(0,0,0,0.05)',
-                padding: '0.2rem 0.6rem',
-                borderRadius: 'var(--radius-pill)'
+            {/* Dossier header */}
+            <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
+              <div className="type" style={{
+                fontSize: '0.68rem',
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                color: 'var(--paper-dim)',
               }}>
-                Task {index + 1} of {tasks.length}
+                Mission № {missionNo} / {String(tasks.length).padStart(2, '0')}
               </div>
-              {!isPending && (
-                <div style={{
-                  background: theme.chipBg,
-                  color: 'white',
-                  padding: '0.3rem 0.7rem',
-                  borderRadius: 'var(--radius-pill)',
-                  fontSize: '0.72rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.04em',
-                }}>
-                  {theme.chip}
-                </div>
-              )}
+              {stamp && <span className={stamp.cls}>{stamp.label}</span>}
             </div>
 
-            {/* Task text */}
-            <div style={{
+            {/* Mission text — typewriter */}
+            <div className="type" style={{
               fontSize: '0.98rem',
-              lineHeight: 1.45,
-              color: 'var(--text-main)',
-              fontWeight: 600,
+              lineHeight: 1.5,
+              color: 'var(--paper-ink)',
               marginBottom: '0.75rem',
             }}>
               {task.text}
@@ -161,78 +136,69 @@ export default function TaskListView({
 
             {/* Claim awaiting response / vote */}
             {dispute && (
-              <div style={{
-                background: 'var(--warning-soft)',
-                border: '1px solid var(--warning-border)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '0.6rem 0.75rem',
-                marginBottom: '0.5rem',
-                fontSize: '0.85rem',
-                fontWeight: 700,
+              <div className="type" style={{
+                borderTop: '1px dashed var(--paper-line)',
+                paddingTop: '0.55rem',
+                marginBottom: '0.25rem',
+                fontSize: '0.82rem',
                 color: 'var(--warning-ink)',
                 textAlign: 'center',
               }}>
                 {dispute.phase === 'voting'
-                  ? '⚖️ Disputed — the group is voting…'
-                  : `⏳ Waiting for ${playerName(dispute.targetId)} to accept…`}
+                  ? '⚖ disputed — the group is voting…'
+                  : `⏳ awaiting ${playerName(dispute.targetId)}'s response…`}
               </div>
             )}
 
-            {/* Outcome row */}
+            {/* Outcome line */}
             {task.status === 'completed' && task.targetId && (
-              <div style={{
-                background: 'var(--success-soft)',
-                border: '1px solid var(--success-border)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '0.6rem 0.75rem',
-                fontSize: '0.9rem',
-                fontWeight: 700,
+              <div className="type" style={{
+                borderTop: '1px dashed var(--paper-line)',
+                paddingTop: '0.55rem',
+                fontSize: '0.85rem',
                 color: 'var(--success-ink)',
                 textAlign: 'center',
               }}>
-                🎯 You got <strong>{playerName(task.targetId)}</strong>!
+                target: <strong>{playerName(task.targetId)}</strong> — mission accomplished
               </div>
             )}
 
             {task.status === 'failed' && task.targetId && (
-              <div style={{
-                background: 'var(--danger-soft)',
-                border: '1px solid var(--danger-border)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '0.6rem 0.75rem',
-                fontSize: '0.9rem',
-                fontWeight: 700,
+              <div className="type" style={{
+                borderTop: '1px dashed var(--paper-line)',
+                paddingTop: '0.55rem',
+                fontSize: '0.85rem',
                 color: 'var(--danger-ink)',
                 textAlign: 'center',
               }}>
-                🚨 Busted by <strong>{playerName(task.targetId)}</strong>
+                compromised by <strong>{playerName(task.targetId)}</strong>
               </div>
             )}
 
             {/* Actions for pending tasks */}
             {isPending && !dispute && (
-              <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
+              <div className="flex gap-1" style={{ flexWrap: 'wrap', marginTop: '0.25rem' }}>
                 <button
                   onClick={() => handleTaskAction(task, 'passed')}
                   className="btn btn-success"
-                  style={{ flex: 2, minWidth: '110px', padding: '0.65rem', fontSize: '0.9rem', borderRadius: 'var(--radius-sm)' }}
+                  style={{ flex: 2, minWidth: '110px', padding: '0.6rem', fontSize: '1.05rem' }}
                 >
-                  ✅ Got it!
+                  Got it!
                 </button>
                 <button
                   onClick={() => handleTaskAction(task, 'failed')}
                   className="btn btn-secondary"
-                  style={{ flex: 1, minWidth: '90px', padding: '0.65rem', fontSize: '0.9rem', borderRadius: 'var(--radius-sm)', color: 'var(--danger)', borderColor: 'var(--danger-border)' }}
+                  style={{ flex: 1, minWidth: '86px', padding: '0.6rem', fontSize: '1.05rem' }}
                 >
-                  😅 Caught
+                  Caught
                 </button>
                 {swapsLeft > 0 && (
                   <button
                     onClick={() => onSwapTask(task.id)}
                     className="btn btn-secondary"
-                    style={{ flex: 1, minWidth: '90px', padding: '0.65rem', fontSize: '0.9rem', borderRadius: 'var(--radius-sm)' }}
+                    style={{ flex: 1, minWidth: '96px', padding: '0.6rem', fontSize: '1.05rem' }}
                   >
-                    🔄 Swap ({swapsLeft}/{swapsTotal})
+                    Swap · {swapsLeft}/{swapsTotal}
                   </button>
                 )}
               </div>
@@ -246,12 +212,10 @@ export default function TaskListView({
           textAlign: 'center',
           padding: '2rem',
           color: 'var(--text-muted)',
-          fontSize: '1rem'
         }}>
-          <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }} aria-hidden="true">🎯</div>
-          <div style={{ fontWeight: 700 }}>No tasks yet!</div>
-          <div style={{ fontSize: '0.9rem', marginTop: '0.4rem' }}>
-            Your secret missions appear when the game starts.
+          <div className="type" style={{ fontSize: '0.95rem', fontWeight: 700 }}>No missions on file.</div>
+          <div style={{ fontSize: '0.85rem', marginTop: '0.4rem' }}>
+            Your dossier arrives when the game starts.
           </div>
         </div>
       )}

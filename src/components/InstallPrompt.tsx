@@ -96,11 +96,11 @@ const InstallPrompt: React.FC = () => {
           background: 'var(--primary-gradient)',
           color: 'white',
           border: 'none',
-          borderRadius: 'var(--radius-pill)',
+          borderRadius: 'var(--radius-sm)',
           padding: '10px 16px',
           fontSize: '13px',
           fontWeight: 700,
-          boxShadow: '0 4px 15px rgba(139, 92, 246, 0.35)',
+          boxShadow: '0 3px 0 var(--primary-deep)',
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
@@ -115,12 +115,11 @@ const InstallPrompt: React.FC = () => {
           width: '30px',
           height: '30px',
           borderRadius: '50%',
-          background: 'rgba(255, 255, 255, 0.9)',
+          background: 'var(--ink-2)',
           color: 'var(--text-muted)',
-          border: 'none',
+          border: '1px solid var(--line-strong)',
           fontSize: '13px',
           fontWeight: 700,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
         }}
       >
         ✕

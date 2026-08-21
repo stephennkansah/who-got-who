@@ -216,11 +216,14 @@ export default function HolidayChallengeGame() {
 
       {/* Challenge List */}
       <div className="card">
-        <h2 style={{ fontSize: '1.05rem', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '2px' }}>
-          🏁 Challenges
+        <div className="overline" style={{ textAlign: 'center', marginBottom: '0.25rem' }}>
+          Open assignments
+        </div>
+        <h2 style={{ marginBottom: '0.25rem' }}>
+          Challenges
         </h2>
-        <p style={{ textAlign: 'center', fontSize: '0.8rem', marginBottom: '1rem' }}>
-          {completedCount}/{challenges.length} done — race the others!
+        <p className="type" style={{ textAlign: 'center', fontSize: '0.78rem', marginBottom: '1rem' }}>
+          {completedCount}/{challenges.length} filed — race the others
         </p>
 
         <div className="flex-column gap-1">
@@ -231,42 +234,39 @@ export default function HolidayChallengeGame() {
             return (
               <button
                 key={challenge.id}
-                className="task-list-item"
+                className="task-list-item paper-card"
                 onClick={() => handleChallengeClick(challenge)}
                 disabled={locked || isCompleting}
                 style={{
                   display: 'block',
                   width: '100%',
                   textAlign: 'left',
-                  background: status.completed
-                    ? (status.type === 'gold' ? 'var(--warning-soft)' : 'rgba(0,0,0,0.04)')
-                    : 'white',
                   borderLeft: `5px solid ${
                     status.completed
-                      ? (status.type === 'gold' ? 'var(--warning)' : '#9ca3af')
+                      ? (status.type === 'gold' ? 'var(--warning)' : 'var(--paper-dim)')
                       : status.awardsClosed
-                        ? '#d1d5db'
+                        ? 'var(--paper-line)'
                         : 'var(--success)'
                   }`,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                  opacity: locked ? 0.7 : 1,
+                  opacity: locked ? 0.65 : 1,
                   cursor: locked ? 'default' : 'pointer',
                   marginBottom: 0,
                   animationDelay: `${Math.min(index * 50, 400)}ms`,
+                  transform: `rotate(${index % 2 === 0 ? '-0.3' : '0.3'}deg)`,
                 }}
               >
                 <div className="flex-between gap-1" style={{ alignItems: 'flex-start' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.4, marginBottom: '0.3rem' }}>
+                    <div className="type" style={{ fontSize: '0.9rem', color: 'var(--paper-ink)', lineHeight: 1.45, marginBottom: '0.3rem' }}>
                       {challenge.text}
                     </div>
                     {challenge.requiresProof && (
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--paper-dim)', fontStyle: 'italic' }}>
                         📸 Requires photo proof
                       </div>
                     )}
                     {status.awardsClosed && !status.completed && (
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--paper-dim)', fontWeight: 700 }}>
                         All points claimed for this one
                       </div>
                     )}
@@ -283,7 +283,7 @@ export default function HolidayChallengeGame() {
                     <div style={{
                       fontSize: '0.75rem',
                       fontWeight: 800,
-                      color: status.completed || !status.goldTaken ? 'var(--warning-ink)' : 'var(--text-muted)',
+                      color: status.completed || !status.goldTaken ? 'var(--warning-ink)' : 'var(--paper-dim)',
                     }}>
                       {status.completed
                         ? `+${status.points}`
@@ -384,12 +384,12 @@ export default function HolidayChallengeGame() {
               return (
                 <div key={player.id} className="flex-between" style={{
                   padding: '0.6rem 0.75rem',
-                  background: isYou ? 'rgba(139, 92, 246, 0.08)' : 'rgba(0,0,0,0.03)',
+                  background: isYou ? 'var(--me-bg)' : 'rgba(35, 32, 20, 0.04)',
                   borderRadius: 'var(--radius-sm)',
-                  border: isYou ? '2px solid rgba(139, 92, 246, 0.35)' : '2px solid transparent'
+                  border: isYou ? '1.5px solid var(--me-border)' : '1.5px solid transparent'
                 }}>
                   <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0 }}>
-                    <span style={{ fontSize: index < 3 ? '1.4rem' : '0.9rem', fontWeight: 700, minWidth: '28px', textAlign: 'center', color: 'var(--text-muted)' }} aria-hidden="true">
+                    <span style={{ fontSize: index < 3 ? '1.4rem' : '0.9rem', fontWeight: 700, minWidth: '28px', textAlign: 'center', color: 'var(--paper-dim)' }} aria-hidden="true">
                       {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
                     </span>
                     <PlayerAvatar player={player} size="small" />
@@ -397,7 +397,7 @@ export default function HolidayChallengeGame() {
                       <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {player.name} {isYou && '(You)'}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--paper-dim)' }}>
                         {player.challengeCompletions?.length || 0} challenges done
                       </div>
                     </div>

@@ -131,16 +131,16 @@ const ShareButton: React.FC<ShareButtonProps> = ({
         onClick={handleShare}
         style={{
           background: 'var(--primary-gradient)',
-          color: 'white',
+          color: '#fdf6ec',
           border: 'none',
-          borderRadius: 'var(--radius-pill)',
+          borderRadius: 'var(--radius-sm)',
           ...buttonSizes[size],
           fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
-          transition: 'transform 0.1s ease',
+          boxShadow: '0 3px 0 var(--primary-deep)',
+          transition: 'transform 0.08s ease',
           ...style
         }}
       >

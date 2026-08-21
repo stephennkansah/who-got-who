@@ -45,7 +45,7 @@ const RuleCard: React.FC<RuleCardProps> = ({ icon, title, tone, children }) => {
 
 const ExampleBox: React.FC<{ title: string; hint: string }> = ({ title, hint }) => (
   <div style={{
-    background: 'rgba(255,255,255,0.75)',
+    background: 'rgba(255,255,255,0.5)',
     padding: '0.6rem 0.75rem',
     borderRadius: '8px',
     marginBottom: '8px',
@@ -279,16 +279,16 @@ export default function Lobby() {
                 className="flex-between"
                 style={{
                   padding: '0.7rem 0.85rem',
-                  background: isYou ? 'rgba(139, 92, 246, 0.08)' : 'rgba(0,0,0,0.03)',
+                  background: isYou ? 'var(--me-bg)' : 'rgba(241, 237, 224, 0.04)',
                   borderRadius: 'var(--radius-sm)',
-                  border: isYou ? '2px solid rgba(139, 92, 246, 0.35)' : '2px solid transparent',
+                  border: isYou ? '1.5px solid var(--me-border)' : '1.5px solid transparent',
                 }}
               >
                 <div className="flex gap-1" style={{ alignItems: 'center' }}>
                   <PlayerAvatar player={player} size="medium" />
                   <div>
                     <div style={{ fontWeight: 700 }}>
-                      {player.name} {isYou && <span style={{ color: 'var(--primary)' }}>(You)</span>}
+                      {player.name} {isYou && <span style={{ color: 'var(--amber)' }}>(You)</span>}
                     </div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                       {player.isHost ? 'Host — starts the game' : 'Ready to play'}
@@ -306,8 +306,8 @@ export default function Lobby() {
         {isHost ? (
           canStart ? (
             <div style={{ textAlign: 'center' }}>
-              <p style={{ color: 'var(--success-ink)', fontWeight: 700, marginBottom: '0.75rem' }}>
-                👑 Everyone's in? Reveal the secret tasks!
+              <p style={{ color: 'var(--text-main)', fontWeight: 700, marginBottom: '0.75rem' }}>
+                👑 Everyone's in? Unseal the missions.
               </p>
               <button
                 className="btn btn-success"
@@ -321,7 +321,7 @@ export default function Lobby() {
           ) : (
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.4rem' }} aria-hidden="true">👋</div>
-              <p style={{ color: 'var(--warning-ink)', fontWeight: 700, marginBottom: '0.25rem' }}>
+              <p style={{ color: 'var(--amber)', fontWeight: 700, marginBottom: '0.25rem' }}>
                 You need at least 2 players to start
               </p>
               <p style={{ fontSize: '0.85rem', margin: 0 }}>
@@ -332,24 +332,36 @@ export default function Lobby() {
         ) : (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '2rem', marginBottom: '0.4rem' }} aria-hidden="true">⏳</div>
-            <p style={{ color: 'var(--info-ink)', fontWeight: 700, marginBottom: '0.25rem' }}>
+            <p style={{ color: 'var(--text-main)', fontWeight: 700, marginBottom: '0.25rem' }}>
               Waiting for {hostName} to start
             </p>
             <p style={{ fontSize: '0.85rem', margin: 0 }}>
-              Your secret tasks are revealed the moment the game begins.
+              Your missions decrypt the moment the game begins.
             </p>
           </div>
         )}
       </div>
 
-      {/* Task teaser */}
-      <div className="card" style={{ textAlign: 'center', border: '2px dashed rgba(139, 92, 246, 0.35)', background: 'rgba(255,255,255,0.7)' }}>
-        <div style={{ fontSize: '2.6rem', marginBottom: '0.4rem' }} aria-hidden="true">🎯</div>
-        <h3 style={{ color: 'var(--primary)', marginBottom: '0.3rem' }}>Your secret tasks land here</h3>
-        <p style={{ fontSize: '0.9rem', margin: 0 }}>
+      {/* Sealed dossier teaser */}
+      <div className="paper-card" style={{ textAlign: 'center', padding: '1.25rem', marginBottom: '0.9rem' }}>
+        <div className="type" style={{
+          fontSize: '0.68rem',
+          letterSpacing: '0.16em',
+          textTransform: 'uppercase',
+          color: 'var(--paper-dim)',
+          marginBottom: '0.75rem',
+        }}>
+          Your dossier · sealed until start
+        </div>
+        <div className="flex-column gap-1" style={{ alignItems: 'center', marginBottom: '0.75rem' }} aria-hidden="true">
+          <span className="redacted" style={{ width: '82%', height: '0.95rem' }}>&nbsp;</span>
+          <span className="redacted" style={{ width: '64%', height: '0.95rem' }}>&nbsp;</span>
+          <span className="redacted" style={{ width: '74%', height: '0.95rem' }}>&nbsp;</span>
+        </div>
+        <p className="type" style={{ fontSize: '0.82rem', margin: 0, color: 'var(--paper-dim)' }}>
           {isHoliday
-            ? 'Everyone races the same 10 challenges once the game starts.'
-            : `You'll get ${playerCount >= 7 ? 8 : 7} secret missions when the game starts. Tell no one. 🤫`}
+            ? 'everyone races the same 10 challenges once the game starts.'
+            : `${playerCount >= 7 ? 8 : 7} missions decrypt when the host starts. tell no one.`}
         </p>
       </div>
 

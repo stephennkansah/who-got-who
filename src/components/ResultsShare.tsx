@@ -103,11 +103,12 @@ Play: ${window.location.origin}`;
         className="btn"
         style={{
           background: 'var(--warning-gradient)',
-          color: 'white',
+          color: '#3a2b0c',
+          boxShadow: '0 4px 0 var(--warning-deep)',
           ...style
         }}
       >
-        🎉 Share Results
+        Share Results
       </button>
 
       <Modal

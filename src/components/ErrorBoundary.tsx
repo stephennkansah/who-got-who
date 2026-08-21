@@ -34,29 +34,29 @@ class ErrorBoundary extends React.Component<Props, State> {
           maxWidth: '800px', 
           margin: '0 auto',
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #4338ca 0%, #3b82f6 50%, #8b5cf6 100%)',
+          background: '#12100c',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
         }}>
           <div style={{
-            background: 'white',
-            borderRadius: '20px',
-            padding: '3rem',
+            background: '#efe5c6',
+            borderRadius: '8px',
+            padding: '2.5rem',
             textAlign: 'center',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            boxShadow: '0 6px 0 rgba(0, 0, 0, 0.5)'
           }}>
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>💥</div>
-            <h2 style={{ 
-              fontSize: '1.5rem', 
-              fontWeight: '600',
-              color: '#1e293b',
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: '700',
+              color: '#232014',
               marginBottom: '1rem'
             }}>
               Oops! Something went wrong
             </h2>
-            <p style={{ 
-              color: '#64748b', 
+            <p style={{
+              color: '#4c4636',
               fontSize: '1rem',
               marginBottom: '2rem',
               lineHeight: '1.5'
@@ -114,7 +114,7 @@ class ErrorBoundary extends React.Component<Props, State> {
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(59, 130, 246, 0.5)';
+                  e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.4)';
                 }}
                 onMouseOut={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
