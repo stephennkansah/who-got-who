@@ -270,7 +270,7 @@ export default function HolidayChallengeGame() {
                         ? 'var(--paper-line)'
                         : 'var(--success)'
                   }`,
-                  opacity: locked ? 0.65 : 1,
+                  opacity: locked ? 0.8 : 1,
                   cursor: locked ? 'default' : 'pointer',
                   marginBottom: 0,
                   animationDelay: `${Math.min(index * 50, 400)}ms`,
@@ -279,16 +279,22 @@ export default function HolidayChallengeGame() {
               >
                 <div className="flex-between gap-1" style={{ alignItems: 'flex-start' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="type" style={{ fontSize: '0.9rem', color: 'var(--paper-ink)', lineHeight: 1.45, marginBottom: '0.3rem' }}>
+                    <div style={{
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      color: 'var(--paper-ink)',
+                      lineHeight: 1.45,
+                      marginBottom: '0.3rem',
+                    }}>
                       {challenge.text}
                     </div>
                     {challenge.requiresProof && (
-                      <div className="type" style={{ fontSize: '0.7rem', color: 'var(--paper-dim)' }}>
-                        requires photo proof
+                      <div style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--paper-dim)' }}>
+                        Requires photo proof
                       </div>
                     )}
                     {status.awardsClosed && !status.completed && (
-                      <div style={{ fontSize: '0.72rem', color: 'var(--paper-dim)', fontWeight: 700 }}>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--paper-dim)', fontWeight: 700 }}>
                         All points claimed for this one
                       </div>
                     )}

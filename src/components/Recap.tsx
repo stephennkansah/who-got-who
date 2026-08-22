@@ -403,7 +403,7 @@ export default function Recap() {
                       {gotcha.playerName}{' '}
                       {gotcha.isCaught ? 'got caught by' : 'got'} {gotcha.targetName}
                     </div>
-                    <div className="type" style={{ fontSize: '0.76rem', color: 'var(--paper-dim)' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--paper-dim)' }}>
                       "{gotcha.text}" · {gotcha.gotAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>

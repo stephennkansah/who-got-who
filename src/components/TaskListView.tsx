@@ -124,9 +124,10 @@ export default function TaskListView({
               {stamp && <span className={stamp.cls}>{stamp.label}</span>}
             </div>
 
-            {/* Mission text — typewriter */}
-            <div className="type" style={{
-              fontSize: '0.98rem',
+            {/* Mission text — the payload, kept maximally readable */}
+            <div style={{
+              fontSize: '1.05rem',
+              fontWeight: 600,
               lineHeight: 1.5,
               color: 'var(--paper-ink)',
               marginBottom: '0.75rem',
@@ -136,42 +137,45 @@ export default function TaskListView({
 
             {/* Claim awaiting response / vote */}
             {dispute && (
-              <div className="type" style={{
+              <div style={{
                 borderTop: '1px dashed var(--paper-line)',
                 paddingTop: '0.55rem',
                 marginBottom: '0.25rem',
-                fontSize: '0.82rem',
+                fontSize: '0.85rem',
+                fontWeight: 700,
                 color: 'var(--warning-ink)',
                 textAlign: 'center',
               }}>
                 {dispute.phase === 'voting'
-                  ? 'disputed — the group is voting…'
-                  : `awaiting ${playerName(dispute.targetId)}'s response…`}
+                  ? 'Disputed — the group is voting…'
+                  : `Awaiting ${playerName(dispute.targetId)}'s response…`}
               </div>
             )}
 
             {/* Outcome line */}
             {task.status === 'completed' && task.targetId && (
-              <div className="type" style={{
+              <div style={{
                 borderTop: '1px dashed var(--paper-line)',
                 paddingTop: '0.55rem',
-                fontSize: '0.85rem',
+                fontSize: '0.88rem',
+                fontWeight: 600,
                 color: 'var(--success-ink)',
                 textAlign: 'center',
               }}>
-                target: <strong>{playerName(task.targetId)}</strong> — mission accomplished
+                Target: <strong>{playerName(task.targetId)}</strong> — mission accomplished
               </div>
             )}
 
             {task.status === 'failed' && task.targetId && (
-              <div className="type" style={{
+              <div style={{
                 borderTop: '1px dashed var(--paper-line)',
                 paddingTop: '0.55rem',
-                fontSize: '0.85rem',
+                fontSize: '0.88rem',
+                fontWeight: 600,
                 color: 'var(--danger-ink)',
                 textAlign: 'center',
               }}>
-                compromised by <strong>{playerName(task.targetId)}</strong>
+                Compromised by <strong>{playerName(task.targetId)}</strong>
               </div>
             )}
 
