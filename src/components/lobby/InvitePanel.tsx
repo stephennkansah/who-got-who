@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 import ShareButton from '../ShareButton';
+import BrandMark from '../common/BrandMark';
 import { showToast } from '../common/Toast';
 
 interface InvitePanelProps {
@@ -47,6 +48,7 @@ export default function InvitePanel({ gameId, gameType, playerCount, maxPlayers 
 
   return (
     <header className="invite-panel">
+      <BrandMark size={64} className="brand-mark-centered" />
       <div className="overline" style={{ marginBottom: '0.6rem' }}>
         {gameType === 'holiday-challenge' ? 'You Got Who? · Operation' : 'Who Got Who · Operation'}
       </div>
@@ -65,7 +67,12 @@ export default function InvitePanel({ gameId, gameType, playerCount, maxPlayers 
       </div>
 
       <div className="invite-actions">
-        <ShareButton gameId={gameId} gameType={gameType} size="small" />
+        <ShareButton
+          gameId={gameId}
+          gameType={gameType}
+          size="small"
+          style={{ minHeight: 44, padding: '8px 6px', fontSize: '0.8rem', justifyContent: 'center' }}
+        />
         <button
           className={`chip-btn ${showQr ? 'active' : ''}`}
           onClick={() => setShowQr((value) => !value)}

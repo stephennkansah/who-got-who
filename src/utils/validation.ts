@@ -70,9 +70,11 @@ export const sanitizeTextInput = (text: string, maxLength: number = 1000): strin
  * Validate avatar emoji
  */
 export const isValidEmojiAvatar = (avatar: string): boolean => {
-  // Check if it's a single emoji (roughly)
-  const emojiRegex = /^[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]$/u;
-  return emojiRegex.test(avatar) && avatar.length <= 4;
+  // One emoji, including skin tones and joined sequences like 👩🏽‍🚀 or 🦸‍♀️
+  // (these run to several UTF-16 units). The server caps emoji avatars at 32.
+  if (!avatar || avatar.length > 32) return false;
+  return /^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|‍|️)+$/u.test(avatar)
+    && /\p{Extended_Pictographic}/u.test(avatar);
 };
 
 /**

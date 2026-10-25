@@ -10,6 +10,7 @@ import { ConfirmationModal } from './common/ConfirmationModal';
 import { showToast } from './common/Toast';
 import StampSplash from './common/StampSplash';
 import LoadingScreen from './common/LoadingScreen';
+import BrandMark from './common/BrandMark';
 import { LeaderboardWidget } from './game/LeaderboardWidget';
 import PhaseBanner from './game/PhaseBanner';
 import HostMenu from './game/HostMenu';
@@ -217,11 +218,12 @@ export default function HolidayChallengeGame() {
         </button>
 
         <div className="header-title" style={{ textAlign: 'center' }}>
+          <BrandMark className="brand-mark-centered brand-mark-header" />
           <h1>You Got Who?</h1>
           <div className="player-count">FIRST TO {winCondition} POINTS</div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className="game-header-controls">
           {currentPlayer.isHost && (
             <button
               onClick={() => setShowHostMenu(true)}

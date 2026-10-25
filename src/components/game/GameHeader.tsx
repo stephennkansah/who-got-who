@@ -1,6 +1,7 @@
 import React from 'react';
 import { Player } from '../../types';
 import { AnimatedScore } from '../common/AnimatedScore';
+import BrandMark from '../common/BrandMark';
 
 interface GameHeaderProps {
   currentPlayer: Player | null;
@@ -35,6 +36,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
       {/* Center: Title */}
       <div className="header-title" style={{ textAlign: 'center' }}>
+        <BrandMark className="brand-mark-centered brand-mark-header" />
         <h1>Who Got Who</h1>
         <div className="player-count">
           {playerCount} AGENTS
@@ -42,7 +44,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
       </div>
 
       {/* Right: Game Controls */}
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div className="game-header-controls">
         {currentPlayer?.isHost && (
           <button
             onClick={onOpenHostMenu}

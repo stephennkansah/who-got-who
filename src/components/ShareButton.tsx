@@ -125,6 +125,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
     <>
       <button
         onClick={handleShare}
+        aria-label={gameId ? 'Share game invite' : 'Share Who Got Who'}
         style={{
           background: 'var(--primary-gradient)',
           color: '#fdf6ec',
@@ -140,7 +141,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
           ...style
         }}
       >
-        Share Game
+        Share
       </button>
 
       <Modal

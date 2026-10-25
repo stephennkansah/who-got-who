@@ -388,10 +388,11 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
     <span className="avatar-picker-trigger" style={{ flexShrink: 0 }}>
     <button
       onClick={() => setShowPicker(true)}
-      aria-label="Change your avatar"
+      aria-label={selectedAvatar ? 'Change your avatar' : 'Pick your avatar'}
       style={{
         background: 'var(--ink-2)',
-        border: '3px solid var(--line-strong)',
+        // Empty reads as a slot to fill, not a face someone picked for you.
+        border: selectedAvatar ? '3px solid var(--line-strong)' : '2px dashed var(--amber)',
         borderRadius: '50%',
         width: '80px',
         height: '80px',
@@ -411,7 +412,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
       }}
       onMouseLeave={(e) => {
         const target = e.target as HTMLButtonElement;
-        target.style.borderColor = 'var(--line-strong)';
+        target.style.borderColor = selectedAvatar ? 'var(--line-strong)' : 'var(--amber)';
         target.style.transform = 'scale(1)';
       }}
       title="Click to choose avatar"
@@ -432,21 +433,18 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
           <span style={{ fontSize: '2.5em' }}>{selectedAvatar}</span>
         )
       ) : (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          color: 'var(--text-muted)',
-          fontSize: '0.7em',
-          fontWeight: '600'
+        <span style={{
+          color: 'var(--amber)',
+          fontSize: '0.8rem',
+          fontWeight: 800,
+          letterSpacing: '0.04em',
         }}>
-          <span style={{ fontSize: '2em', marginBottom: '2px' }}>👤</span>
-          <span>Choose</span>
-        </div>
+          Pick
+        </span>
       )}
     </button>
     {/* Says "tap me" without words */}
-    <span className="avatar-edit-badge" aria-hidden="true">✎</span>
+    <span className="avatar-edit-badge" aria-hidden="true">{selectedAvatar ? '✎' : '+'}</span>
     </span>
   );
 };

@@ -1,5 +1,8 @@
 # Ensure static assets are served directly
 /static/*    /static/:splat   200
+/icons/*    /icons/:splat   200
+/favicon.ico    /favicon.ico   200
+/logo192.png    /logo192.png   200
 /logo512.png    /logo512.png   200
 /manifest.json    /manifest.json   200
 /sw.js    /sw.js   200

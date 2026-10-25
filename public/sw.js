@@ -1,5 +1,9 @@
-const CACHE_NAME = 'who-got-who-shell-v5';
-const SHELL_URLS = ['/', '/manifest.json', '/logo512.png'];
+const CACHE_NAME = 'who-got-who-shell-v6';
+const SHELL_URLS = [
+  '/', '/manifest.json', '/favicon.ico',
+  '/icons/spy-48.png', '/icons/spy-180.png', '/icons/spy-192.png',
+  '/icons/spy-512.png', '/icons/spy-maskable-512.png', '/icons/spy-badge-96.png',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_URLS)));
@@ -38,8 +42,8 @@ self.addEventListener('push', (event) => {
         tag: message.tag || 'feed',
         renotify: false,
         silent: watching,
-        icon: '/logo192.png',
-        badge: '/logo192.png',
+        icon: '/icons/spy-192.png',
+        badge: '/icons/spy-badge-96.png',
       });
     }),
   );

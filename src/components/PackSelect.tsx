@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { getAllPackOptions } from '../data/packCatalog';
+import BrandMark from './common/BrandMark';
 
 interface PackSelectProps {
   gameId: string;
@@ -138,6 +139,7 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
         ← {packAlreadySelected ? 'Lobby' : 'Home'}
       </button>
       <header style={{ textAlign: 'center', margin: '0.25rem 0 1.25rem' }}>
+        <BrandMark className="brand-mark-centered" />
         <h1 style={{ fontSize: '1.9rem', marginBottom: '0.2rem' }}>Choose Your Game</h1>
         <div className="app-subtitle">
           {!isHost

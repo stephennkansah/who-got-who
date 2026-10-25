@@ -39,8 +39,8 @@ export default function Roster({ players, currentPlayerId, isHost, maxPlayers, o
 
   return (
     <div className="card">
-      <div className="flex-between" style={{ marginBottom: '0.9rem' }}>
-        <span className="overline">The roster · {players.length}/{maxPlayers}</span>
+      <div className="flex-between roster-header" style={{ marginBottom: '0.9rem' }}>
+        <span className="overline">Roster · {players.length}/{maxPlayers}</span>
         {guests.length > 0 && (
           <span className="overline" style={{ color: readyCount === guests.length ? 'var(--success)' : 'var(--text-muted)' }}>
             {readyCount}/{guests.length} ready

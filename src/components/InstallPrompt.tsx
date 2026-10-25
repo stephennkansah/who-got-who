@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './common/Modal';
+import BrandMark from './common/BrandMark';
 import { showToast } from './common/Toast';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -160,6 +161,7 @@ const InstallPrompt: React.FC = () => {
       </div>
 
       <Modal isOpen={showSteps} onClose={() => setShowSteps(false)} ariaLabel="How to install Who Got Who" showClose>
+        <BrandMark size={72} alt="Who Got Who" className="brand-mark-centered" />
         <h2 style={{ margin: '0 0 0.5rem' }}>Install the App</h2>
         <p className="text-small" style={{ marginBottom: '1rem' }}>
           It opens full screen like a normal app, and you can find the game again in one tap.

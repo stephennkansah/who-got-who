@@ -1,4 +1,5 @@
 import { Game, Player } from '../types';
+import { BRAND_ICON_LARGE } from '../branding';
 
 const W = 1080;
 const H = 1350;
@@ -22,6 +23,9 @@ function fit(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): str
 
 /** Draws a shareable "final debrief" card for a finished game. */
 export async function renderResultsImage(game: Game): Promise<Blob> {
+  const brand = new Image();
+  brand.src = BRAND_ICON_LARGE;
+  const brandReady = brand.decode().then(() => true).catch(() => false);
   // Make sure the display fonts are ready before drawing with them.
   await Promise.all([
     document.fonts?.load('120px "Bebas Neue"'),
@@ -46,19 +50,29 @@ export async function renderResultsImage(game: Game): Promise<Blob> {
   ctx.fillStyle = PAPER;
   ctx.fillRect(70, 70, W - 140, H - 140);
 
+  // Same mark as the installed app; sharing still works if the image is unavailable.
+  if (await brandReady) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(W / 2 - 48, 100, 96, 96, 19);
+    ctx.clip();
+    ctx.drawImage(brand, W / 2 - 48, 100, 96, 96);
+    ctx.restore();
+  }
+
   ctx.textAlign = 'center';
   ctx.fillStyle = '#5d5642';
   ctx.font = '30px "Special Elite", "Courier New", monospace';
-  ctx.fillText('FINAL DEBRIEF · CASE CLOSED', W / 2, 160);
+  ctx.fillText('FINAL DEBRIEF · CASE CLOSED', W / 2, 242);
 
   ctx.fillStyle = PAPER_INK;
   ctx.font = '150px "Bebas Neue", "Arial Narrow", sans-serif';
-  ctx.fillText(isHoliday ? 'YOU GOT WHO?' : 'WHO GOT WHO', W / 2, 310);
+  ctx.fillText(isHoliday ? 'YOU GOT WHO?' : 'WHO GOT WHO', W / 2, 370);
 
   // Winner stamp
   if (winner) {
     ctx.save();
-    ctx.translate(W / 2, 450);
+    ctx.translate(W / 2, 475);
     ctx.rotate(-0.07);
     ctx.font = '96px "Bebas Neue", "Arial Narrow", sans-serif';
     const label = fit(ctx, `${winner.name.toUpperCase()} WINS`, 760);

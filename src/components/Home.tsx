@@ -7,10 +7,19 @@ import AvatarPicker from './AvatarPicker';
 import Modal from './common/Modal';
 import { showToast } from './common/Toast';
 import LoadingScreen from './common/LoadingScreen';
+import BrandMark from './common/BrandMark';
 
 const PROFILE_KEY = 'wgw-profile';
 
-type Profile = { name: string; avatar: string; avatarType: 'emoji' | 'photo' };
+// avatarChosen: only an avatar the player actually picked is remembered and shown again.
+type Profile = { name: string; avatar: string; avatarType: 'emoji' | 'photo'; avatarChosen?: boolean };
+
+// Used when someone skips the picker, so the roster isn't a wall of identical faces.
+const FALLBACK_AVATARS = ['🦊', '🐼', '🦉', '🐙', '🦄', '🐸', '🐯', '🦁', '🐨', '🐵', '🤖', '👻', '👾', '🎭'];
+
+function randomAvatar(): string {
+  return FALLBACK_AVATARS[Math.floor(Math.random() * FALLBACK_AVATARS.length)];
+}
 
 function loadProfile(): Profile | null {
   try {
@@ -27,7 +36,7 @@ function saveProfile(profile: Profile) {
   } catch {
     // A large photo may not fit; the name alone is still worth keeping.
     try {
-      localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...profile, avatar: '😎', avatarType: 'emoji' }));
+      localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...profile, avatar: '', avatarType: 'emoji', avatarChosen: false }));
     } catch {
       // Storage unavailable (private mode).
     }
@@ -54,8 +63,11 @@ function Home() {
   const [playerName, setPlayerName] = useState(profile?.name || '');
   const requestedCode = extractCode(searchParams.get('join') || '');
   const [gameId, setGameId] = useState(requestedCode);
-  const [selectedAvatar, setSelectedAvatar] = useState(profile?.avatar || '😎');
-  const [avatarType, setAvatarType] = useState<'emoji' | 'photo'>(profile?.avatarType || 'emoji');
+  // Blank until the player picks one — a pre-filled face looked like it was assigned.
+  const [selectedAvatar, setSelectedAvatar] = useState(profile?.avatarChosen ? profile.avatar : '');
+  const [avatarType, setAvatarType] = useState<'emoji' | 'photo'>(
+    profile?.avatarChosen ? profile.avatarType : 'emoji',
+  );
   const [mode, setMode] = useState<'join' | 'welcome'>(requestedCode ? 'join' : 'welcome');
   const [showBriefing, setShowBriefing] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -84,10 +96,21 @@ function Home() {
     if (activeGame && requestedCode === activeGame.id) navigate(gamePath(activeGame, state.currentPlayer));
   }, [activeGame, requestedCode, state.currentPlayer, navigate]);
 
-  const remember = (name: string) => saveProfile({ name, avatar: selectedAvatar, avatarType });
+  const remember = (name: string) => saveProfile({
+    name,
+    avatar: selectedAvatar,
+    avatarType,
+    avatarChosen: !!selectedAvatar,
+  });
+
+  // Skipped the picker? You still get a face, just not one that looks pre-assigned.
+  const avatarToSend = () => (selectedAvatar
+    ? { avatar: selectedAvatar, type: avatarType }
+    : { avatar: randomAvatar(), type: 'emoji' as const });
 
   const handleStartGame = async () => {
-    const validation = validateGameInput(playerName, undefined, selectedAvatar);
+    const chosen = avatarToSend();
+    const validation = validateGameInput(playerName, undefined, chosen.avatar);
     if (!validation.isValid) {
       showToast(validation.errors.join(' '), 'error');
       return;
@@ -97,7 +120,7 @@ function Home() {
       await createGame(
         validation.sanitizedValues.playerName!,
         validation.sanitizedValues.avatar,
-        avatarType,
+        chosen.type,
       );
     } catch {
       // The provider renders the actionable service error below.
@@ -105,7 +128,8 @@ function Home() {
   };
 
   const handleJoinGame = async () => {
-    const validation = validateGameInput(playerName, gameId, selectedAvatar);
+    const chosen = avatarToSend();
+    const validation = validateGameInput(playerName, gameId, chosen.avatar);
     if (!validation.isValid) {
       showToast(validation.errors.join(' '), 'error');
       return;
@@ -116,7 +140,7 @@ function Home() {
         validation.sanitizedValues.gameId!,
         validation.sanitizedValues.playerName!,
         validation.sanitizedValues.avatar,
-        avatarType,
+        chosen.type,
       );
     } catch {
       // The provider renders the actionable service error below.
@@ -142,11 +166,12 @@ function Home() {
   return (
     <div className="container" style={{ justifyContent: 'space-between', textAlign: 'center' }}>
       {/* Masthead */}
-      <header style={{ position: 'relative', paddingTop: '9vh' }}>
+      <header className="home-masthead">
+        <BrandMark size={104} className="brand-mark-centered" />
         <div className="overline" style={{ marginBottom: '0.7rem' }}>
           Classified · Party Ops
         </div>
-        <h1 style={{ fontSize: 'clamp(4rem, 22vw, 5.5rem)', marginBottom: '0.5rem' }}>
+        <h1 style={{ fontSize: 'clamp(3.5rem, 20vw, 5rem)', marginBottom: '0.5rem' }}>
           Who<br />Got Who
         </h1>
         <p className="type" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
@@ -157,7 +182,7 @@ function Home() {
           aria-hidden="true"
           style={{
             position: 'absolute',
-            top: 'calc(9vh + 30px)',
+            top: 'calc(2vh + 135px)',
             right: '2px',
             fontSize: '0.82rem',
             opacity: 0.9,

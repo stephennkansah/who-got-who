@@ -130,23 +130,24 @@ export default function TaskListView({
   return (
     <div>
       <div className="mission-toolbar">
-        <div>
-          <div className="overline">Your missions · {open.length} open</div>
-          <div className="mission-hint">
-            {covered
-              ? 'Hidden from prying eyes — tap one to peek'
-              : lockReason
-                ? 'Read up and plan — tap one to swap it'
-                : 'Tap a mission when you pull it off'}
-          </div>
+        <div className="mission-toolbar-title">
+          <span className="overline">Your missions</span>
+          <span className="mission-count">{open.length} open</span>
         </div>
         <button
           className={`chip-btn ${covered ? 'active' : ''}`}
           onClick={toggleCover}
-          aria-pressed={covered}
+          aria-label={covered ? 'Show all missions' : 'Hide all missions'}
         >
           {covered ? 'Show' : 'Hide'}
         </button>
+        <div className="mission-hint">
+          {covered
+            ? 'Hidden from prying eyes — tap one to peek'
+            : lockReason
+              ? 'Read up and plan — tap one to swap it'
+              : 'Tap a mission when you pull it off'}
+        </div>
       </div>
 
       {active.map((task, index) => {

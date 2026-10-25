@@ -1,0 +1,35 @@
+{
+  "short_name": "Who Got Who",
+  "name": "Who Got Who - Party Game",
+  "description": "Perfect for parties, dinner guests, trips away, and family gatherings. The ultimate party game of stealth tasks and social challenges.",
+  "icons": [
+    {
+      "src": "icons/spy-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/spy-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/spy-maskable-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#12100c",
+  "background_color": "#12100c",
+  "orientation": "portrait",
+  "categories": ["games", "entertainment", "social"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
+}

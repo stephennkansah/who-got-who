@@ -81,13 +81,12 @@ android-sdk/
 android.keystore
 local.properties
 create_icon.html
-store_icon.png
 twa-manifest.json
 manifest-checksum.txt
 gradlew
 gradlew.bat
 gradle/
-app/
+app/build/
 build/
 gradle.properties
 settings.gradle

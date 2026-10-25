@@ -25,7 +25,7 @@ export class NotificationService {
 
   static showNotification(title: string, options?: NotificationOptions): void {
     if (!this.canShowNotifications()) return;
-    const defaults: NotificationOptions = { icon: '/logo192.png', badge: '/logo192.png', ...options };
+    const defaults: NotificationOptions = { icon: '/icons/spy-192.png', badge: '/icons/spy-badge-96.png', ...options };
     const pageNotification = () => {
       try {
         const notification = new Notification(title, defaults);

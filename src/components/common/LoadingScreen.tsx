@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import BrandMark from './BrandMark';
 
 interface LoadingScreenProps {
   message: string;
@@ -13,6 +14,7 @@ export default function LoadingScreen({ message, showBack = false }: LoadingScre
   return (
     <div className="container flex-center">
       <div className="text-center">
+        <BrandMark size={96} alt="Who Got Who" className="brand-mark-centered" />
         <div className="spinner" aria-hidden="true" />
         <p className="type" style={{ fontSize: '0.9rem', marginBottom: showBack ? '1.25rem' : 0 }}>
           {message}

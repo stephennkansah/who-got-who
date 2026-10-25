@@ -2,6 +2,17 @@
 
 These PowerShell scripts help automate common tasks for publishing your Android app.
 
+## App icon exports
+
+The approved spy artwork is saved in `assets/branding/spy-original.png`. Run
+`powershell -File scripts/export-app-icons.ps1` to reproduce the web, favicon,
+Apple touch, maskable, notification, store, and Android launcher/splash assets.
+The script uses Windows System.Drawing and does not regenerate or redraw the artwork.
+Open `create_icon.html` for a preview and download links. Android launchers use
+separate padded adaptive layers; web installs use the maskable entry in the manifest.
+Deploy the web build to update the website/PWA. Native Android installs need a new
+Android build to receive their bundled launcher and splash images.
+
 ## 🔨 build-android.ps1
 
 **Purpose**: Builds the Android App Bundle (AAB) file for Google Play Store submission.
