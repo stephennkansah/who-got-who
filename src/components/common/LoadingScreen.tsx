@@ -14,7 +14,7 @@ export default function LoadingScreen({ message, showBack = false }: LoadingScre
     <div className="container flex-center">
       <div className="text-center">
         <div className="spinner" aria-hidden="true" />
-        <p className="type" style={{ fontSize: '0.85rem', marginBottom: showBack ? '1.25rem' : 0 }}>
+        <p className="type" style={{ fontSize: '0.9rem', marginBottom: showBack ? '1.25rem' : 0 }}>
           {message}
         </p>
         {showBack && (

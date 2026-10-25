@@ -13,6 +13,7 @@ import FeedbackButton from './components/FeedbackButton';
 import ErrorBoundary from './components/ErrorBoundary';
 import ToastHost, { showToast } from './components/common/Toast';
 import ConnectionPill from './components/common/ConnectionPill';
+import { SheetHistorySync } from './hooks/useBackToClose';
 import UpdateNotice from './components/common/UpdateNotice';
 
 // Wrapper component to extract gameId from URL params
@@ -86,6 +87,7 @@ function App() {
               <Route path="/recap/:gameId" element={<Recap />} />
             </Routes>
             <ErrorToastBridge />
+            <SheetHistorySync />
             <FloatingWidgets />
           </Router>
         </AwsGameProvider>

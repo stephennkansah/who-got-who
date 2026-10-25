@@ -239,7 +239,7 @@ export default function Recap() {
         marginBottom: '0.9rem',
       }}>
         <div className="type" style={{
-          fontSize: '0.68rem',
+          fontSize: '0.76rem',
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
           color: 'var(--paper-dim)',
@@ -296,7 +296,7 @@ export default function Recap() {
                     <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {player.name} {isYou && <span style={{ color: 'var(--amber)' }}>(You)</span>}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
                       {isHoliday
                         ? `${player.challengeCompletions?.length || 0} challenges`
                         : `${player.stats?.gothcas || 0} gotcha${(player.stats?.gothcas || 0) === 1 ? '' : 's'}`}
@@ -478,7 +478,7 @@ export default function Recap() {
                       {gotcha.playerName}{' '}
                       {gotcha.isCaught ? 'got caught by' : 'got'} {gotcha.targetName}
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--paper-dim)' }}>
+                    <div style={{ fontSize: '0.86rem', color: 'var(--paper-dim)' }}>
                       "{gotcha.text}" · {gotcha.gotAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>

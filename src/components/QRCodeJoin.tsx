@@ -26,7 +26,7 @@ const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, gameType, style }) => {
           border: '2px solid var(--line-strong)',
           borderRadius: 'var(--radius-sm)',
           padding: '8px 16px',
-          fontSize: '0.85rem',
+          fontSize: '0.9rem',
           fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
@@ -69,7 +69,7 @@ const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, gameType, style }) => {
           <p style={{ color: 'var(--info-ink)', margin: '0 0 4px', fontWeight: 700, fontSize: '1rem', letterSpacing: '1px' }}>
             Game code: <strong>{gameId}</strong>
           </p>
-          <p style={{ color: 'var(--info-ink)', margin: 0, fontSize: '0.85rem', opacity: 0.85 }}>
+          <p style={{ color: 'var(--info-ink)', margin: 0, fontSize: '0.9rem', opacity: 0.85 }}>
             Scan the QR or type the code on the home screen.
           </p>
         </div>

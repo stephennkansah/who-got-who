@@ -120,7 +120,7 @@ export default function TaskListView({
     return (
       <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
         <div className="type" style={{ fontSize: '0.95rem', fontWeight: 700 }}>No missions on file.</div>
-        <div style={{ fontSize: '0.85rem', marginTop: '0.4rem' }}>
+        <div style={{ fontSize: '0.9rem', marginTop: '0.4rem' }}>
           Your dossier arrives when the game starts.
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function TaskListView({
                 <div className={`stamp big ${filing?.result === 'passed' ? 'success' : 'danger'}`}>
                   {filing?.result === 'passed' ? "Got 'em" : 'Busted'}
                 </div>
-                <div className="type" style={{ color: 'var(--paper)', fontSize: '0.75rem' }}>
+                <div className="type" style={{ color: 'var(--paper)', fontSize: '0.82rem' }}>
                   filing report…
                 </div>
               </div>
@@ -250,7 +250,7 @@ export default function TaskListView({
       {active.length === 0 && (
         <div className="paper-card" style={{ padding: '1.25rem', textAlign: 'center', marginBottom: '0.8rem' }}>
           <div className="type" style={{ fontWeight: 700 }}>Every mission filed.</div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--paper-dim)', marginTop: '0.3rem' }}>
+          <div style={{ fontSize: '0.9rem', color: 'var(--paper-dim)', marginTop: '0.3rem' }}>
             Lie low and watch the board.
           </div>
         </div>

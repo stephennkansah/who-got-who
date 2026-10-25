@@ -50,11 +50,11 @@ const PackTile: React.FC<PackTileProps> = ({
     {selected && (
       <div className="stamp danger" style={{ marginBottom: '0.4rem' }}>Selected</div>
     )}
-    <div style={{ fontSize: '0.85rem', color: '#4c4636', lineHeight: 1.45, marginBottom: '0.6rem' }}>
+    <div style={{ fontSize: '0.9rem', color: '#4c4636', lineHeight: 1.45, marginBottom: '0.6rem' }}>
       {description}
     </div>
     <div className="type" style={{
-      fontSize: '0.78rem',
+      fontSize: '0.85rem',
       color: 'var(--paper-dim)',
       padding: '0.5rem 0.7rem',
       background: 'rgba(35, 32, 20, 0.05)',
@@ -134,7 +134,10 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
 
   return (
     <div className="container">
-      <header style={{ textAlign: 'center', margin: '0.5rem 0 1.25rem' }}>
+      <button className="back-link" onClick={handleBack}>
+        ← {packAlreadySelected ? 'Lobby' : 'Home'}
+      </button>
+      <header style={{ textAlign: 'center', margin: '0.25rem 0 1.25rem' }}>
         <h1 style={{ fontSize: '1.9rem', marginBottom: '0.2rem' }}>Choose Your Game</h1>
         <div className="app-subtitle">
           {!isHost
@@ -148,7 +151,7 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
       <div className="card">
         <div style={{ textAlign: 'center', marginBottom: '0.9rem' }}>
           <h3 style={{ margin: '0 0 0.15rem' }}>Who Got Who?</h3>
-          <p style={{ fontSize: '0.82rem', margin: 0 }}>
+          <p style={{ fontSize: '0.88rem', margin: 0 }}>
             Everyone gets <strong>different secret tasks</strong> — complete yours without getting caught.
           </p>
         </div>
@@ -172,7 +175,7 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
       <div className="card">
         <div style={{ textAlign: 'center', marginBottom: '0.9rem' }}>
           <h3 style={{ margin: '0 0 0.15rem' }}>You Got Who?</h3>
-          <p style={{ fontSize: '0.82rem', margin: 0 }}>
+          <p style={{ fontSize: '0.88rem', margin: 0 }}>
             Everyone races the <strong>same 10 challenges</strong> — no stealth, all speed.
           </p>
         </div>

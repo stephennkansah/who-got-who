@@ -159,7 +159,7 @@ function Home() {
             position: 'absolute',
             top: 'calc(9vh + 30px)',
             right: '2px',
-            fontSize: '0.75rem',
+            fontSize: '0.82rem',
             opacity: 0.9,
             transform: 'rotate(10deg)',
           }}
@@ -184,7 +184,7 @@ function Home() {
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', letterSpacing: '0.14em', lineHeight: 1 }}>
               {activeGame.id}
             </div>
-            <p style={{ color: 'var(--paper-dim)', fontSize: '0.88rem', margin: '0.5rem 0 1rem' }}>
+            <p style={{ color: 'var(--paper-dim)', fontSize: '0.93rem', margin: '0.5rem 0 1rem' }}>
               {activeGame.status === 'live'
                 ? `You're still in this game as ${state.currentPlayer?.name}.`
                 : `You're in this lobby as ${state.currentPlayer?.name}.`}
@@ -289,7 +289,7 @@ function Home() {
         >
           How does it work?
         </button>
-        <p style={{ fontSize: '0.72rem', margin: '0.4rem 0 0' }}>
+        <p style={{ fontSize: '0.8rem', margin: '0.4rem 0 0' }}>
           <a href="/privacy.html" style={{ color: 'var(--text-muted)' }}>Privacy</a>
           {' · '}Only upload photos with everyone&apos;s permission.
         </p>
@@ -304,7 +304,7 @@ function Home() {
         maxWidth={420}
       >
         <div className="type" style={{
-          fontSize: '0.7rem',
+          fontSize: '0.76rem',
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
           color: 'var(--paper-dim)',
@@ -321,7 +321,7 @@ function Home() {
           <Step number="3" text={'Say "Gotcha!" out loud, then claim it in the app. Your target can accept — or dispute it to a group vote.'} />
           <Step number="4" text="First to the target score takes the game. Then everyone's missions are revealed." />
         </div>
-        <div className="type" style={{ fontSize: '0.78rem', color: 'var(--paper-dim)', marginBottom: '1.25rem' }}>
+        <div className="type" style={{ fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: '1.25rem' }}>
           field-tested at house parties, dinners, pre-drinks &amp; game nights
         </div>
         <button className="btn btn-primary" onClick={() => setShowBriefing(false)}>
@@ -344,7 +344,7 @@ const Step = ({ number, text }: { number: string, text: string }) => (
     }} aria-hidden="true">
       {number}
     </div>
-    <p className="type" style={{ color: 'var(--paper-ink)', margin: 0, fontSize: '0.88rem', lineHeight: 1.5 }}>
+    <p className="type" style={{ color: 'var(--paper-ink)', margin: 0, fontSize: '0.93rem', lineHeight: 1.5 }}>
       {text}
     </p>
   </div>

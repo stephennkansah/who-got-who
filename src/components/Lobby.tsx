@@ -14,6 +14,7 @@ import GameSetup from './lobby/GameSetup';
 import ProfileEditor from './lobby/ProfileEditor';
 import PlayerActions from './lobby/PlayerActions';
 import RulesContent from './RulesContent';
+import { useBackToClose } from '../hooks/useBackToClose';
 
 const RULES_SEEN_KEY = 'wgw-rules-seen';
 
@@ -144,6 +145,13 @@ export default function Lobby() {
     if (currentPlayer && !currentPlayer.isHost && !currentPlayer.lockedIn) void attempt(() => setReady(true));
   };
 
+  // Back (button or phone) leaves the rules for the lobby without saying you're ready.
+  const closeRules = () => {
+    localStorage.setItem(RULES_SEEN_KEY, 'true');
+    setShowRules(false);
+  };
+  useBackToClose(showRules && !!currentGame, closeRules);
+
   if (!currentGame || !currentPlayer || !summary) {
     return <LoadingScreen message="finding your game…" showBack />;
   }
@@ -152,7 +160,10 @@ export default function Lobby() {
   if (showRules) {
     return (
       <div className="container">
-        <header style={{ textAlign: 'center', margin: '0.5rem 0 1.25rem' }}>
+        <button className="back-link" onClick={closeRules}>
+          ← Lobby
+        </button>
+        <header style={{ textAlign: 'center', margin: '0.25rem 0 1.25rem' }}>
           <h1 style={{ fontSize: '1.9rem', marginBottom: '0.2rem' }}>
             {isHoliday ? 'You Got Who?' : 'Who Got Who'}
           </h1>
@@ -161,7 +172,7 @@ export default function Lobby() {
           </div>
         </header>
 
-        <div className="card">
+        <div style={{ marginBottom: '0.9rem' }}>
           <RulesContent game={currentGame} />
         </div>
 
@@ -227,7 +238,7 @@ export default function Lobby() {
               >
                 {isStarting ? 'Starting…' : notReady.length === 0 ? 'Start the Game' : 'Start Anyway'}
               </button>
-              <p style={{ fontSize: '0.8rem', margin: '0.6rem 0 0' }}>
+              <p style={{ fontSize: '0.86rem', margin: '0.6rem 0 0' }}>
                 Latecomers can still join with the code after you start.
               </p>
             </>
@@ -236,7 +247,7 @@ export default function Lobby() {
               <p style={{ color: 'var(--amber)', fontWeight: 700, marginBottom: '0.25rem' }}>
                 You need at least 2 agents to start
               </p>
-              <p style={{ fontSize: '0.85rem', margin: 0 }}>
+              <p style={{ fontSize: '0.9rem', margin: 0 }}>
                 Share the code, link or QR above and the game can begin.
               </p>
             </>
@@ -260,7 +271,7 @@ export default function Lobby() {
       {/* Sealed dossier teaser */}
       <div className="paper-card" style={{ textAlign: 'center', padding: '1.25rem', marginBottom: '0.9rem' }}>
         <div className="type" style={{
-          fontSize: '0.68rem',
+          fontSize: '0.76rem',
           letterSpacing: '0.16em',
           textTransform: 'uppercase',
           color: 'var(--paper-dim)',
@@ -273,7 +284,7 @@ export default function Lobby() {
           <span className="redacted" style={{ width: '64%', height: '0.95rem' }}>&nbsp;</span>
           <span className="redacted" style={{ width: '74%', height: '0.95rem' }}>&nbsp;</span>
         </div>
-        <p className="type" style={{ fontSize: '0.82rem', margin: 0, color: 'var(--paper-dim)' }}>
+        <p className="type" style={{ fontSize: '0.88rem', margin: 0, color: 'var(--paper-dim)' }}>
           {isHoliday
             ? `everyone races the same ${summary.challenges} challenges once the game starts.`
             : `${summary.missions} missions decrypt when the host starts. tell no one.`}

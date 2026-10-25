@@ -157,7 +157,8 @@ export async function sendWebPush(
       TTL: String(options.ttlSeconds),
       Urgency: options.urgency ?? 'normal',
     },
-    body,
+    // Same bytes; a plain Uint8Array satisfies fetch's BodyInit type where Buffer doesn't.
+    body: new Uint8Array(body),
     signal: AbortSignal.timeout(3000),
   });
   return response.status;

@@ -49,7 +49,7 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
                 marginBottom: '0.3rem',
                 background: completion.isSuccess ? 'var(--success-soft)' : 'var(--danger-soft)',
                 borderRadius: '8px',
-                fontSize: '0.8rem',
+                fontSize: '0.86rem',
                 gap: '0.5rem'
               }}>
                 <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0, flex: 1 }}>
@@ -61,7 +61,7 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
                       {completion.playerName}
                     </div>
                     <div style={{
-                      fontSize: '0.72rem',
+                      fontSize: '0.8rem',
                       color: 'var(--paper-dim)',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -72,7 +72,7 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
                   </div>
                 </div>
                 <div style={{
-                  fontSize: '0.72rem',
+                  fontSize: '0.8rem',
                   fontWeight: 700,
                   color: completion.isSuccess ? 'var(--success-ink)' : 'var(--danger-ink)',
                   textAlign: 'right',
@@ -85,7 +85,7 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
               </div>
             ))
           ) : (
-            <div style={{ textAlign: 'center', color: 'var(--paper-dim)', fontSize: '0.85rem', padding: '0.75rem' }}>
+            <div style={{ textAlign: 'center', color: 'var(--paper-dim)', fontSize: '0.9rem', padding: '0.75rem' }}>
               No gotchas yet — stay sneaky.
             </div>
           )}
@@ -116,7 +116,7 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
                     <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {player.name} {isYou && '(You)'}
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--paper-dim)' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--paper-dim)' }}>
                       {player.tasks.filter(t => t.status === 'completed').length} tasks completed
                     </div>
                   </div>

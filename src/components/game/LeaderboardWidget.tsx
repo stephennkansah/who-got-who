@@ -28,7 +28,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
         style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'inherit' }}
       >
         <div className="leaderboard-label">
-          Leaderboard · first to {targetScore} · tap for all
+          Leaderboard · first to {targetScore}
         </div>
 
         <div className="leaderboard-grid">

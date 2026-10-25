@@ -136,7 +136,7 @@ class ErrorBoundary extends React.Component<Props, State> {
                   Error Details (Development)
                 </summary>
                 <pre style={{
-                  fontSize: '0.8rem',
+                  fontSize: '0.86rem',
                   color: '#ef4444',
                   marginTop: '0.5rem',
                   whiteSpace: 'pre-wrap'

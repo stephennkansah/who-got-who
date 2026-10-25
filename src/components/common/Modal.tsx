@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import { useInRouterContext } from 'react-router-dom';
+import { useBackToClose } from '../../hooks/useBackToClose';
+
+/** The phone's back button closes the popup rather than leaving the screen. */
+function BackButtonCloses({ onClose }: { onClose: () => void }) {
+  useBackToClose(true, onClose);
+  return null;
+}
 
 interface ModalProps {
   isOpen: boolean;
@@ -31,6 +39,7 @@ export default function Modal({
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
+  const inRouter = useInRouterContext();
 
   const handleClose = useCallback(() => {
     if (dismissible) onClose?.();
@@ -88,6 +97,7 @@ export default function Modal({
         style={{ maxWidth, position: 'relative' }}
         onClick={(e) => e.stopPropagation()}
       >
+        {inRouter && dismissible && onClose && <BackButtonCloses onClose={onClose} />}
         {showClose && dismissible && (
           <button className="modal-close" onClick={onClose} aria-label="Close">
             ✕

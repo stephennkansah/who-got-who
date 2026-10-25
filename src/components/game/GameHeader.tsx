@@ -30,7 +30,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         <div style={{ fontSize: '1.3rem', lineHeight: 1 }}>
           <AnimatedScore value={currentPlayer?.score || 0} />
         </div>
-        <div style={{ fontSize: '0.6rem', letterSpacing: '0.16em', opacity: 0.8 }}>OF {targetScore}</div>
+        <div style={{ fontSize: '0.68rem', letterSpacing: '0.16em', opacity: 0.8 }}>OF {targetScore}</div>
       </button>
 
       {/* Center: Title */}

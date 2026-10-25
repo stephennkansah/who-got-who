@@ -153,7 +153,7 @@ Play: ${window.location.origin}`;
           borderRadius: 'var(--radius-sm)',
           padding: '1rem',
           marginBottom: '1.1rem',
-          fontSize: '0.85rem',
+          fontSize: '0.9rem',
           lineHeight: 1.5,
           whiteSpace: 'pre-line',
           textAlign: 'left',

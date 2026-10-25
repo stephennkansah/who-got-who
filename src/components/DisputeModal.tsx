@@ -75,7 +75,7 @@ export default function DisputeModal({
             "{taskText}"
           </p>
         )}
-        <p style={{ margin: '0.4rem 0 0', fontSize: '0.85rem', color: 'var(--warning-ink)' }}>
+        <p style={{ margin: '0.4rem 0 0', fontSize: '0.9rem', color: 'var(--warning-ink)' }}>
           Did they say "Gotcha!" before you could call them out?
         </p>
       </div>

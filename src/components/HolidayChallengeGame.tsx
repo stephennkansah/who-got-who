@@ -211,7 +211,7 @@ export default function HolidayChallengeGame() {
           aria-label="Show leaderboard"
         >
           <div style={{ fontSize: '1.3rem', lineHeight: 1 }}>{currentPlayer.challengeScore || 0}</div>
-          <div style={{ fontSize: '0.55rem', letterSpacing: '0.2em', opacity: 0.8 }}>
+          <div style={{ fontSize: '0.68rem', letterSpacing: '0.2em', opacity: 0.8 }}>
             #{myRank + 1} OF {sortedPlayers.length}
           </div>
         </button>
@@ -265,7 +265,7 @@ export default function HolidayChallengeGame() {
           <div className="overline" style={{ marginBottom: '0.6rem' }}>Latest</div>
           <div className="flex-column" style={{ gap: '0.35rem', marginBottom: photos.length ? '0.8rem' : 0 }}>
             {recent.slice(0, 3).map((completion) => (
-              <div key={completion.id} style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>
+              <div key={completion.id} style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>
                 <strong>{completion.playerId === currentPlayer.id ? 'You' : nameOf(completion.playerId)}</strong>
                 {' took '}
                 <span style={{ color: completion.type === 'gold' ? 'var(--amber)' : 'var(--text-muted)', fontWeight: 700 }}>
@@ -287,7 +287,7 @@ export default function HolidayChallengeGame() {
         <h2 style={{ marginBottom: '0.25rem' }}>
           Challenges
         </h2>
-        <p className="type" style={{ textAlign: 'center', fontSize: '0.78rem', marginBottom: '1rem' }}>
+        <p className="type" style={{ textAlign: 'center', fontSize: '0.85rem', marginBottom: '1rem' }}>
           {completedCount}/{challenges.length} filed · gold {goldPoints} pts, then {currentGame.settings.holidayMaxSilverPerChallenge || 2} silvers at {silverPoints}
         </p>
 
@@ -332,12 +332,12 @@ export default function HolidayChallengeGame() {
                       {challenge.text}
                     </div>
                     {challenge.requiresProof && (
-                      <div style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--paper-dim)' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--paper-dim)' }}>
                         Requires photo proof
                       </div>
                     )}
                     {status.awardsClosed && !status.completed && (
-                      <div style={{ fontSize: '0.76rem', color: 'var(--paper-dim)', fontWeight: 700 }}>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--paper-dim)', fontWeight: 700 }}>
                         All points claimed for this one
                       </div>
                     )}
@@ -346,7 +346,7 @@ export default function HolidayChallengeGame() {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, gap: '0.1rem' }}>
                     <div style={{
                       fontFamily: 'var(--font-display)',
-                      fontSize: '0.78rem',
+                      fontSize: '0.85rem',
                       letterSpacing: '0.14em',
                       color: status.awardsClosed && !status.completed
                         ? 'var(--paper-dim)'
@@ -481,7 +481,7 @@ export default function HolidayChallengeGame() {
                       <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {player.name} {isYou && '(You)'}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--paper-dim)' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--paper-dim)' }}>
                         {player.challengeCompletions?.length || 0} challenges done
                       </div>
                     </div>

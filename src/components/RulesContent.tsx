@@ -15,26 +15,28 @@ const toneStyles: Record<RuleCardProps['tone'], { bg: string; border: string; in
   success: { bg: 'var(--success-soft)', border: 'var(--success)', ink: 'var(--success-ink)' },
 };
 
+// Colour lives in the stripe and the heading; the reading text stays near-black on
+// paper so it's easy to read in a dim room.
 const RuleCard: React.FC<RuleCardProps> = ({ title, tone, children }) => {
   const t = toneStyles[tone];
   return (
     <div style={{
       padding: '1rem 1.1rem',
-      background: t.bg,
+      background: 'var(--paper)',
       borderRadius: 'var(--radius-md)',
-      borderLeft: `5px solid ${t.border}`,
+      borderLeft: `6px solid ${t.border}`,
       textAlign: 'left',
     }}>
       <div style={{
         fontFamily: 'var(--font-display)',
-        fontSize: '1.1rem',
-        letterSpacing: '0.07em',
+        fontSize: '1.3rem',
+        letterSpacing: '0.06em',
         color: t.ink,
-        marginBottom: '0.4rem',
+        marginBottom: '0.35rem',
       }}>
         {title}
       </div>
-      <div style={{ fontSize: '0.9rem', color: t.ink, lineHeight: 1.55 }}>
+      <div style={{ fontSize: '1rem', color: 'var(--paper-ink)', lineHeight: 1.6 }}>
         {children}
       </div>
     </div>
@@ -43,13 +45,13 @@ const RuleCard: React.FC<RuleCardProps> = ({ title, tone, children }) => {
 
 const ExampleBox: React.FC<{ title: string; hint: string }> = ({ title, hint }) => (
   <div style={{
-    background: 'rgba(255,255,255,0.5)',
-    padding: '0.6rem 0.75rem',
+    background: 'rgba(35, 32, 20, 0.06)',
+    padding: '0.65rem 0.8rem',
     borderRadius: '8px',
     marginBottom: '8px',
   }}>
     <strong>{title}</strong>
-    <div style={{ fontStyle: 'italic', fontSize: '0.85em', marginTop: '2px' }}>{hint}</div>
+    <div style={{ fontStyle: 'italic', fontSize: '0.92em', marginTop: '3px', color: '#4c4636' }}>{hint}</div>
   </div>
 );
 

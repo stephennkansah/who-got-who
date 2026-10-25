@@ -86,7 +86,7 @@ export default function VotingBanner({ dispute }: VotingBannerProps) {
           background: 'rgba(255,255,255,0.8)',
           color: 'var(--paper-ink)',
           borderRadius: '8px',
-          fontSize: '0.85rem',
+          fontSize: '0.9rem',
         }}>
           <strong>{targetName} says:</strong> "{dispute.description}"
         </div>

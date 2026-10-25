@@ -116,7 +116,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   };
 
   const buttonSizes = {
-    small: { padding: '8px 16px', fontSize: '0.85rem' },
+    small: { padding: '8px 16px', fontSize: '0.9rem' },
     medium: { padding: '12px 24px', fontSize: '1rem' },
     large: { padding: '16px 32px', fontSize: '1.1rem' }
   };
