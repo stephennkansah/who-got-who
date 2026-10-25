@@ -67,7 +67,6 @@ export default function Lobby() {
   const playerCount = players.length;
   const canStart = playerCount >= 2;
   const isHoliday = currentGame?.gameType === 'holiday-challenge';
-  const challengeCount = currentGame?.settings?.holidayChallengeCount ?? 10;
   const hostName = players.find((p) => p.isHost)?.name || 'the host';
   const packName = getAllPackOptions().find((pack) => pack.id === currentGame?.settings?.selectedPack)?.name;
   const summary = currentGame ? lobbySummary(currentGame) : null;

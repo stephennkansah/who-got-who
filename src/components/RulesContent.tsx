@@ -91,7 +91,8 @@ export default function RulesContent({ game }: { game: Game }) {
     <div className="flex-column gap-2">
       <RuleCard title="1 · Your secret missions" tone="info">
         You get <strong>{summary.missions} missions</strong> — things to get <strong>other players in this game</strong> to
-        say or do. Nobody else can see yours. Don't fancy one? <strong>Swap</strong> it ({summary.swaps} per game).
+        say or do. Nobody else can see yours, and no one else has the same ones. Don't fancy one?
+        <strong> Swap</strong> it ({summary.swaps} per game).
         {summary.briefingMinutes > 0 && <> You get {summary.briefingMinutes} minutes to read up before gotchas open.</>}
       </RuleCard>
 

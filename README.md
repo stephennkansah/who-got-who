@@ -13,7 +13,8 @@ Who Got Who is a mobile-first party game for completing secret social tasks with
 - A target must accept a successful Gotcha or dispute it
 - Uninvolved players vote on disputes; the host default resolves a tie
 - A valid Gotcha scores 1 point, plus 0.5 for a first-time target
-- The target score is 4, or 5 in games with 7 or more players
+- The target score depends on the host's game length: Quick 3, Party 4, Long 8, Weekend 12 (one or two more in games with 7 or more players)
+- The host also sets a settling-in time before gotchas open, how long targets have to answer a claim, and can pause the game
 - Disputes need at least one uninvolved player to vote; in 2-player games claims are settled out loud
 - Late arrivals can join a live game with a full hand of tasks; the host can remove players
 - When the game ends every player's tasks are revealed, and anyone can open a one-tap rematch for the group
