@@ -385,8 +385,10 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
   }
 
   return (
+    <span className="avatar-picker-trigger" style={{ flexShrink: 0 }}>
     <button
       onClick={() => setShowPicker(true)}
+      aria-label="Change your avatar"
       style={{
         background: 'var(--ink-2)',
         border: '3px solid var(--line-strong)',
@@ -443,6 +445,9 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
         </div>
       )}
     </button>
+    {/* Says "tap me" without words */}
+    <span className="avatar-edit-badge" aria-hidden="true">✎</span>
+    </span>
   );
 };
 

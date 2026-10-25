@@ -9,7 +9,7 @@ import React, {
   useState,
 } from 'react';
 import imageCompression from 'browser-image-compression';
-import { Game, GameContextType, GameState, Player } from '../types';
+import { Game, GameContextType, GameState, Player, SettingsUpdate } from '../types';
 import {
   configureAws,
   getAwsGameClient,
@@ -240,6 +240,8 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
           false,
         );
         localStorage.setItem('currentGameId', response.gameId);
+        // Start on the Core pack so the host lands straight in the lobby; it can be changed there.
+        await sendAction('SELECT_PACK', { packId: 'core' }, response.gameId, false).catch(() => undefined);
         await refreshGame(response.gameId);
       }),
     [prepareAvatar, refreshGame, run, sendAction],
@@ -313,9 +315,17 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
       }),
     [refreshGame, run, sendAction],
   );
-  const setBriefingMinutes = useCallback(
-    (minutes: number) =>
-      run(() => sendAction('UPDATE_SETTINGS', { briefingMinutes: minutes }).then(() => undefined)),
+  const updateSettings = useCallback(
+    (settings: SettingsUpdate) =>
+      run(() => sendAction('UPDATE_SETTINGS', { ...settings }).then(() => undefined)),
+    [run, sendAction],
+  );
+  const setReady = useCallback(
+    (ready: boolean) => run(() => sendAction('SET_READY', { ready }).then(() => undefined)),
+    [run, sendAction],
+  );
+  const transferHost = useCallback(
+    (playerId: string) => run(() => sendAction('TRANSFER_HOST', { playerId }).then(() => undefined)),
     [run, sendAction],
   );
   const openClaims = useCallback(
@@ -330,9 +340,13 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
     () => run(() => sendAction('RESUME').then(() => undefined)),
     [run, sendAction],
   );
-  const updatePlayerName = useCallback(
-    (name: string) => run(() => sendAction('UPDATE_NAME', { name }).then(() => undefined)),
-    [run, sendAction],
+  const updateProfile = useCallback(
+    (name: string, avatar?: string, avatarType?: 'emoji' | 'photo') =>
+      run(async () => {
+        const profile = avatar === undefined ? {} : await prepareAvatar(avatar, avatarType);
+        await sendAction('UPDATE_NAME', { name, ...profile });
+      }),
+    [prepareAvatar, run, sendAction],
   );
   const swapTask = useCallback(
     (taskId: string) => run(() => sendAction('SWAP_TASK', { taskId }).then(() => undefined)),
@@ -522,14 +536,16 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
       endGame,
       leaveGame,
       kickPlayer,
-      updatePlayerName,
+      transferHost,
+      setReady,
+      updateProfile,
       swapTask,
       claimGotcha,
       disputeGotcha,
       voteOnDispute,
       acceptGotcha,
       rematch,
-      setBriefingMinutes,
+      updateSettings,
       openClaims,
       pauseGame,
       resumeGame,
@@ -549,12 +565,14 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
       pauseGame,
       rematch,
       resumeGame,
-      setBriefingMinutes,
       selectPack,
+      setReady,
       startGame,
       state,
       swapTask,
-      updatePlayerName,
+      transferHost,
+      updateProfile,
+      updateSettings,
       voteOnDispute,
     ],
   );

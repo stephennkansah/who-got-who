@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Game, Player } from '../types';
 import Modal from './common/Modal';
 import { showToast } from './common/Toast';
+import { renderResultsImage } from '../utils/resultsImage';
 
 interface ResultsShareProps {
   game: Game;
@@ -47,6 +48,11 @@ Play: ${window.location.origin}`;
 
   const shareOptions = [
     {
+      name: 'Share Image',
+      action: 'image',
+      color: '#b98c36'
+    },
+    {
       name: 'WhatsApp',
             url: `https://wa.me/?text=${encodeURIComponent(generateResultsSummary())}`,
       color: '#25D366'
@@ -83,8 +89,33 @@ Play: ${window.location.origin}`;
     setShowShareOptions(false);
   };
 
+  // A picture of the final standings travels further than text in group chats.
+  const shareImage = async () => {
+    try {
+      const blob = await renderResultsImage(game);
+      const file = new File([blob], `who-got-who-${game.id}.png`, { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], text: `${gameName} — ${winner?.name || 'we'} won! ${window.location.origin}` });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.name;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast('Results image saved', 'success');
+      }
+      setShowShareOptions(false);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      showToast("Couldn't create the image — try Copy Results instead.", 'error');
+    }
+  };
+
   const handleOptionClick = (option: typeof shareOptions[0]) => {
-    if (option.action === 'copy') {
+    if (option.action === 'image') {
+      void shareImage();
+    } else if (option.action === 'copy') {
       copyResults();
     } else {
       window.open(option.url, '_blank', 'width=600,height=400');
@@ -142,6 +173,7 @@ Play: ${window.location.origin}`;
               key={option.name}
               onClick={() => handleOptionClick(option)}
               style={{
+                gridColumn: option.action === 'image' ? '1 / -1' : undefined,
                 padding: '18px 12px',
                 border: 'none',
                 borderRadius: 'var(--radius-md)',

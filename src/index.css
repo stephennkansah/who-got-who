@@ -810,7 +810,8 @@ button:not(:disabled):active {
 .mission-status.warning { color: var(--warning-ink); }
 
 .mission-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
   margin-top: 0.85rem;
 }
@@ -818,6 +819,22 @@ button:not(:disabled):active {
   padding: 0.65rem 0.4rem;
   font-size: 1.05rem;
 }
+.mission-actions .mission-primary {
+  grid-column: 1 / -1;
+  font-size: 1.3rem;
+  padding: 0.8rem;
+}
+
+/* Worked example in the rules */
+.rules-story {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.phase-rules { min-height: 36px; padding: 0.25rem; color: var(--warning-ink); }
 
 .filing-overlay {
   position: absolute;
@@ -1097,6 +1114,198 @@ button:not(:disabled):active {
   background: var(--amber);
   border-color: var(--amber);
   color: #3a2b0c;
+}
+
+/* ---------- Lobby ---------- */
+
+.invite-panel {
+  text-align: center;
+  margin: 0.5rem 0 1.1rem;
+}
+
+.invite-code {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text-main);
+  font-family: var(--font-display);
+  font-size: clamp(3.4rem, 18vw, 4.8rem);
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+  line-height: 1;
+}
+
+.invite-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+.invite-actions .chip-btn {
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-sm);
+}
+
+.qr-panel {
+  margin: 1rem auto 0;
+  max-width: 280px;
+  animation: scaleIn 0.2s ease-out;
+}
+.qr-frame {
+  background: #fff;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+}
+.qr-panel p { font-size: 0.8rem; margin-top: 0.6rem; }
+
+.roster {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.roster-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: rgba(241, 237, 224, 0.04);
+  border: 1.5px solid transparent;
+}
+.roster-row.is-me { background: var(--me-bg); border-color: var(--me-border); }
+.roster-row.just-joined { animation: rowArrive 2.5s ease-out; }
+.roster-row.ghost {
+  border: 1.5px dashed var(--line);
+  background: transparent;
+  min-height: 52px;
+}
+
+@keyframes rowArrive {
+  0% { transform: translateX(-12px); opacity: 0; box-shadow: 0 0 0 2px var(--success); }
+  15% { transform: translateX(0); opacity: 1; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.roster-info { flex: 1; min-width: 0; }
+.roster-name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.roster-status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.roster-status.ready { color: var(--success); font-weight: 700; }
+.roster-status.host { color: var(--amber); }
+
+.ready-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  flex-shrink: 0;
+}
+.roster-status.ready .ready-dot { background: var(--success); }
+
+.roster-more {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.roster-more:active { background: rgba(241, 237, 224, 0.08); }
+
+.ghost-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--line-strong);
+  flex-shrink: 0;
+}
+
+.setup-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0.9rem;
+}
+.setup-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+.setup-row .setup-label { margin-bottom: 0.1rem; }
+.setup-value { font-weight: 700; color: var(--text-main); }
+.setup-block { margin-bottom: 1rem; }
+.setup-help { font-size: 0.78rem; margin: 0.4rem 0 0; }
+
+.setup-facts {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding-top: 0.2rem;
+}
+.setup-facts li {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-pill);
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  color: var(--text-main);
+}
+
+.segmented small {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  opacity: 0.75;
+  margin-top: 0.1rem;
+}
+
+/* Avatar picker: a small pencil says "tap to change" */
+.avatar-picker-trigger { position: relative; display: inline-flex; }
+.avatar-edit-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--amber);
+  color: #3a2b0c;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+  pointer-events: none;
 }
 
 /* Status banner for claims you are part of */
