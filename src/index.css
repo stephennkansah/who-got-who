@@ -887,6 +887,15 @@ button:not(:disabled):active {
   color: var(--paper-ink);
 }
 
+.mission-tip-toggle {
+  margin-top: 0.65rem;
+  color: var(--paper-ink);
+  border-color: var(--paper-line);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  letter-spacing: 0;
+}
+
 .mission-tip {
   margin-top: 0.45rem;
   font-size: 0.9rem;
