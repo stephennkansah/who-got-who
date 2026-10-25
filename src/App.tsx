@@ -16,6 +16,7 @@ import ToastHost, { showToast } from './components/common/Toast';
 import ConnectionPill from './components/common/ConnectionPill';
 import { SheetHistorySync } from './hooks/useBackToClose';
 import UpdateNotice from './components/common/UpdateNotice';
+import NativeLifecycle from './components/NativeLifecycle';
 
 // Wrapper component to extract gameId from URL params
 const PackSelectWrapper: React.FC = () => {
@@ -82,6 +83,7 @@ function App() {
       <div style={{ height: '100%', width: '100%' }}>
         <AwsGameProvider>
           <Router>
+            <NativeLifecycle />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/select-pack/:gameId" element={<PackSelectWrapper />} />

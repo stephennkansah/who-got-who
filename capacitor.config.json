@@ -1,0 +1,10 @@
+{
+  "appId": "club.whogotwho.app",
+  "appName": "Who Got Who",
+  "webDir": "build",
+  "backgroundColor": "#12100c",
+  "ios": {
+    "contentInset": "never",
+    "preferredContentMode": "mobile"
+  }
+}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import NotificationService from '../services/notificationService';
 import { PUSH_PERMISSION_EVENT } from '../services/pushService';
+import { isNativeApp } from '../services/appPlatform';
 
 interface NotificationPromptProps {
   onPermissionGranted?: () => void;
@@ -16,7 +17,7 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
 
   useEffect(() => {
     // Check if we should show the prompt
-    if ('Notification' in window) {
+    if (!isNativeApp() && 'Notification' in window) {
       setPermission(Notification.permission);
       // Show prompt if permission hasn't been decided and user hasn't dismissed it
       const hasPrompted = localStorage.getItem('notification-prompted');
@@ -28,7 +29,7 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
 
   const handleEnableNotifications = async () => {
     const granted = await NotificationService.requestPermission();
-    
+
     if (granted) {
       setPermission('granted');
       onPermissionGranted?.();
@@ -45,7 +46,7 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
       setPermission('denied');
       onPermissionDenied?.();
     }
-    
+
     localStorage.setItem('notification-prompted', 'true');
     setShowPrompt(false);
   };
@@ -55,7 +56,7 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
     setShowPrompt(false);
   };
 
-  if (!('Notification' in window)) {
+  if (isNativeApp() || !('Notification' in window)) {
     return null; // Browser doesn't support notifications
   }
 
@@ -113,4 +114,4 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
   );
 };
 
-export default NotificationPrompt; 
+export default NotificationPrompt;

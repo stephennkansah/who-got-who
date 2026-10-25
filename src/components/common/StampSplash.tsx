@@ -1,3 +1,4 @@
+import { buzz } from '../../services/appPlatform';
 import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import Mascot, { MascotPose } from './Mascot';
@@ -28,7 +29,7 @@ export default function StampSplash({
   onDoneRef.current = onDone;
 
   useEffect(() => {
-    navigator.vibrate?.([90, 40, 60]);
+    buzz([90, 40, 60]);
     const timer = window.setTimeout(() => onDoneRef.current(), durationMs);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps

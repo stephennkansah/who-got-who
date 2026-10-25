@@ -3,6 +3,7 @@ import { Game, Player } from '../types';
 import Modal from './common/Modal';
 import { showToast } from './common/Toast';
 import { renderResultsImage } from '../utils/resultsImage';
+import { isNativeApp, publicGameOrigin, shareNativeImage, isShareCancelled } from '../services/appPlatform';
 
 interface ResultsShareProps {
   game: Game;
@@ -43,7 +44,7 @@ ${leaderboard}
 ${game.players.length} players • ${totalCompleted} ${missionWord} completed
 
 The ultimate social party game!
-Play: ${window.location.origin}`;
+Play: ${publicGameOrigin()}`;
   };
 
   const shareOptions = [
@@ -94,8 +95,10 @@ Play: ${window.location.origin}`;
     try {
       const blob = await renderResultsImage(game);
       const file = new File([blob], `who-got-who-${game.id}.png`, { type: 'image/png' });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], text: `${gameName} — ${winner?.name || 'we'} won! ${window.location.origin}` });
+      if (isNativeApp()) {
+        await shareNativeImage(blob, `${gameName} — ${winner?.name || 'we'} won! ${publicGameOrigin()}`);
+      } else if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], text: `${gameName} — ${winner?.name || 'we'} won! ${publicGameOrigin()}` });
       } else {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -107,7 +110,7 @@ Play: ${window.location.origin}`;
       }
       setShowShareOptions(false);
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') return;
+      if (isShareCancelled(error)) return;
       showToast("Couldn't create the image — try Copy Results instead.", 'error');
     }
   };

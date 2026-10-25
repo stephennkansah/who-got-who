@@ -1,3 +1,4 @@
+import { buzz } from '../services/appPlatform';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dispute } from '../types';
 import Modal from './common/Modal';
@@ -35,7 +36,7 @@ export default function DisputeModal({
     if (paused) return;
     if (timeLeft <= 10 && !buzzedRef.current) {
       buzzedRef.current = true;
-      navigator.vibrate?.(200);
+      buzz(200);
     }
     if (timeLeft === 0 && !expiredRef.current) {
       expiredRef.current = true;

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import imageCompression from 'browser-image-compression';
 import Modal from './common/Modal';
 import { showToast } from './common/Toast';
+import { isNativeApp, pickNativePhoto, isShareCancelled } from '../services/appPlatform';
 
 interface AvatarPickerProps {
   selectedAvatar: string;
@@ -9,10 +10,10 @@ interface AvatarPickerProps {
   style?: React.CSSProperties;
 }
 
-const AvatarPicker: React.FC<AvatarPickerProps> = ({ 
-  selectedAvatar, 
-  onAvatarChange, 
-  style 
+const AvatarPicker: React.FC<AvatarPickerProps> = ({
+  selectedAvatar,
+  onAvatarChange,
+  style
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -34,7 +35,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
     // Dark skin tone
     '👩🏿‍💼', '👨🏿‍🍳', '👩🏿‍🚀', '👨🏿‍🎓', '👩🏿‍💻', '👨🏿‍🎨',
     // Fun characters (skin tone neutral)
-    '🤖', '👻', '🎭', '👾', '🦸‍♀️', '🦸‍♂️', 
+    '🤖', '👻', '🎭', '👾', '🦸‍♀️', '🦸‍♂️',
     '🧙‍♀️', '🧙‍♂️', '🦹‍♀️', '🦹‍♂️', '🧚‍♀️', '🧚‍♂️'
   ];
 
@@ -53,26 +54,30 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
   };
 
   const startCamera = async () => {
+    if (isNativeApp()) {
+      await chooseNativeAvatar('camera');
+      return;
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
           facingMode: 'user',
           width: { ideal: 640 },
           height: { ideal: 480 }
-        } 
+        }
       });
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
-        
+
         // Ensure video plays
         try {
           await videoRef.current.play();
         } catch (playError) {
           console.error('Error playing video:', playError);
         }
-        
+
         setShowCamera(true);
       }
     } catch (error) {
@@ -127,7 +132,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
 
         // Compress the image
         const compressedFile = await imageCompression(file, options);
-        
+
         // Convert to base64 for storage
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -149,6 +154,19 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    await processAvatarPhoto(file);
+  };
+
+  const chooseNativeAvatar = async (source: 'camera' | 'photos') => {
+    try {
+      const file = await pickNativePhoto(source, true);
+      await processAvatarPhoto(file);
+    } catch (error) {
+      if (!isShareCancelled(error)) showToast('Photo unavailable — check permissions or choose an emoji.', 'error');
+    }
+  };
+
+  const processAvatarPhoto = async (file: File) => {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -176,7 +194,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
 
       // Compress the image
       const compressedFile = await imageCompression(file, options);
-      
+
       // Convert to base64 for storage
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -241,9 +259,9 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                     }}
                   />
                   <canvas ref={canvasRef} style={{ display: 'none' }} />
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '10px', 
+                  <div style={{
+                    display: 'flex',
+                    gap: '10px',
                     justifyContent: 'center',
                     marginTop: '15px'
                   }}>
@@ -303,7 +321,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                   >
                     Take a Photo
                   </button>
-                  
+
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -312,7 +330,7 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                     style={{ display: 'none' }}
                   />
                   <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => isNativeApp() ? void chooseNativeAvatar('photos') : fileInputRef.current?.click()}
                     disabled={isUploading}
                     style={{
                       background: isUploading ? '#6b7280' : 'var(--primary-gradient)',
@@ -331,11 +349,11 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
                   </button>
                 </div>
               )}
-              
-              <p style={{ 
-                margin: '10px 0 0 0', 
-                fontSize: '0.8em', 
-                color: 'var(--paper-dim)' 
+
+              <p style={{
+                margin: '10px 0 0 0',
+                fontSize: '0.8em',
+                color: 'var(--paper-dim)'
               }}>
                 Auto-compressed to 100KB for fast loading
               </p>
@@ -452,4 +470,4 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
   );
 };
 
-export default AvatarPicker; 
+export default AvatarPicker;

@@ -1,3 +1,4 @@
+import { buzz } from '../services/appPlatform';
 import { useEffect, useRef } from 'react';
 import { useGame } from './useGame';
 import { showToast } from '../components/common/Toast';
@@ -108,7 +109,7 @@ export function useGameFeed(onMyClaimResolved?: (outcome: ClaimOutcome) => void)
 
     for (const dispute of state.activeDisputes) {
       if (dispute.targetId !== me.id || dispute.phase !== 'response' || before.claimsOnMe.has(dispute.id)) continue;
-      navigator.vibrate?.([120, 60, 120]);
+      buzz([120, 60, 120]);
       NotificationService.notifyIfHidden(
         'Gotcha claimed!',
         `${nameOf(dispute.accuserId)} says they got you — open the game to accept or dispute.`,
@@ -118,7 +119,7 @@ export function useGameFeed(onMyClaimResolved?: (outcome: ClaimOutcome) => void)
 
     for (const dispute of state.activeDisputes) {
       if (!snapshot.votesForMe.has(dispute.id) || before.votesForMe.has(dispute.id)) continue;
-      navigator.vibrate?.([120, 60, 120]);
+      buzz([120, 60, 120]);
       NotificationService.notifyIfHidden(
         'Your vote is needed',
         `${nameOf(dispute.targetId)} disputes ${nameOf(dispute.accuserId)}'s gotcha — open the game to vote.`,

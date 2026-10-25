@@ -4,6 +4,7 @@ import ShareButton from '../ShareButton';
 import BrandMark from '../common/BrandMark';
 import Mascot from '../common/Mascot';
 import { showToast } from '../common/Toast';
+import { publicGameOrigin } from '../../services/appPlatform';
 
 interface InvitePanelProps {
   gameId: string;
@@ -30,7 +31,7 @@ async function copyText(text: string) {
 /** The code as the hero, plus every way to get people in: share, link, QR. */
 export default function InvitePanel({ gameId, gameType, playerCount, maxPlayers }: InvitePanelProps) {
   const [showQr, setShowQr] = useState(false);
-  const joinUrl = `${window.location.origin}/?join=${gameId}${gameType === 'holiday-challenge' ? '&type=you-got-who' : ''}`;
+  const joinUrl = `${publicGameOrigin()}/?join=${gameId}${gameType === 'holiday-challenge' ? '&type=you-got-who' : ''}`;
 
   // Keep the screen awake while the host holds the QR up for people to scan.
   useEffect(() => {

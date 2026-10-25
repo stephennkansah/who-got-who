@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Modal from './common/Modal';
 import { showToast } from './common/Toast';
+import { publicGameOrigin, shareInvite, isShareCancelled } from '../services/appPlatform';
 
 interface ShareButtonProps {
   gameId?: string;
@@ -17,7 +18,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
 }) => {
   const [showShareOptions, setShowShareOptions] = useState(false);
 
-  const baseUrl = window.location.origin;
+  const baseUrl = publicGameOrigin();
 
   // Include game type in URL for YOU GOT WHO? games
   const shareUrl = gameId
@@ -45,24 +46,21 @@ const ShareButton: React.FC<ShareButtonProps> = ({
 
   // Try native Web Share API first (mobile)
   const handleNativeShare = async () => {
-    if (navigator.share) {
       try {
         // Pass the link separately: Android appends `url` to `text`, so including
         // it in both would send the link twice.
-        await navigator.share({
+        const shared = await shareInvite({
           title: shareTitle,
           text: `${pitch}\n\n👉`,
           url: shareUrl,
         });
-        return { success: true, cancelled: false };
+        return { success: shared, cancelled: false };
       } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
+        if (isShareCancelled(error)) {
           return { success: false, cancelled: true };
         }
         return { success: false, cancelled: false };
       }
-    }
-    return { success: false, cancelled: false };
   };
 
   const handleShare = async () => {

@@ -17,6 +17,7 @@ import HostMenu from './game/HostMenu';
 import RulesSheet from './game/RulesSheet';
 import { useGamePhase } from '../hooks/useGamePhase';
 import NotificationService from '../services/notificationService';
+import { isNativeApp, pickNativePhoto, isShareCancelled, buzz } from '../services/appPlatform';
 
 export default function HolidayChallengeGame() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -104,7 +105,7 @@ export default function HolidayChallengeGame() {
   // The settling-in clock just hit zero: everyone hears the starting gun.
   useEffect(() => {
     if (wasBriefing.current && !phase.briefing && !phase.paused && currentGame?.status === 'live') {
-      navigator.vibrate?.([150, 80, 150]);
+      buzz([150, 80, 150]);
       showToast('Challenges are open — go!', 'success');
       NotificationService.notifyIfHidden('Challenges are open!', 'The briefing is over — go get them.', 'claims-open');
     }
@@ -432,7 +433,21 @@ export default function HolidayChallengeGame() {
           </p>
         )}
 
-        <label
+        {isNativeApp() ? (
+          <button
+            className="btn btn-secondary"
+            style={{ marginBottom: '0.75rem' }}
+            onClick={async () => {
+              try {
+                setSelectedImage(await pickNativePhoto('prompt'));
+              } catch (error) {
+                if (!isShareCancelled(error)) showToast('Could not open that photo. Please try again.', 'error');
+              }
+            }}
+          >
+            {imagePreview ? 'Choose a Different Photo' : 'Take or Choose a Photo'}
+          </button>
+        ) : <label
           className="btn btn-secondary"
           style={{ marginBottom: '0.75rem', cursor: 'pointer' }}
         >
@@ -443,7 +458,7 @@ export default function HolidayChallengeGame() {
             onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
             style={{ display: 'none' }}
           />
-        </label>
+        </label>}
 
         <div className="flex gap-1">
           <button className="btn btn-secondary" onClick={handleImageUploadCancel} style={{ flex: 1 }}>

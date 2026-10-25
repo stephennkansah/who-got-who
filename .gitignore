@@ -78,6 +78,11 @@ pids
 cmdline-tools.zip
 android-sdk/
 android.keystore
+*.p8
+*.p12
+*.mobileprovision
+*.xcarchive/
+*.ipa
 local.properties
 create_icon.html
 manifest-checksum.txt

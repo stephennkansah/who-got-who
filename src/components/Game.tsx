@@ -1,3 +1,4 @@
+import { buzz } from '../services/appPlatform';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
@@ -180,7 +181,7 @@ export default function Game() {
   // The settling-in clock just hit zero: everyone hears the starting gun.
   useEffect(() => {
     if (wasBriefing.current && !phase.briefing && !phase.paused && currentGame?.status === 'live') {
-      navigator.vibrate?.([150, 80, 150]);
+      buzz([150, 80, 150]);
       setSlam({ title: 'Gotchas Open', subtitle: 'the briefing is over — happy hunting', tone: 'success', mascot: 'mission' });
       NotificationService.notifyIfHidden('Gotchas are open!', 'The briefing is over — go get them.', 'claims-open');
     }

@@ -1,3 +1,4 @@
+import { buzz } from '../services/appPlatform';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
@@ -34,7 +35,7 @@ function useLobbyFeed(players: Player[], currentPlayerId?: string) {
       .filter((player) => !had.has(player.id) && player.id !== currentPlayerId)
       .forEach((player) => {
         showToast(`${player.name} joined`, 'success');
-        if (amHost) navigator.vibrate?.(60);
+        if (amHost) buzz(60);
       });
     before
       .filter((player) => !has.has(player.id))

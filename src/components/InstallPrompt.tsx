@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from './common/Modal';
 import BrandMark from './common/BrandMark';
 import { showToast } from './common/Toast';
+import { isNativeApp } from '../services/appPlatform';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -45,7 +46,7 @@ const STEPS: Record<InstallPlatform, string[]> = {
 
 const InstallPrompt: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(isNativeApp);
   const [showSteps, setShowSteps] = useState(false);
   const [isDismissed, setIsDismissed] = useState(
     () => localStorage.getItem(DISMISS_KEY) === 'true',
@@ -54,7 +55,7 @@ const InstallPrompt: React.FC = () => {
 
   useEffect(() => {
     // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (isNativeApp() || window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
       return;
     }

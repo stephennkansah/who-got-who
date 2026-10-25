@@ -3,10 +3,12 @@
 // the app is added to the Home Screen (iOS 16.4+).
 
 /** Fired once the player allows notifications, so the open game can subscribe straight away. */
+import { isNativeApp } from './appPlatform';
+
 export const PUSH_PERMISSION_EVENT = 'wgw-push-permission';
 
 export function isPushSupported(): boolean {
-  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  return !isNativeApp() && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }
 
 function keyBytes(base64url: string): Uint8Array {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import InstallPrompt, { detectPlatform } from '../components/InstallPrompt';
+import { Capacitor } from '@capacitor/core';
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
 const ANDROID = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';
@@ -46,5 +47,13 @@ describe('InstallPrompt', () => {
     userAgent.mockReturnValue(ANDROID);
     render(<InstallPrompt />);
     expect(screen.queryByText('Install App')).not.toBeInTheDocument();
+  });
+
+  it('does not offer web installation inside the iPhone app', () => {
+    const native = jest.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true);
+    userAgent.mockReturnValue(IPHONE);
+    render(<InstallPrompt />);
+    expect(screen.queryByText('Install App')).not.toBeInTheDocument();
+    native.mockRestore();
   });
 });

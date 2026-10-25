@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import QRCode from 'react-qr-code';
 import Modal from './common/Modal';
+import { publicGameOrigin } from '../services/appPlatform';
 
 interface QRCodeJoinProps {
   gameId: string;
@@ -13,8 +14,8 @@ const QRCodeJoin: React.FC<QRCodeJoinProps> = ({ gameId, gameType, style }) => {
 
   // Include game type in URL for YOU GOT WHO? games
   const gameUrl = gameType === 'holiday-challenge'
-    ? `${window.location.origin}/?join=${gameId}&type=you-got-who`
-    : `${window.location.origin}/?join=${gameId}`;
+    ? `${publicGameOrigin()}/?join=${gameId}&type=you-got-who`
+    : `${publicGameOrigin()}/?join=${gameId}`;
 
   return (
     <>
