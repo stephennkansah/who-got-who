@@ -1,8 +1,8 @@
 import { defineBackend } from '@aws-amplify/backend';
 import { AttributeType, BillingMode, Table, TableEncryption } from 'aws-cdk-lib/aws-dynamodb';
-import { Duration, RemovalPolicy } from 'aws-cdk-lib';
+import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
-import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { Effect, Policy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Function as LambdaFunction } from 'aws-cdk-lib/aws-lambda';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
@@ -53,16 +53,19 @@ mutableLambda.addEnvironment(
 // only grants the signed-in role. Give the guest role the same per-identity folders so
 // photo avatars and challenge proofs can upload — each guest can only touch their own.
 const mediaBucketArn = backend.storage.resources.bucket.bucketArn;
-backend.auth.resources.unauthenticatedUserIamRole.addToPrincipalPolicy(
-  new PolicyStatement({
+// Keep the policy in storage: adding it to the role's default policy in auth
+// makes auth depend on storage, while storage already depends on auth.
+const guestMediaPolicy = new Policy(Stack.of(backend.storage.resources.bucket), 'GuestMediaAccess', {
+  statements: [new PolicyStatement({
     effect: Effect.ALLOW,
     actions: ['s3:PutObject', 's3:GetObject', 's3:DeleteObject'],
     resources: [
       `${mediaBucketArn}/avatars/\${cognito-identity.amazonaws.com:sub}/*`,
       `${mediaBucketArn}/proofs/\${cognito-identity.amazonaws.com:sub}/*`,
     ],
-  }),
-);
+  })],
+});
+guestMediaPolicy.attachToRole(backend.auth.resources.unauthenticatedUserIamRole);
 
 (backend.storage.resources.bucket as Bucket).addLifecycleRule({
   id: 'delete-expired-game-media',
