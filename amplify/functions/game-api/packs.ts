@@ -6,9 +6,9 @@ import type { Task, TaskPack, Challenge, HolidayChallengePack } from '../../../s
 //
 // Every task carries a one-line `tips` hint: a natural way to set the task
 // up without giving it away. Keep ids stable — live games store them as
-// `templateId`.
+// `templateId`. Retired ids (do not reuse): v012, v020, v029, p009, p026.
 
-// Category 1: Correction Tasks (10 Tasks)
+// Category 1: Correction Tasks (11 Tasks)
 const coreCorrectTasks: Task[] = [
   {
     id: 'c001',
@@ -53,16 +53,21 @@ const coreCorrectTasks: Task[] = [
   {
     id: 'c009',
     text: 'Get a player to correct the spelling of a word you spell out loud.',
-    tips: 'While "writing a list", spell a tricky word wrong: "Necessary, n-e-c-c-e-s-a-r-y?"'
+    tips: 'Ask "How do you spell that? Isn\'t it...?" and spell it wrong.'
   },
   {
     id: 'c010',
     text: 'Get a player to correct you on the rules of a different game or sport.',
     tips: 'Wonder aloud: "In chess the queen can jump like a knight, right?"'
+  },
+  {
+    id: 'c011',
+    text: 'Get a player to correct your maths.',
+    tips: 'Get the bill split, the tip or the score slightly wrong out loud.'
   }
 ];
 
-// Category 2: Verbal & Conversational (30 Tasks)
+// Category 2: Verbal & Conversational (27 Tasks)
 const coreVerbalTasks: Task[] = [
   {
     id: 'v001',
@@ -71,13 +76,13 @@ const coreVerbalTasks: Task[] = [
   },
   {
     id: 'v002',
-    text: 'Get a player to say "literally."',
-    tips: 'Ask "Was it really that bad?" about a story they just told.'
+    text: 'Get a player to say "nightmare."',
+    tips: 'Ask about their worst journey, flight or neighbour.'
   },
   {
     id: 'v003',
-    text: 'Get a player to say "I don\'t know."',
-    tips: 'Ask an oddly specific question, like how many bones are in a giraffe\'s neck.'
+    text: 'Get a player to say "good question."',
+    tips: 'Ask something thoughtful they\'ll need a moment to answer.'
   },
   {
     id: 'v004',
@@ -91,13 +96,13 @@ const coreVerbalTasks: Task[] = [
   },
   {
     id: 'v006',
-    text: 'Get a player to say "thank you" to you.',
-    tips: 'Top up their drink or hand them something they need.'
+    text: 'Get a player to thank you for something you didn\'t do.',
+    tips: 'Say "I saved you the last slice" or "I topped up your drink" and see if they buy it.'
   },
   {
     id: 'v007',
-    text: 'Get a player to say your name.',
-    tips: 'Ask "Who\'s the best dancer here?" when everyone knows it\'s you.'
+    text: 'Get a player to say your name twice within one minute.',
+    tips: 'Ask two quick "Who\'s better at this, me or...?" questions back to back.'
   },
   {
     id: 'v008',
@@ -106,8 +111,8 @@ const coreVerbalTasks: Task[] = [
   },
   {
     id: 'v009',
-    text: 'Get a player to agree with you twice in a row.',
-    tips: 'Line up two easy ones: "This song\'s great, right? And these snacks?"'
+    text: 'Get a player to say "you\'re right."',
+    tips: 'Win a tiny argument and wait for them to admit it.'
   },
   {
     id: 'v010',
@@ -116,13 +121,8 @@ const coreVerbalTasks: Task[] = [
   },
   {
     id: 'v011',
-    text: 'Get a player to ask the group a question.',
-    tips: 'Disagree with them and say "Ask anyone, they\'ll back me up."'
-  },
-  {
-    id: 'v012',
-    text: 'Get a player to ask for advice.',
-    tips: 'Mention you know a lot about something they\'ve been stuck on lately.'
+    text: 'Get a player to start a show of hands.',
+    tips: 'Start a debate that splits the room; someone will say "Hands up who..."'
   },
   {
     id: 'v013',
@@ -131,38 +131,33 @@ const coreVerbalTasks: Task[] = [
   },
   {
     id: 'v014',
-    text: 'Get a player to talk about the weather.',
-    tips: 'Glance out of the window and say "Have you seen it out there?"'
+    text: 'Get a player to make a friendly bet with you.',
+    tips: 'Make a bold prediction and offer a silly forfeit if you\'re wrong.'
   },
   {
     id: 'v015',
-    text: 'Get a player to mention an animal.',
-    tips: 'Ask "If you were an animal, what would you be?"'
+    text: 'Get a player to make an animal noise.',
+    tips: 'Ask what noise a giraffe or a fox makes.'
   },
   {
     id: 'v016',
-    text: 'Get a player to name a city they\'ve never been to.',
-    tips: 'Ask "Where has everyone been except you?"'
+    text: 'Get a player to rate something out of 10.',
+    tips: 'Ask how they\'d score the food, the music or your outfit.'
   },
   {
     id: 'v017',
-    text: 'Get a player to name a musical artist or band.',
-    tips: 'Ask what song has been stuck in their head lately.'
+    text: 'Get a player to name their guilty-pleasure song.',
+    tips: 'Confess your own cheesy favourite first.'
   },
   {
     id: 'v018',
-    text: 'Get a player to name a movie from the 90s.',
-    tips: 'Argue that films were better before 2000 and let them prove it.'
+    text: 'Get a player to name a film they think is overrated.',
+    tips: 'Say a hugely popular film was "just okay" and ask if they agree.'
   },
   {
     id: 'v019',
     text: 'Get a player to talk about a dream they had.',
     tips: 'Say "I had the weirdest dream last night" and ask if they get strange ones.'
-  },
-  {
-    id: 'v020',
-    text: 'Get a player to bring up a memory you both share.',
-    tips: 'Mention a place or song from a time you were together and let them take over.'
   },
   {
     id: 'v021',
@@ -181,8 +176,8 @@ const coreVerbalTasks: Task[] = [
   },
   {
     id: 'v024',
-    text: 'Get a player to talk about their job.',
-    tips: 'Ask about the strangest thing that\'s happened at their work.'
+    text: 'Get a player to answer five questions in a row about their job.',
+    tips: 'Act genuinely curious and keep the follow-ups coming before they notice.'
   },
   {
     id: 'v025',
@@ -205,23 +200,18 @@ const coreVerbalTasks: Task[] = [
     tips: 'Announce something unbelievable, like a crazy price or that you\'ve never seen Star Wars.'
   },
   {
-    id: 'v029',
-    text: 'Get a player to swear or curse.',
-    tips: 'Get them ranting about something that annoys them: parking, referees, queues.'
-  },
-  {
     id: 'v030',
     text: 'Get a player to start a sentence with "No offense, but..."',
     tips: 'Ask for their honest opinion of your outfit or music taste.'
   }
 ];
 
-// Category 3: Physical & Interactive (30 Tasks)
+// Category 3: Physical & Interactive (28 Tasks)
 const corePhysicalTasks: Task[] = [
   {
     id: 'p001',
-    text: 'Get a player to take a sip of their drink at the same time as you.',
-    tips: 'Raise your glass slowly mid-chat; people tend to mirror.'
+    text: 'Get a player to pour you a drink.',
+    tips: 'Hold out your empty glass while you\'re in the middle of a story.'
   },
   {
     id: 'p002',
@@ -235,18 +225,18 @@ const corePhysicalTasks: Task[] = [
   },
   {
     id: 'p004',
-    text: 'Get a player to cross their legs.',
-    tips: 'Sit back and cross your own legs mid-chat; body language is catching.'
+    text: 'Get a player to swap seats with you.',
+    tips: 'Say you can\'t hear from where you are, or the light is in your eyes.'
   },
   {
     id: 'p005',
-    text: 'Get a player to cross their arms.',
-    tips: 'Say something cheeky they\'ll pretend to be offended by.'
+    text: 'Get a player to hold something for you for 20 seconds.',
+    tips: 'Hand them your drink or plate while you "check your pockets".'
   },
   {
     id: 'p006',
-    text: 'Get a player to rub their eyes.',
-    tips: 'Ask if they\'ve got something in their eye.'
+    text: 'Get a player to wink at you.',
+    tips: 'Admit you can\'t wink properly and ask if they can.'
   },
   {
     id: 'p007',
@@ -255,13 +245,8 @@ const corePhysicalTasks: Task[] = [
   },
   {
     id: 'p008',
-    text: 'Get a player to point at something.',
-    tips: 'Ask "Which one is yours?" or ask them for directions.'
-  },
-  {
-    id: 'p009',
-    text: 'Get a player to crack their knuckles.',
-    tips: 'Crack your own and ask if it really gives you arthritis.'
+    text: 'Get a player to point at you.',
+    tips: 'Ask "Who here is most likely to get lost on holiday?"'
   },
   {
     id: 'p010',
@@ -270,8 +255,8 @@ const corePhysicalTasks: Task[] = [
   },
   {
     id: 'p011',
-    text: 'Get a player to pass an item on the table.',
-    tips: 'Ask for the salt, a napkin or the remote.'
+    text: 'Get a player to pass you something that\'s right next to you.',
+    tips: 'Ask for something within your own reach while you look busy.'
   },
   {
     id: 'p012',
@@ -280,8 +265,8 @@ const corePhysicalTasks: Task[] = [
   },
   {
     id: 'p013',
-    text: 'Get a player to stand up for any reason.',
-    tips: 'Ask them to grab something from another room or show you something.'
+    text: 'Get a player to fetch something for you from another room.',
+    tips: 'Say you left your charger or jumper in the other room.'
   },
   {
     id: 'p014',
@@ -335,18 +320,13 @@ const corePhysicalTasks: Task[] = [
   },
   {
     id: 'p024',
-    text: 'Get a player to pat someone on the back.',
-    tips: 'Share some good news near them and wait for the congratulations.'
+    text: 'Get a player to give you a shoulder massage for 10 seconds.',
+    tips: 'Roll your shoulders and moan about how stiff your neck is.'
   },
   {
     id: 'p025',
     text: 'Get a player to lean in to hear better.',
     tips: 'Drop your voice mid-sentence like you\'re sharing a secret.'
-  },
-  {
-    id: 'p026',
-    text: 'Get a player to shrug.',
-    tips: 'Ask a question with no real answer, like "Where did this week go?"'
   },
   {
     id: 'p027',
@@ -365,8 +345,8 @@ const corePhysicalTasks: Task[] = [
   },
   {
     id: 'p030',
-    text: 'Get a player to nod their head three times in a row.',
-    tips: 'Ask three quick yes-questions in a row.'
+    text: 'Get a player to take a photo of you.',
+    tips: 'Hand them your phone and say you need a new profile picture.'
   }
 ];
 
@@ -399,8 +379,8 @@ const corePerformativeTasks: Task[] = [
   },
   {
     id: 'f006',
-    text: 'Get a player to spell a word out loud.',
-    tips: 'Ask "How do you spell that?" about a tricky word while you type a message.'
+    text: 'Get a player to say a tongue twister.',
+    tips: 'Stumble over "red lorry, yellow lorry" and ask if they can do it.'
   },
   {
     id: 'f007',
@@ -429,8 +409,8 @@ const corePerformativeTasks: Task[] = [
   },
   {
     id: 'f012',
-    text: 'Get a player to name three former presidents or prime ministers.',
-    tips: 'Admit you can never remember who came before the current leader.'
+    text: 'Get a player to show you a party trick or hidden talent.',
+    tips: 'Show off a small trick of your own and ask "What\'s yours?"'
   },
   {
     id: 'f013',
@@ -439,8 +419,8 @@ const corePerformativeTasks: Task[] = [
   },
   {
     id: 'f014',
-    text: 'Get a player to complain about the temperature.',
-    tips: 'Ask "Is it just me, or is it boiling in here?"'
+    text: 'Get a player to take a bow.',
+    tips: 'Applaud loudly when they finish a story or win at something.'
   },
   {
     id: 'f015',
@@ -463,13 +443,13 @@ const coreTechnologyTasks: Task[] = [
   },
   {
     id: 't003',
-    text: 'Get a player to check their phone\'s battery percentage.',
-    tips: 'Complain your battery is dying and ask if anyone has a charger.'
+    text: 'Get a player to tell you their battery percentage.',
+    tips: 'Complain your phone is dying and ask "How much have you got?"'
   },
   {
     id: 't004',
-    text: 'Get a player to ask whether Wi-Fi is available.',
-    tips: 'Complain that the phone signal in here is terrible.'
+    text: 'Get a player to show you a photo on their phone.',
+    tips: 'Ask to see their pet, their last holiday or something they cooked.'
   },
   {
     id: 't005',
@@ -478,13 +458,13 @@ const coreTechnologyTasks: Task[] = [
   },
   {
     id: 't006',
-    text: 'Get a player to mention a social media platform.',
-    tips: 'Ask where they saw something they just mentioned.'
+    text: 'Get a player to text you while you\'re in the same room.',
+    tips: 'Ask them to send you a link or photo they just mentioned.'
   },
   {
     id: 't007',
-    text: 'Get a player to ask a voice assistant (Siri, Google or Alexa) a question.',
-    tips: 'Start a trivia argument nobody can settle without looking it up.'
+    text: 'Get a player to look something up on their phone to settle a debate.',
+    tips: 'Make a confident claim about a fact and refuse to back down.'
   },
   {
     id: 't008',
@@ -513,8 +493,8 @@ const coreTechnologyTasks: Task[] = [
   },
   {
     id: 't013',
-    text: 'Get a player to say the word "point" or "score."',
-    tips: 'Ask how the scoring works, or bring up a match that\'s on.'
+    text: 'Get a player to arm wrestle you.',
+    tips: 'Brag about how strong you are and wait for them to call your bluff.'
   },
   {
     id: 't014',
