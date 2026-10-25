@@ -21,9 +21,8 @@ dist/
 keystore.properties
 android.keystore.backup.*
 
-# Gradle cache files
+# Gradle cache files (the wrapper is source, so keep it in Git)
 .gradle/
-gradle/
 
 # Node cache files
 node_modules/.cache/
@@ -81,13 +80,6 @@ android-sdk/
 android.keystore
 local.properties
 create_icon.html
-twa-manifest.json
 manifest-checksum.txt
-gradlew
-gradlew.bat
-gradle/
 app/build/
 build/
-gradle.properties
-settings.gradle
-build.gradle

@@ -31,7 +31,7 @@ def twaManifest = [
     applicationId: 'club.whogotwho.twa',
     hostName: 'whogotwho.club', // The domain being opened in the TWA.
     launchUrl: '/', // The start path for the TWA. Must be relative to the domain.
-    name: '(Who Got Who - Party Game)', // The application name.
+    name: 'Who Got Who - Party Game', // The application name.
     launcherName: 'Who Got Who', // The name shown on the Android Launcher.
     themeColor: '#12100c', // The color used for the status bar.
     themeColorDark: '#12100c', // The color used for the dark status bar.
@@ -62,10 +62,11 @@ android {
     namespace "club.whogotwho.twa"
     defaultConfig {
         applicationId "club.whogotwho.twa"
-        minSdkVersion 21
-        targetSdkVersion 35
-        versionCode 1
-        versionName "1"
+        // Play automatic protection requires Android 7.0 or newer.
+        minSdkVersion 24
+        targetSdkVersion 36
+        versionCode 3
+        versionName "1.0.0"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
@@ -179,9 +180,26 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    lintOptions {
-        checkReleaseBuilds false
+    lint {
+        checkReleaseBuilds true
+        abortOnError true
     }
+}
+
+// Never let a release task quietly produce an unsigned bundle.
+def validateReleaseSigning = tasks.register('validateReleaseSigning') {
+    doLast {
+        def requiredProperties = ['storeFile', 'storePassword', 'keyAlias', 'keyPassword']
+        if (!keystorePropertiesFile.exists() || requiredProperties.any { !keystoreProperties[it] }) {
+            throw new GradleException('Release signing requires a complete local keystore.properties file.')
+        }
+        if (!rootProject.file(keystoreProperties['storeFile']).exists()) {
+            throw new GradleException('The release keystore file does not exist. Check storeFile in keystore.properties.')
+        }
+    }
+}
+tasks.configureEach {
+    if (name == 'preReleaseBuild') dependsOn(validateReleaseSigning)
 }
 
 task generateShorcutsFile {
@@ -228,8 +246,6 @@ repositories {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     
-        implementation 'com.google.androidbrowserhelper:billing:1.1.0'
-    
-        implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.2'
+        implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3'
     
 }

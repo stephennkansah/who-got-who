@@ -1,254 +1,172 @@
-# 📱 Publishing to Google Play Store - Complete Guide
+# Who Got Who: Android release
 
-Your app is already set up as a **Trusted Web Activity (TWA)** - a wrapper that makes your React web app work as a native Android app!
+The Android app opens the live game at https://whogotwho.club as a Trusted Web
+Activity. Web deployments update gameplay; native wrapper, icon and permission
+changes require a new Android release.
 
-## ✅ What You Already Have
+The app entry was created on 25 October 2026 in the existing organisation account:
+[Who Got Who in Play Console](https://play.google.com/console/u/2/developers/5302625220640785272/app/4972225190205657515/app-dashboard).
+Its default language is English (UK), category type Game, and download price Free.
 
-- ✅ Android project configured (TWA)
-- ✅ App icons and splash screens
-- ✅ Keystore file (`android.keystore`)
-- ✅ App pointing to `whogotwho.club`
+The internal release draft is named **1.0.0 - First internal test**. The user
+uploaded version code 3 manually and Google Play accepted it with minimum API 24
+and target API 36. Version 2 was replaced because automatic protection requires
+minimum API 24. No test rollout or production submission has been made.
+The website changes are local and still need deployment.
 
-## 🚀 Step-by-Step Publishing Process
+## Build locally
 
-### Step 1: Set Up Signing Configuration
+Use Java 17, Android SDK platform 36 and Build Tools 35.0.0. Set the SDK path
+in the ignored local.properties file. Keep the existing android.keystore and
+keystore.properties private and backed up; do not regenerate the signing key.
 
-1. **Create `keystore.properties` file** in the project root (same level as `build.gradle`):
+Run:
 
-```properties
-storeFile=android.keystore
-storePassword=YOUR_KEYSTORE_PASSWORD
-keyAlias=who-got-who
-keyPassword=YOUR_KEY_PASSWORD
-```
-
-⚠️ **IMPORTANT**: 
-- Replace `YOUR_KEYSTORE_PASSWORD` and `YOUR_KEY_PASSWORD` with your actual passwords
-- **NEVER commit this file to git** (it's already in `.gitignore`)
-- Keep these passwords safe - you'll need them for all future updates!
-
-2. **Verify your keystore details** match what's in `twa-manifest.json`:
-   - Key alias: `who-got-who`
-   - Keystore path: `android.keystore`
-
-### Step 2: Build Your Release App Bundle (AAB)
-
-Google Play requires an **Android App Bundle (.aab)** file, not an APK.
-
-**Easy Way (Recommended):**
 ```powershell
-# Use the helper script - it checks everything for you!
-.\build-android.ps1
+.\build-android.ps1 -IncludeApk
 ```
 
-**Manual Way:**
+The helper runs release lint and builds a signed AAB and optional APK. Generated
+files go outside OneDrive to avoid sync locks:
+
+- AAB: %LOCALAPPDATA%\WhoGotWho\android-build\app\outputs\bundle\release\app-release.aab
+- APK: %LOCALAPPDATA%\WhoGotWho\android-build\app\outputs\apk\release\app-release.apk
+- Lint: %LOCALAPPDATA%\WhoGotWho\android-build\app\reports\lint-results-release.html
+
+A successful build is not Play approval or a substitute for phone testing.
+The old app/build output may still contain an older build; use the path printed
+by the helper.
+
+Current configuration:
+
+- Package: club.whogotwho.twa
+- Version name: 1.0.0; version code: 3
+- Compile and target API: 36 (Android 16)
+- Minimum API: 24 (Android 7), required by Play automatic protection
+- No advertising or in-app billing SDK
+- Optional notification delegation; browser-managed photo selection
+
+For subsequent uploads, increase versionCode above every code already used in
+this app's Play Console. Keep app/build.gradle and twa-manifest.json versions
+in sync. Recheck the target SDK if regenerating the project with Bubblewrap.
+
+## Connect the installed app to the website
+
+The file public/.well-known/assetlinks.json contains both the existing local
+release/upload certificate and this app's Play app signing certificate, read
+from Play Console on 25 October 2026. Deploy the website to publish them.
+Google Play signs installed apps with a different certificate from the local
+upload key. Keep both for testing.
+
+1. Create or open **Who Got Who** in your existing Play Console account.
+2. Under Protected with Play / Play Store protection / Manage Play app signing,
+   copy the **App signing key certificate**
+   SHA-256 fingerprint. Do not copy the upload key certificate or another app's key.
+3. Add that public fingerprint while keeping the local fingerprint:
+
 ```powershell
-# Navigate to your project root
-cd "C:\Users\super\OneDrive\Desktop\React progams\who got who"
-
-# Build the release bundle
-.\gradlew.bat bundleRelease
+.\scripts\add-play-signing-fingerprint.ps1 -Fingerprint 'AA:BB:...'
 ```
 
-**Your AAB file will be created at:**
-```
-app\build\outputs\bundle\release\app-release.aab
-```
+Replace the example with all 32 colon-separated bytes. The script rejects
+placeholders and malformed fingerprints. No password or private key is needed.
 
-### Step 3: Test Your Build (Optional but Recommended)
+4. Deploy the website. Confirm https://whogotwho.club/.well-known/assetlinks.json
+   returns HTTP 200 and JSON directly, without redirects or the app's HTML.
+5. Install from a Play testing track and confirm the game opens without browser
+   address controls. Keep both fingerprints if testing sideloaded APKs too.
 
-Before uploading to Play Store, test the APK:
+The current Play fingerprint starts C3:DC:AB:6C; the local fingerprint starts
+BF:FC:02:00. Full fingerprints are recorded in the assetlinks JSON. Verification
+on a Play-installed phone still requires website deployment and a test install.
+See [Google's TWA signing guidance](https://developer.chrome.com/docs/android/trusted-web-activity/android-for-web-devs).
 
-**Easy Way:**
-```powershell
-# Use the helper script
-.\test-build.ps1
-```
+## Prepare the listing
 
-**Manual Way:**
-```powershell
-# Build APK for testing
-.\gradlew.bat assembleRelease
-```
+The app is free to download. Optional paid mission packs are planned for a later
+release; choosing Free in Play Console does not prevent in-app purchases.
+The current build has no checkout or paid entitlements. Its unused, outdated
+billing library was removed, so billing must be integrated before selling packs.
 
-**APK location:**
-```
-app\build\outputs\apk\release\app-release.apk
-```
+For paid packs, add the current Android Browser Helper billing integration,
+configure one-time products in Play Console, and use Google Play Billing inside
+the Play-installed app. Verify and acknowledge purchases on the backend, persist
+pack ownership, restore purchases, and handle refunds before unlocking content.
+Do not charge for packs based only on a browser flag or local storage. See
+[Google's TWA billing guide](https://developer.chrome.com/docs/android/trusted-web-activity/receive-payments-play-billing).
 
-Install it on your Android device:
-1. Transfer the APK to your phone
-2. Enable "Install from Unknown Sources" in Settings
-3. Install and test the app
+Suggested name: **Who Got Who**
 
-### Step 4: Create Google Play Console Account
+Suggested short description (within 80 characters):
 
-1. Go to [Google Play Console](https://play.google.com/console/)
-2. Pay the **one-time $25 registration fee**
-3. Complete your developer account setup
+> Secret missions. Sly friends. Catch them out before they catch you.
 
-### Step 5: Create Your App Listing
+Suggested full description:
 
-1. **Click "Create app"** in Play Console
-2. **Fill in app details:**
-   - App name: "Who Got Who"
-   - Default language: English
-   - App or game: Game
-   - Free or paid: Free
-   - Declare that your app follows Google Play policies
+> Turn your next get-together into a game of secret missions and suspicious friends.
+>
+> Host a game, share the code, and give everyone their own hidden missions.
+> Complete yours without being caught, call out your friends when you spot them,
+> and find out who fooled who when the game ends.
+>
+> Play at parties, dinners or trips away. Friends can join in their browser,
+> so the whole group does not need to install the Android app.
+>
+> An internet connection is required. Notifications and photo avatars are optional.
 
-### Step 6: Set Up App Content
+Use public/icons/spy-512.png for the store icon. Keep the approved mascot art.
+Prepare actual phone screenshots and a 1024 x 500 feature graphic before
+submission; do not use the composite development preview as a store screenshot.
 
-#### 6.1 Store Listing
-- **App name**: Who Got Who
-- **Short description**: "Perfect for parties, dinner guests, trips away, and family gatherings. The ultimate party game of stealth tasks and social challenges."
-- **Full description**: Write a detailed description of your game
-- **App icon**: Upload `logo512.png` (512x512px)
-- **Feature graphic**: Create a 1024x500px banner
-- **Screenshots**: Take screenshots of your app (minimum 2, recommended 4-8)
-  - Phone: 16:9 or 9:16 aspect ratio
-  - Tablet (optional): 16:9 or 9:16
-- **Category**: Games → Party
-- **Tags**: Party game, social, multiplayer
+Privacy policy URL: https://whogotwho.club/privacy.html
+Support email: info@myformatic.com
+Website: https://whogotwho.club
 
-#### 6.2 Content Rating
-- Complete the questionnaire about your app's content
-- Get your rating (likely "Everyone" for a party game)
+Choose the available game category, audience and content rating based on the
+actual mission packs. The privacy policy says the service is not directed to
+children under 13; do not choose younger audience groups without reviewing
+the product and corresponding requirements. Do not assume an age rating.
 
-#### 6.3 Privacy Policy
-- **Required**: You need a privacy policy URL
-- The AWS-backed game stores temporary gameplay data, so publish a privacy policy page on your website
-- **Template provided**: Use `privacy-policy-template.html` as a starting point
-- Publish the served policy at: `https://whogotwho.club/privacy.html`
+## App content and reviewer access
 
-#### 6.4 Target Audience
-- Select appropriate age groups
-- Answer content questions
+Complete Ads, Data safety, Target audience, Content rating and App access in
+Play Console. The current game has no ads or purchases.
 
-### Step 7: Upload Your App Bundle
+For Data safety, review the actual data flows, including the website opened
+inside the app: chosen player name, optional avatar/proof photos, game actions
+and scores, pseudonymous device identity, optional push subscription, aggregated
+play statistics and normal service logs. Do not declare that no data is collected.
+The current privacy policy describes retention and the support route for access
+or deletion requests. Google distinguishes service-provider processing from
+other sharing; answer the form using its definitions.
 
-1. Go to **"Production"** (or "Internal testing" for testing first)
-2. Click **"Create new release"**
-3. **Upload your AAB file**: `app\build\outputs\bundle\release\app-release.aab`
-4. **Release name**: "1.0.0" (or "Initial Release")
-5. **Release notes**: What's new in this version
+Reviewer access draft: no paid account or password is required. Enter a player
+name, host a game, and use its code to join on other devices or separate browser
+profiles. Reviewers can use the website for additional players. Start once the
+lobby's minimum player count is met. Claims require interaction with the other
+players. Provide the exact current steps and any additional instructions the
+Console requests; do not provide a short-lived game code as the only access route.
 
-### Step 8: Complete Store Listing
+References:
+[App content](https://support.google.com/googleplay/android-developer/answer/9859455)
+and [Data safety](https://support.google.com/googleplay/android-developer/answer/10787469).
 
-Make sure all required sections show ✅:
-- ✅ Store listing
-- ✅ Content rating
-- ✅ Privacy policy
-- ✅ Target audience
-- ✅ App access (if applicable)
+## Test before submission
 
-### Step 9: Review and Submit
+Start with a Play testing track. Check on real phones:
 
-1. Review all information
-2. Click **"Send for review"**
-3. Wait for Google's review (usually 1-3 days)
+- Cold launch, splash/icon, back button, app links and full-screen verification.
+- Hosting and joining with several devices, including browser-only players.
+- Mission claims, the fixed five-minute response window, disputes and recap.
+- Correct score progression and the five-point win condition.
+- Notification allow/deny and a claim alert while the phone is locked.
+- Photo picker, upload, reconnect after losing signal, and app resume.
+- Small screens, large screens, text scaling and Android 16 system bars.
 
-## 🔄 Updating Your App Later
+Use Play's pre-launch report as an additional check. This developer account is
+an organisation account; follow the requirements shown for this new app in
+Play Console. The separate new-personal-account testing rules are described in
+[Google's testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465).
 
-When you want to release an update:
-
-1. **Update version numbers** in `app/build.gradle`:
-```gradle
-versionCode 2  // Increment by 1 each time
-versionName "1.0.1"  // Your version string
-```
-
-2. **Also update** `twa-manifest.json`:
-```json
-"appVersionCode": 2,
-"appVersionName": "1.0.1"
-```
-
-3. **Rebuild**:
-```powershell
-.\gradlew bundleRelease
-```
-
-4. **Upload new AAB** to Play Console
-
-## ⚠️ Important Notes
-
-### Domain Verification
-Your TWA points to `whogotwho.club`. Make sure:
-- ✅ Your website is live and accessible
-- ✅ Your `manifest.json` is accessible at `https://whogotwho.club/manifest.json`
-- ✅ Your domain has proper SSL certificate (HTTPS)
-
-### Digital Asset Links
-Google Play requires **Digital Asset Links** verification. You need to add a file to your website:
-
-1. Create file: `/.well-known/assetlinks.json` on your website
-2. Content should verify your app's package name: `club.whogotwho.twa`
-
-**Example assetlinks.json:**
-```json
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "club.whogotwho.twa",
-    "sha256_cert_fingerprints": ["YOUR_APP_SHA256_FINGERPRINT"]
-  }
-}]
-```
-
-**Easy Way to Get Your SHA256 Fingerprint:**
-```powershell
-# Use the helper script - it formats everything for you!
-.\get-sha256-fingerprint.ps1
-```
-
-**Manual Way:**
-```powershell
-keytool -list -v -keystore android.keystore -alias who-got-who
-```
-
-**Template File:**
-- Use `assetlinks.json.example` as a template
-- Replace `YOUR_SHA256_FINGERPRINT_HERE` with your actual fingerprint
-
-### Testing Before Release
-
-**Internal Testing Track** (Recommended):
-1. Create an internal testing release
-2. Add testers (email addresses)
-3. Test thoroughly before going to production
-
-## 🐛 Troubleshooting
-
-### Build Errors
-- **"SDK location not found"**: Check `local.properties` has correct `sdk.dir` path
-- **"Keystore not found"**: Make sure `android.keystore` is in project root
-- **Signing errors**: Verify `keystore.properties` passwords are correct
-
-### Play Console Errors
-- **"App bundle validation failed"**: Check that your AAB was built correctly
-- **"Missing privacy policy"**: Add privacy policy URL to your website
-- **"Digital Asset Links verification failed"**: Ensure `assetlinks.json` is accessible
-
-## 📚 Additional Resources
-
-- [Google Play Console Help](https://support.google.com/googleplay/android-developer/)
-- [TWA Documentation](https://developer.chrome.com/docs/android/trusted-web-activity/)
-- [App Bundle Guide](https://developer.android.com/guide/app-bundle)
-
-## ✅ Checklist Before Submitting
-
-- [ ] `keystore.properties` created with correct passwords
-- [ ] AAB file built successfully
-- [ ] App tested on real device
-- [ ] Store listing complete (description, screenshots, icons)
-- [ ] Privacy policy URL added
-- [ ] Content rating completed
-- [ ] Digital Asset Links file on website
-- [ ] Version numbers updated
-- [ ] App works correctly when installed
-
----
-
-**Good luck with your Play Store submission! 🎉**
+Upload the signed AAB, finish the listing and app-content forms, and review the
+release before submitting. This repository does not upload or submit it automatically.

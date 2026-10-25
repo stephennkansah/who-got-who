@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "club.whogotwho.twa",
+      "sha256_cert_fingerprints": [
+        "BF:FC:02:00:6F:BF:FA:B7:77:3F:E1:27:DE:1D:D0:EE:2A:7F:C0:65:F1:0E:23:B8:90:FB:CB:EC:20:08:DF:C3",
+        "C3:DC:AB:6C:1E:EE:34:62:54:7A:9F:30:E1:42:99:8F:B0:C8:A6:27:07:1D:B7:D6:D2:E3:3F:38:E2:44:4A:D2"
+      ]
+    }
+  }
+]

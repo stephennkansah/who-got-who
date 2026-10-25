@@ -11,7 +11,7 @@
 </head>
 <body>
   <h1>Who Got Who Privacy Policy</h1>
-  <p class="muted">Last updated: 21 August 2026</p>
+  <p class="muted">Last updated: 25 October 2026</p>
   <p>Who Got Who uses only the information needed to run a temporary multiplayer game.</p>
   <h2>Information we process</h2>
   <ul>
@@ -19,12 +19,14 @@
     <li>Game membership, tasks, claims, votes, scores, and challenge completions.</li>
     <li>Optional photo proof for challenges that clearly request it.</li>
     <li>A pseudonymous AWS Cognito device identity, plus normal security logs such as IP address and browser information.</li>
+    <li>If you allow notifications, a push subscription address and encryption keys used to deliver game alerts to your device.</li>
   </ul>
   <p>Secret pending tasks are returned only to the device identity that owns them until the game ends, when every player's tasks are revealed to the players in that game. A task you claim on another player is shown to that player and to the players voting on it. Avatars and challenge proof photos are visible only to the players in the same game, through short-lived private links; they are not public and are not used for advertising or model training by us. Ask permission from every identifiable person before uploading a photo.</p>
   <p>To improve the game we keep anonymous play statistics: daily counts such as games started and finished, players per game, rematches and disputes, and how often each mission is dealt, swapped or completed. To count how many players go on to host their own game, we keep a one-way scrambled version of the device identity for up to 400 days after its last game; it cannot be turned back into the identity. These statistics contain no names, photos, messages or game codes.</p>
   <h2>Storage and retention</h2>
   <p>Amazon Web Services provides Cognito, AppSync, Lambda, DynamoDB, S3, and Amplify Hosting. Ended games expire after about 24 hours; inactive games expire after about 7 days. Uploaded avatars and proof images are automatically removed within 30 days. Deletion may complete shortly after these periods because cloud cleanup is asynchronous.</p>
   <h2>Your choices</h2>
+  <p>Notifications are optional and the game works without them. If enabled, your browser or device's push service delivers game alerts, which may appear on your lock screen. Push subscription details are stored with your game membership and expire with the game. You can turn notifications off in your browser or device settings.</p>
   <p>Photo avatars are optional. Do not upload sensitive information. You may leave a game at any time. To request access or early deletion, email <a href="mailto:info@myformatic.com">info@myformatic.com</a> with the game code and approximate creation time.</p>
   <h2>Children</h2>
   <p>The service is not directed to children under 13. Contact us if you believe a child supplied personal information.</p>

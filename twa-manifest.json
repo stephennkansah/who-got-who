@@ -1,7 +1,7 @@
 {
   "packageId": "club.whogotwho.twa",
   "host": "whogotwho.club",
-  "name": "(Who Got Who - Party Game)",
+  "name": "Who Got Who - Party Game",
   "launcherName": "Who Got Who",
   "display": "standalone",
   "themeColor": "#12100c",
@@ -18,18 +18,18 @@
   "monochromeIconUrl": "https://whogotwho.club/icons/spy-badge-96.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
-    "path": "C:\\Users\\super\\OneDrive\\Desktop\\React progams\\who got who\\android.keystore",
+    "path": "./android.keystore",
     "alias": "who-got-who"
   },
-  "appVersionName": "1",
-  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "appVersionCode": 3,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://whogotwho.club/manifest.json",
   "fallbackType": "customtabs",
   "features": {
     "playBilling": {
-      "enabled": true
+      "enabled": false
     }
   },
   "alphaDependencies": {
@@ -39,7 +39,7 @@
   "isChromeOSOnly": false,
   "isMetaQuest": false,
   "fullScopeUrl": "https://whogotwho.club/",
-  "minSdkVersion": 21,
+  "minSdkVersion": 24,
   "orientation": "portrait",
   "fingerprints": [],
   "additionalTrustedOrigins": [],
@@ -47,5 +47,5 @@
   "protocolHandlers": [],
   "fileHandlers": [],
   "launchHandlerClientMode": "",
-  "appVersion": "1"
+  "appVersion": "1.0.0"
 }
