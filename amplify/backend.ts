@@ -34,13 +34,24 @@ const rateLimitTable = new Table(stateStack, 'RateLimits', {
   timeToLiveAttribute: 'expiresAt',
   removalPolicy: RemovalPolicy.DESTROY,
 });
+// Anonymous play counters (games started, rematches, most-swapped missions…).
+// Read with `npm run stats`. Kept if the stack is ever torn down.
+const statsTable = new Table(stateStack, 'Stats', {
+  partitionKey: { name: 'key', type: AttributeType.STRING },
+  billingMode: BillingMode.PAY_PER_REQUEST,
+  encryption: TableEncryption.AWS_MANAGED,
+  timeToLiveAttribute: 'expiresAt',
+  removalPolicy: RemovalPolicy.RETAIN,
+});
 
 const lambda = backend.gameApi.resources.lambda;
 const mutableLambda = lambda as LambdaFunction;
 gameTable.grantReadWriteData(lambda);
 rateLimitTable.grantReadWriteData(lambda);
+statsTable.grantReadWriteData(lambda);
 mutableLambda.addEnvironment('GAME_TABLE_NAME', gameTable.tableName);
 mutableLambda.addEnvironment('RATE_LIMIT_TABLE_NAME', rateLimitTable.tableName);
+mutableLambda.addEnvironment('STATS_TABLE_NAME', statsTable.tableName);
 
 backend.storage.resources.bucket.grantRead(lambda, 'avatars/*');
 backend.storage.resources.bucket.grantRead(lambda, 'proofs/*');

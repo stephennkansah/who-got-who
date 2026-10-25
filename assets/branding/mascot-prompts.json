@@ -1,0 +1,44 @@
+{
+  "status": "approved",
+  "selectionDate": "2026-10-25",
+  "selectionRule": "Use only these five exact user-selected images for mascot expressions. Other generated expression variants are not approved. Preserve the selected artwork; do not regenerate or alter it without a new request. The previously approved app icon remains the app icon.",
+  "tool": "built-in image_gen; exact image files selected and supplied by the user",
+  "reference": "assets/branding/spy-original.png",
+  "assets": [
+    {
+      "name": "lobby",
+      "path": "public/mascots/lobby.png",
+      "userAttachment": 1,
+      "sourceAttachment": "codex-clipboard-22ff6c43-79e7-4ca2-8ebe-2b8b175c0145.png",
+      "prompt": "Use case: logo-brand. Asset type: one production game mascot illustration for Who Got Who. Input image 1 is the approved mascot identity and style reference. Create a single standalone expression variant of EXACTLY this cream fedora with red band and TWO floating cartoon eyes. Preserve the recognizable hat silhouette with its asymmetrical creased crown, curved brim, cream #efe5c6, red #e5484d band, near-black #12100c pupils with small cream highlights. Playful mischievous spy-noir, friendly and cheeky. Bold clean vector-like shapes, minimal soft shading like the reference, strong silhouette, no thin lines. No human face, nose, mouth, body, arms or hands. No text, letters, badges, frames, background panels, drop shadow, glow, watermark, extra characters, or extra eyes. GENUINELY TRANSPARENT BACKGROUND with alpha, including gaps between the hat and eyes; do not render a checkerboard. Square 1024x1024; the full uncropped mascot centered at consistent scale, about 72% of canvas width, with generous clear margins. Readable at 96px. This is one isolated asset, not a grid or contact sheet. Pose: WAITING / CURIOUS PEEK. Tilt the hat gently clockwise, both eyes wide and inquisitive, both pupils glancing distinctly to the LEFT as if looking out for friends to arrive. One eye slightly higher, eyebrows implied by the hat brim. Friendly anticipation, not nervous or angry. Keep the entire hat and both eyes visible."
+    },
+    {
+      "name": "mission-transparent",
+      "path": "public/mascots/mission-transparent.png",
+      "userAttachment": 2,
+      "sourceAttachment": "codex-clipboard-a56c078c-6c26-49f6-ab7a-172c2c3a882c.png",
+      "prompt": "Use case: logo-brand. Asset type: one production game mascot illustration for Who Got Who. Input image 1 is the approved mascot identity and style reference. Create a single standalone expression variant of EXACTLY this cream fedora with red band and TWO floating cartoon eyes. Preserve the recognizable hat silhouette with its asymmetrical creased crown, curved brim, cream #efe5c6, red #e5484d band, near-black #12100c pupils with small cream highlights. Playful mischievous spy-noir, friendly and cheeky. Bold clean vector-like shapes, minimal soft shading like the reference, strong silhouette, no thin lines. No human face, nose, mouth, body, arms or hands. No text, letters, badges, frames, background panels, drop shadow, glow, watermark, extra characters, or extra eyes. GENUINELY TRANSPARENT BACKGROUND with alpha, including gaps between the hat and eyes; do not render a checkerboard. Square 1024x1024; the full uncropped mascot centered at consistent scale, about 72% of canvas width, with generous clear margins. Readable at 96px. This is one isolated asset, not a grid or contact sheet. Pose: SECRET MISSION / SLY FOCUS. Pull the hat low, keep two eyes half-lidded with a clear mischievous sideways glance to the RIGHT. Lower brim diagonally over the eyes, pupils toward the right edge of both eyes. Confident playful concentration, not evil or sinister. Clearly more narrowed and focused than the reference."
+    },
+    {
+      "name": "caught",
+      "path": "public/mascots/caught.png",
+      "userAttachment": 3,
+      "sourceAttachment": "codex-clipboard-701ac9a5-d877-430e-a1a4-5edf9cdb2b50.png",
+      "prompt": "Use case: logo-brand. Asset type: one production game mascot illustration for Who Got Who. Input image 1 is the approved mascot identity and style reference. Create a single standalone expression variant of EXACTLY this cream fedora with red band and TWO floating cartoon eyes. Preserve the recognizable hat silhouette with its asymmetrical creased crown, curved brim, cream #efe5c6, red #e5484d band, near-black #12100c pupils with small cream highlights. Playful mischievous spy-noir, friendly and cheeky. Bold clean vector-like shapes, minimal soft shading like the reference, strong silhouette, no thin lines. No human face, nose, mouth, body, arms or hands. No text, letters, badges, frames, background panels, drop shadow, glow, watermark, extra characters, or extra eyes. GENUINELY TRANSPARENT BACKGROUND with alpha, including gaps between the hat and eyes; do not render a checkerboard. Square 1024x1024; the full uncropped mascot centered at consistent scale, about 72% of canvas width, with generous clear margins. Readable at 96px. This is one isolated asset, not a grid or contact sheet. Pose: CAUGHT OUT / COMIC SURPRISE. Two large ROUND wide-open cream eyes with smaller near-black pupils looking toward the viewer, hat lifted slightly above them and tilted to suggest a startled little bounce. Funny 'you got me!' surprise, warm and harmless; no horror, no sweat drops, no exclamation marks."
+    },
+    {
+      "name": "mission",
+      "path": "public/mascots/mission.png",
+      "userAttachment": 4,
+      "sourceAttachment": "codex-clipboard-761986d9-ebc5-43d2-a0b8-657251fbad08.png",
+      "prompt": "Use case: logo-brand. Create ONE square 1024x1024 production mascot illustration for the Who Got Who party game. Input image is the approved identity reference: preserve this cream fedora silhouette, red band, and two cartoon eyes. Cream #efe5c6, red #e5484d, near-black #12100c pupils with cream highlights. Bold clean flat vector-like shapes, minimal smooth shading only, mischievous and friendly spy-noir. BACKGROUND MUST BE A PERFECTLY SOLID OPAQUE #12100c across the whole square, including between separate shapes and inside the hat crease. No transparency, no background texture, no speckles, no white edge residue, no grain, no noise, no glow. Precisely smooth clean edges. Full mascot centered, occupies about 72 percent of canvas width, all elements comfortably inside the canvas. Hat and floating eyes, with a small floating cartoon mouth ONLY when requested in the pose below. No human skin, nose, ears, head outline, facial hair, body, hands, arms, extra props or characters. No text or symbols, no frame. Strong simple expression readable at 96px; no thin lines. One asset, never a collage. SECRET MISSION / FOCUSED: hat brim pulled low across two narrow half-lidded eyes with both pupils clearly glancing RIGHT, crafty but friendly. No mouth; the rest of the face is hidden in the dark. Deliberate low diagonal brim, strong undercover expression."
+    },
+    {
+      "name": "results",
+      "path": "public/mascots/results.png",
+      "userAttachment": 5,
+      "sourceAttachment": "codex-clipboard-54c97713-f4e0-4852-ae84-a900d2d8cd0a.png",
+      "prompt": "Use case: logo-brand. Create ONE square 1024x1024 production mascot illustration for the Who Got Who party game. Input image is the approved identity reference: preserve this cream fedora silhouette, red band, and two cartoon eyes. Cream #efe5c6, red #e5484d, near-black #12100c pupils with cream highlights. Bold clean flat vector-like shapes, minimal smooth shading only, mischievous and friendly spy-noir. BACKGROUND MUST BE A PERFECTLY SOLID OPAQUE #12100c across the whole square, including between separate shapes and inside the hat crease. No transparency, no background texture, no speckles, no white edge residue, no grain, no noise, no glow. Precisely smooth clean edges. Full mascot centered, occupies about 72 percent of canvas width, all elements comfortably inside the canvas. Hat and floating eyes, with a small floating cartoon mouth ONLY when requested in the pose below. No human skin, nose, ears, head outline, facial hair, body, hands, arms, extra props or characters. No text or symbols, no frame. Strong simple expression readable at 96px; no thin lines. One asset, never a collage. RESULTS / DELIGHTED WINNER: hat tipped jauntily up and to the side, two happy eyes curved by smiling lower lids, plus a clear friendly floating toothy smile below the eyes. A rounded upward smiling mouth with one thick cream upper-teeth shape, a dark lower mouth and a tiny red tongue using the same red as the hatband. Smile is about half the width of the pair of eyes; keep it modest and appealing, not a giant mouth or skull. No individual detailed teeth, no fangs. Proud, delighted, playful."
+    }
+  ]
+}

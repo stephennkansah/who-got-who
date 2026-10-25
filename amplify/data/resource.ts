@@ -32,6 +32,15 @@ const schema = a.schema({
     .authorization((allow) => [allow.guest()])
     .handler(a.handler.function(gameApi)),
 
+  // Private play statistics for the /stats page. The passcode is checked in the
+  // Lambda against STATS_ADMIN_KEY; without that setting the query is off.
+  getStats: a
+    .query()
+    .arguments({ key: a.string().required(), days: a.integer() })
+    .returns(a.json())
+    .authorization((allow) => [allow.guest()])
+    .handler(a.handler.function(gameApi)),
+
   onGameUpdated: a
     .subscription()
     .for(a.ref('gameAction'))

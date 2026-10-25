@@ -41,16 +41,11 @@ export interface GameSettings {
   holidaySilverPoints?: number; // points for subsequent completions
   holidayMaxSilverPerChallenge?: number; // max silver points per challenge
   briefingMinutes?: number; // settling-in time between dealing missions and opening gotchas
-  gameLength?: GameLength; // sets the winning score at the start
 }
-
-export type GameLength = 'quick' | 'standard' | 'long' | 'weekend';
 
 /** Lobby settings the host can change before the start. */
 export interface SettingsUpdate {
   briefingMinutes?: number;
-  gameLength?: GameLength;
-  responseMinutes?: number;
 }
 
 export interface Player {

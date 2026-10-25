@@ -6,6 +6,7 @@ import { useCountdown } from '../hooks/useCountdown';
 import { useGamePhase } from '../hooks/useGamePhase';
 import NotificationService from '../services/notificationService';
 import { TaskInstance } from '../types';
+import { WINNING_SCORE } from '../utils/gameSettings';
 import TaskListView from './TaskListView';
 import TargetSelectModal from './TargetSelectModal';
 import DisputeModal from './DisputeModal';
@@ -80,7 +81,7 @@ export default function Game() {
 
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
-  const targetScore = currentGame?.settings?.targetScore ?? 4;
+  const targetScore = WINNING_SCORE;
   const responseClaim = state.activeDisputes.find(
     (dispute) => dispute.phase === 'response' && dispute.targetId === currentPlayer?.id,
   );

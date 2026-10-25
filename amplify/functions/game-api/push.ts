@@ -1,4 +1,4 @@
-import type { StoredGame, StoredPlayer } from './domain';
+import { CLAIM_RESPONSE_SECONDS, type StoredGame, type StoredPlayer } from './domain';
 
 export type PushMessage = {
   playerId: string;
@@ -27,7 +27,7 @@ export function pushMessages(before: StoredGame, after: StoredGame): PushMessage
   const only = (id: string) => after.players.filter((player) => player.id === id);
   const holiday = after.gameType === 'holiday-challenge';
   const justEnded = before.status === 'live' && after.status === 'ended';
-  const claimWindow = Math.max(60, after.settings.disputeTimeoutSeconds);
+  const claimWindow = CLAIM_RESPONSE_SECONDS;
 
   if (before.status === 'draft' && after.status === 'live') {
     send(after.players.filter((player) => player.id !== after.hostId), {

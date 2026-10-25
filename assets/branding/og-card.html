@@ -1,0 +1,85 @@
+<!doctype html>
+<!-- Source for public/og-image.png, the link-preview card shown in WhatsApp,
+     iMessage and social apps. Re-export with: npm run export:og -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: 'Bebas Neue'; src: url(../../src/fonts/JTUSjIg69CK48gW7PXoo9Wlhyw.woff2) format('woff2'); }
+  @font-face { font-family: 'Outfit'; font-weight: 700; src: url(../../src/fonts/QGYvz_MVcBeNP4NJtEtq.woff2) format('woff2'); }
+  @font-face { font-family: 'Special Elite'; src: url(../../src/fonts/XLYgIZbkc4JPUL5CVArUVL0ntnAOSA.woff2) format('woff2'); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    background:
+      radial-gradient(70% 90% at 26% 50%, rgba(232, 181, 84, 0.16), transparent 62%),
+      #12100c;
+    color: #f1ede0;
+    display: flex;
+    align-items: center;
+    gap: 56px;
+    padding: 0 80px 0 70px;
+    font-family: 'Outfit', sans-serif;
+    position: relative;
+  }
+  .art {
+    width: 400px;
+    height: 400px;
+    flex-shrink: 0;
+    border-radius: 48px;
+    box-shadow: 0 0 0 3px rgba(241, 237, 224, 0.12), 0 24px 60px rgba(0, 0, 0, 0.55);
+  }
+  .copy { position: relative; }
+  .overline {
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: 0.24em;
+    color: #a8a190;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-weight: 400;
+    font-size: 168px;
+    line-height: 0.88;
+    letter-spacing: 0.03em;
+    color: #f1ede0;
+  }
+  .tagline {
+    font-family: 'Special Elite', monospace;
+    font-size: 32px;
+    color: #e8b554;
+    margin-top: 22px;
+  }
+  .join {
+    margin-top: 26px;
+    font-weight: 700;
+    font-size: 28px;
+    color: #f1ede0;
+    opacity: 0.85;
+  }
+  .stamp {
+    position: absolute;
+    top: 78px;
+    right: 0;
+    transform: rotate(9deg);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px;
+    letter-spacing: 0.12em;
+    color: #e5484d;
+    border: 5px solid #e5484d;
+    border-radius: 8px;
+    padding: 6px 16px 0;
+  }
+</style>
+</head>
+<body>
+  <img class="art" src="spy-original.png" alt="" />
+  <div class="copy">
+    <div class="overline">YOU'RE INVITED TO PLAY</div>
+    <h1>Who<br />Got Who</h1>
+    <div class="tagline">secret missions for your next party</div>
+    <div class="join">Tap to join · free · no app, no sign-up</div>
+  </div>
+</body>
+</html>

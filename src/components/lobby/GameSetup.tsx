@@ -1,11 +1,8 @@
 import React from 'react';
-import { Game, GameLength, SettingsUpdate } from '../../types';
+import { Game, SettingsUpdate } from '../../types';
 import {
   BRIEFING_OPTIONS,
-  GAME_LENGTH_OPTIONS,
-  RESPONSE_OPTIONS,
   lobbySummary,
-  targetScoreFor,
 } from '../../utils/gameSettings';
 
 interface GameSetupProps {
@@ -51,7 +48,6 @@ function Segmented<T extends string | number>({ label, options, value, disabled,
 /** Pack and pacing. The host edits; everyone else sees the plan. */
 export default function GameSetup({ game, packName, isHost, busy, onChangePack, onUpdate }: GameSetupProps) {
   const summary = lobbySummary(game);
-  const players = game.players.length;
   const what = summary.isHoliday ? 'challenges' : 'gotchas';
 
   const facts = summary.isHoliday
@@ -64,7 +60,7 @@ export default function GameSetup({ game, packName, isHost, busy, onChangePack, 
         `${summary.missions} secret missions each`,
         `first to ${summary.target} points`,
         `${summary.swaps} swaps`,
-        `${summary.responseMinutes} min to answer a claim`,
+        `${summary.responseMinutes} min to respond to a claim`,
       ];
   facts.push(summary.briefingMinutes ? `${what} open ${summary.briefingMinutes} min after the start` : `${what} open at the start`);
 
@@ -79,37 +75,6 @@ export default function GameSetup({ game, packName, isHost, busy, onChangePack, 
         </div>
         {isHost && <button className="link-btn" onClick={onChangePack}>Change</button>}
       </div>
-
-      {isHost && !summary.isHoliday && (
-        <div className="setup-block">
-          <div className="setup-label">Game length</div>
-          <Segmented<GameLength>
-            label="Game length"
-            value={summary.length}
-            disabled={busy}
-            onChange={(gameLength) => onUpdate({ gameLength })}
-            options={GAME_LENGTH_OPTIONS.map((option) => ({
-              value: option.id,
-              label: option.label,
-              sub: `to ${targetScoreFor(option.id, players)}`,
-            }))}
-          />
-        </div>
-      )}
-
-      {isHost && !summary.isHoliday && (
-        <div className="setup-block">
-          <div className="setup-label">Time to answer a claim</div>
-          <Segmented<number>
-            label="Time to answer a claim"
-            value={summary.responseMinutes}
-            disabled={busy}
-            onChange={(responseMinutes) => onUpdate({ responseMinutes })}
-            options={RESPONSE_OPTIONS.map((minutes) => ({ value: minutes, label: `${minutes} min` }))}
-          />
-          <p className="setup-help">Longer suits all-day or weekend games, when phones live in pockets.</p>
-        </div>
-      )}
 
       {isHost && (
         <div className="setup-block">

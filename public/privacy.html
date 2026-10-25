@@ -21,6 +21,7 @@
     <li>A pseudonymous AWS Cognito device identity, plus normal security logs such as IP address and browser information.</li>
   </ul>
   <p>Secret pending tasks are returned only to the device identity that owns them until the game ends, when every player's tasks are revealed to the players in that game. A task you claim on another player is shown to that player and to the players voting on it. Avatars and challenge proof photos are visible only to the players in the same game, through short-lived private links; they are not public and are not used for advertising or model training by us. Ask permission from every identifiable person before uploading a photo.</p>
+  <p>To improve the game we keep anonymous play statistics: daily counts such as games started and finished, players per game, rematches and disputes, and how often each mission is dealt, swapped or completed. To count how many players go on to host their own game, we keep a one-way scrambled version of the device identity for up to 400 days after its last game; it cannot be turned back into the identity. These statistics contain no names, photos, messages or game codes.</p>
   <h2>Storage and retention</h2>
   <p>Amazon Web Services provides Cognito, AppSync, Lambda, DynamoDB, S3, and Amplify Hosting. Ended games expire after about 24 hours; inactive games expire after about 7 days. Uploaded avatars and proof images are automatically removed within 30 days. Deletion may complete shortly after these periods because cloud cleanup is asynchronous.</p>
   <h2>Your choices</h2>

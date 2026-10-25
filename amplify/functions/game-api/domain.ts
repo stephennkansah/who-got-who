@@ -41,22 +41,11 @@ export type GameActionName =
 export const BRIEFING_OPTIONS = [0, 5, 10, 15, 30];
 export const DEFAULT_BRIEFING_MINUTES = 10;
 
-/** Winning score by game length: [groups under 7, groups of 7 or more]. */
-export const GAME_LENGTH_TARGETS = {
-  quick: [3, 4],
-  standard: [4, 5],
-  long: [8, 10],
-  weekend: [12, 15],
-} as const;
-export type GameLength = keyof typeof GAME_LENGTH_TARGETS;
+/** Fixed winning score for secret missions, regardless of group size. */
+export const WINNING_SCORE = 5;
 
-/** Minutes a target has to accept or dispute a claim. Longer suits all-weekend games. */
-export const RESPONSE_OPTIONS = [2, 10, 30];
-
-function targetScoreFor(length: GameLength | undefined, playerCount: number): number {
-  const [small, large] = GAME_LENGTH_TARGETS[length ?? 'standard'];
-  return playerCount >= 7 ? large : small;
-}
+/** Fixed response and voting window; hosts cannot change it. */
+export const CLAIM_RESPONSE_SECONDS = 5 * 60;
 
 /** Actions only the Lambda itself may apply; clients cannot send them directly. */
 export const INTERNAL_ACTIONS: ReadonlySet<string> = new Set(['LINK_REMATCH']);
@@ -144,7 +133,8 @@ export type StoredGame = {
     holidaySilverPoints?: number;
     holidayMaxSilverPerChallenge?: number;
     briefingMinutes?: number;
-    gameLength?: GameLength;
+    // Legacy metadata only; no longer configurable or used to choose a target.
+    gameLength?: 'quick' | 'standard' | 'long' | 'weekend';
   };
   currentPhase: 'draft' | 'play' | 'ended';
   challengeCompletions: Array<{
@@ -294,15 +284,14 @@ export function createGame(
     players: [host],
     settings: {
       swapsAllowed: 2,
-      disputeTimeoutSeconds: 120,
+      disputeTimeoutSeconds: CLAIM_RESPONSE_SECONDS,
       hostDefaultOnTie: true,
       enableNegativeScoring: false,
       maxPlayers: MAX_PLAYERS,
-      targetScore: 4,
+      targetScore: WINNING_SCORE,
       selectedPack: null,
       tasksLoaded: false,
       briefingMinutes: DEFAULT_BRIEFING_MINUTES,
-      gameLength: 'standard',
     },
     currentPhase: 'draft',
     challengeCompletions: [],
@@ -368,7 +357,7 @@ function awardGotcha(game: StoredGame, dispute: StoredDispute): void {
   }
   task.status = 'completed';
   dispute.result = 'upheld';
-  if (claimant.score >= game.settings.targetScore) {
+  if (claimant.score >= WINNING_SCORE) {
     game.status = 'ended';
     game.currentPhase = 'ended';
   }
@@ -566,7 +555,7 @@ export async function applyAction(
       if (!game.settings.selectedPack || !allowedPacks.has(game.settings.selectedPack)) {
         throw new GameRuleError('Choose a pack before starting');
       }
-      game.settings.targetScore = targetScoreFor(game.settings.gameLength, game.players.length);
+      game.settings.targetScore = WINNING_SCORE;
       updateGroupRules(game);
       if (game.gameType === 'holiday-challenge') {
         game.selectedChallenges = getRandomHolidayChallenges(
@@ -601,23 +590,17 @@ export async function applyAction(
     case 'UPDATE_SETTINGS': {
       host(game, identityId);
       requireStatus(game, 'draft');
-      const next = { ...game.settings };
+      const next = {
+        ...game.settings,
+        targetScore: WINNING_SCORE,
+        disputeTimeoutSeconds: CLAIM_RESPONSE_SECONDS,
+      };
       if (body.briefingMinutes !== undefined) {
         const briefing = Number(body.briefingMinutes);
         if (!BRIEFING_OPTIONS.includes(briefing)) throw new GameRuleError('Choose a listed settling-in time');
         next.briefingMinutes = briefing;
       }
-      if (body.gameLength !== undefined) {
-        if (typeof body.gameLength !== 'string' || !(body.gameLength in GAME_LENGTH_TARGETS)) {
-          throw new GameRuleError('Choose a listed game length');
-        }
-        next.gameLength = body.gameLength as GameLength;
-      }
-      if (body.responseMinutes !== undefined) {
-        const minutes = Number(body.responseMinutes);
-        if (!RESPONSE_OPTIONS.includes(minutes)) throw new GameRuleError('Choose a listed response time');
-        next.disputeTimeoutSeconds = minutes * 60;
-      }
+      // Ignore obsolete score, length, and response choices from older clients.
       if (JSON.stringify(next) === JSON.stringify(game.settings)) break;
       game.settings = next;
       changed = true;
@@ -813,7 +796,7 @@ export async function applyAction(
           accuserId: player.id,
           openedAt: now.toISOString(),
           closesAt: new Date(
-            now.getTime() + game.settings.disputeTimeoutSeconds * 1000,
+            now.getTime() + CLAIM_RESPONSE_SECONDS * 1000,
           ).toISOString(),
           phase: 'response',
           result: 'pending',
@@ -863,7 +846,7 @@ export async function applyAction(
       dispute.phase = 'voting';
       dispute.description = optionalText(body.reason, 100);
       dispute.closesAt = new Date(
-        now.getTime() + game.settings.disputeTimeoutSeconds * 1000,
+        now.getTime() + CLAIM_RESPONSE_SECONDS * 1000,
       ).toISOString();
       changed = true;
       break;
@@ -991,6 +974,10 @@ export async function applyAction(
   if (game.status === 'ended' && source.status !== 'ended') game.endedAt = now.toISOString();
 
   if (changed) {
+    // Older stored settings cannot change new claim deadlines. Existing open
+    // claims retain their recorded closesAt, including any pause adjustment.
+    game.settings.disputeTimeoutSeconds = CLAIM_RESPONSE_SECONDS;
+    game.settings.targetScore = WINNING_SCORE;
     game.revision = source.revision + 1;
     game.requestIds = [...source.requestIds, requestId].slice(-50);
     game.expiresAt =
@@ -1051,7 +1038,11 @@ export async function projectGameView(
     createdAt: game.createdAt,
     hostId: game.hostId,
     players: publicPlayers,
-    settings: game.settings,
+    settings: {
+      ...game.settings,
+      targetScore: WINNING_SCORE,
+      disputeTimeoutSeconds: CLAIM_RESPONSE_SECONDS,
+    },
     currentPhase: game.currentPhase,
     challengeCompletions,
     selectedChallenges: game.selectedChallenges,

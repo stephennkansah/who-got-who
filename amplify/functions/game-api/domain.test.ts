@@ -47,6 +47,76 @@ async function liveGame(
 const minutesLater = (minutes: number) => new Date(Date.now() + minutes * 60 * 1000);
 
 async function run() {
+  {
+    const game = createGame('NEW234', 'new-host', playerPayload('Host'), nextRequest());
+    assert.equal(game.settings.targetScore, 5, 'new lobbies start with a five-point target');
+  }
+
+  // Three gotchas cannot win, four spread across players can, and repeat
+  // targets need a fifth. Exercise real claims instead of setting scores.
+  for (const targets of [[1, 2, 3, 1], [1, 1, 2, 2], [1, 1, 1, 1, 1]]) {
+    const identities = Array.from({ length: Math.max(...targets) + 1 }, (_, index) => `score-${index}`);
+    let game = await liveGame(identities);
+    const handSize = game.players[0].tasks.length;
+    for (const [index, targetIndex] of targets.entries()) {
+      const taskId = game.players[0].tasks[index].id;
+      game = await action(game, 'CLAIM_GOTCHA', identities[0], {
+        taskId,
+        targetId: game.players[targetIndex].id,
+        outcome: 'success',
+      });
+      assert.equal(game.status, 'live', 'a pending claim cannot win');
+      game = await action(game, 'ACCEPT_GOTCHA', identities[targetIndex], { taskId });
+      assert.equal(game.status, index === targets.length - 1 ? 'ended' : 'live');
+    }
+    assert.equal(game.players[0].score, targets.length + new Set(targets).size * 0.5);
+    assert.equal(game.players[0].stats.gothcas, targets.length);
+    assert.equal(game.players[0].tasks.length, handSize, 'completed missions are not replaced');
+    assert.equal(game.players[0].tasks.filter((task) => task.status === 'completed').length, targets.length);
+  }
+
+  {
+    // Obsolete stored targets cannot change the fixed rule or its display.
+    let game = await liveGame();
+    game.settings.targetScore = 12;
+    const view = await projectGameView(game, 'device-host', async (key) => key);
+    assert.equal((view.payload as { game: StoredGame }).game.settings.targetScore, 5);
+    game = await action(game, 'PAUSE', 'device-host');
+    assert.equal(game.settings.targetScore, 5);
+  }
+
+  {
+    let game = await liveGame();
+    assert.equal(game.settings.disputeTimeoutSeconds, 300);
+    // A game saved with an old host-selected window must use the fixed rule too.
+    game.settings.disputeTimeoutSeconds = 1800;
+    const view = await projectGameView(game, 'device-host', async (key) => key);
+    assert.equal((view.payload as { game: StoredGame }).game.settings.disputeTimeoutSeconds, 300);
+    const now = new Date();
+    const taskId = game.players[0].tasks[0].id;
+    game = await actionAt(now, game, 'CLAIM_GOTCHA', 'device-host', {
+      taskId,
+      targetId: game.players[1].id,
+      outcome: 'success',
+    });
+    assert.equal(new Date(game.disputes[0].closesAt).getTime() - now.getTime(), 300000);
+    const beforeDeadline = await actionAt(new Date(now.getTime() + 299999), game, 'RESOLVE_EXPIRED', 'device-guest');
+    assert.equal(beforeDeadline.disputes[0].result, 'pending');
+    const atDeadline = await actionAt(new Date(now.getTime() + 300000), game, 'RESOLVE_EXPIRED', 'device-guest');
+    assert.equal(atDeadline.disputes[0].result, 'upheld', 'an unanswered claim resolves at five minutes');
+    assert.equal(atDeadline.players[0].score, 1.5);
+    const votingAt = new Date(now.getTime() + 60000);
+    const voting = await actionAt(votingAt, game, 'DISPUTE_GOTCHA', 'device-guest', { taskId });
+    assert.equal(new Date(voting.disputes[0].closesAt).getTime() - votingAt.getTime(), 300000);
+    // A deployment must not restart or shorten a claim that was already open.
+    const existing = JSON.parse(JSON.stringify(game)) as StoredGame;
+    existing.settings.disputeTimeoutSeconds = 120;
+    existing.disputes[0].closesAt = new Date(now.getTime() + 120000).toISOString();
+    const updated = await actionAt(new Date(now.getTime() + 30000), existing, 'PAUSE', 'device-host');
+    assert.equal(updated.disputes[0].closesAt, existing.disputes[0].closesAt);
+    assert.equal(updated.settings.disputeTimeoutSeconds, 300);
+  }
+
   assert.throws(
     () =>
       createGame(
@@ -122,7 +192,7 @@ async function run() {
     // The target's auto-accept lands just after the response timer: no error, and it still counts.
     let game = await liveGame(['late-accept-host', 'late-accept-target']);
     const task = game.players[0].tasks[0];
-    game.players[0].score = 3;
+    game.players[0].score = 3.5;
     game = await action(game, 'CLAIM_GOTCHA', 'late-accept-host', {
       taskId: task.id,
       targetId: game.players[1].id,
@@ -131,10 +201,10 @@ async function run() {
     const justAfter = new Date(new Date(game.disputes[0].closesAt).getTime() + 1000);
     game = await actionAt(justAfter, game, 'ACCEPT_GOTCHA', 'late-accept-target', { taskId: task.id });
     assert.equal(game.disputes[0].result, 'upheld');
-    assert.equal(game.players[0].score, 4.5);
+    assert.equal(game.players[0].score, 5);
     assert.equal(game.status, 'ended', 'the expired claim can still win the game');
     game = await actionAt(justAfter, game, 'ACCEPT_GOTCHA', 'late-accept-target', { taskId: task.id });
-    assert.equal(game.players[0].score, 4.5, 'a second tap does not score twice');
+    assert.equal(game.players[0].score, 5, 'a second tap does not score twice');
   }
 
   {
@@ -366,21 +436,24 @@ async function run() {
       () => action(game, 'TRANSFER_HOST', 'lobby-guest', { playerId: game.players[0].id }),
       (error: unknown) => error instanceof GameRuleError && /Only the host/.test(error.message),
     );
-    // Weekend settings: longer game and a longer window to answer claims.
-    await assert.rejects(
-      () => action(game, 'UPDATE_SETTINGS', 'lobby-host', { gameLength: 'forever' }),
-      (error: unknown) => error instanceof GameRuleError && /game length/.test(error.message),
-    );
-    game = await action(game, 'UPDATE_SETTINGS', 'lobby-host', { gameLength: 'weekend', responseMinutes: 30 });
+    // Old saved lobbies and clients cannot restore configurable winning scores.
+    game.settings.gameLength = 'weekend';
+    game.settings.targetScore = 12;
+    const lobbyView = await projectGameView(game, 'lobby-host', async (key) => key);
+    assert.equal((lobbyView.payload as { game: StoredGame }).game.settings.targetScore, 5);
+    game = await action(game, 'UPDATE_SETTINGS', 'lobby-host', {
+      gameLength: 'long', targetScore: 12, responseMinutes: 30,
+    });
     assert.equal(game.settings.gameLength, 'weekend');
-    assert.equal(game.settings.disputeTimeoutSeconds, 1800);
+    assert.equal(game.settings.targetScore, 5, 'old clients cannot change the five-point target');
+    assert.equal(game.settings.disputeTimeoutSeconds, 300, 'old clients cannot change the five-minute deadline');
     game = await action(game, 'TRANSFER_HOST', 'lobby-host', { playerId: game.players[1].id });
     assert.equal(game.hostId, game.players[1].id);
     assert.equal(game.players[0].isHost, false);
     assert.equal(game.players[1].isHost, true);
     game = await action(game, 'SELECT_PACK', 'lobby-guest', { packId: 'core' });
     game = await action(game, 'START', 'lobby-guest');
-    assert.equal(game.settings.targetScore, 12, 'a weekend game plays to 12 points');
+    assert.equal(game.settings.targetScore, 5, 'legacy game length does not affect the winning score');
   }
 
   // No task may repeat across players, even after everyone uses every swap.
@@ -409,6 +482,7 @@ async function run() {
     }
     assert.equal(game.settings.swapsAllowed, swaps, label);
     game = await action(game, 'START', identities[0]);
+    assert.equal(game.settings.targetScore, 5, `${label} still plays to five points`);
 
     const bonusCounts = game.players.map(
       (player) =>

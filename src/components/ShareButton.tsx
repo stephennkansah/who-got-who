@@ -28,25 +28,30 @@ const ShareButton: React.FC<ShareButtonProps> = ({
 
   const isYouGotWho = gameType === 'holiday-challenge';
 
-  const shareText = gameId
+  // The pitch without the link. The link goes last on its own line so WhatsApp
+  // and iMessage turn it into the big preview card (public/og-image.png).
+  const pitch = gameId
     ? isYouGotWho
-      ? `🏖️ Join my YOU GOT WHO? game!\n\nGame Code: ${gameId}\n\nSocial holiday challenges - race to complete the same challenges! Perfect for vacations!\n\n${shareUrl}`
-      : `🎮 Join my WHO GOT WHO? game!\n\nGame Code: ${gameId}\n\nSecret missions, stealth gameplay - perfect for parties, dinners & hangouts!\n\n${shareUrl}`
-    : `🎮 Check out WHO GOT WHO?\n\nSecret missions game perfect for parties, dinners & social events. Play in the background of whatever you're doing!\n\n${shareUrl}`;
+      ? `🏖️ Holiday challenge time!\nJoin my You Got Who? game — we all race the same challenges, first to finish takes the points.\n\nCode: ${gameId}`
+      : `🕵️ You're invited!\nJoin my Who Got Who game — we each get secret missions to pull off on each other during the party. Don't get caught.\n\nCode: ${gameId}`
+    : "🕵️ Who Got Who — a party game of secret missions you play in the background of a night out. No app, no sign-up.";
+  const shareText = `${pitch}\n\n👉 ${shareUrl}`;
 
   const shareTitle = gameId
     ? isYouGotWho
-      ? `Join YOU GOT WHO? Game ${gameId}!`
-      : `Join WHO GOT WHO? Game ${gameId}!`
-    : 'WHO GOT WHO? - The Ultimate Party Game';
+      ? `Join my You Got Who? game · ${gameId}`
+      : `Join my Who Got Who game · ${gameId}`
+    : 'Who Got Who — the secret-mission party game';
 
   // Try native Web Share API first (mobile)
   const handleNativeShare = async () => {
     if (navigator.share) {
       try {
+        // Pass the link separately: Android appends `url` to `text`, so including
+        // it in both would send the link twice.
         await navigator.share({
           title: shareTitle,
-          text: shareText,
+          text: `${pitch}\n\n👉`,
           url: shareUrl,
         });
         return { success: true, cancelled: false };

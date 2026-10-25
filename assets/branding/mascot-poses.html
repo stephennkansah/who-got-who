@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Who Got Who — Mascot expressions</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 48px; background: #12100c; color: #efe5c6; font: 16px/1.5 system-ui, sans-serif; }
+    main { max-width: 1500px; margin: auto; }
+    header { margin-bottom: 36px; }
+    .eyebrow { color: #e8b554; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; }
+    h1 { font-size: clamp(28px, 4vw, 46px); line-height: 1.1; margin: 12px 0; }
+    header p { color: #b8af98; margin: 0; }
+    .grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px; }
+    article { overflow: hidden; background: #1c1913; border: 1px solid #383126; border-radius: 20px; }
+    .hero { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; background: #12100c; }
+    .copy { padding: 20px; }
+    h2 { margin: 0 0 6px; font-size: 19px; }
+    article p { color: #b8af98; margin: 0; min-height: 48px; font-size: 14px; }
+    .small { margin-top: 20px; padding-top: 16px; border-top: 1px solid #383126; display: flex; align-items: center; gap: 12px; color: #9b927d; font-size: 12px; }
+    .small img { width: 64px; height: 64px; border-radius: 12px; }
+    footer { color: #9b927d; margin-top: 28px; font-size: 13px; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } body { padding: 28px; } }
+    @media (max-width: 600px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } body { padding: 20px; } .copy { padding: 14px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="eyebrow">Who Got Who · Approved mascots</div>
+      <h1>The chosen five.</h1>
+      <p>Only these five selected images will be used for mascot expressions.</p>
+    </header>
+    <div class="grid">
+      <article><img class="hero" src="../../public/mascots/lobby.png" alt="Curious spy waiting for friends"><div class="copy"><h2>Waiting for friends</h2><p>A curious glance around the lobby.</p><div class="small"><img src="../../public/mascots/lobby.png" alt="">64px preview</div></div></article>
+      <article><img class="hero" src="../../public/mascots/mission-transparent.png" alt="Focused spy with a sideways glance"><div class="copy"><h2>Undercover</h2><p>The selected transparent mission pose.</p><div class="small"><img src="../../public/mascots/mission-transparent.png" alt="">64px preview</div></div></article>
+      <article><img class="hero" src="../../public/mascots/caught.png" alt="Wide-eyed spy caught out"><div class="copy"><h2>Caught out</h2><p>A surprised, wide-eyed look.</p><div class="small"><img src="../../public/mascots/caught.png" alt="">64px preview</div></div></article>
+      <article><img class="hero" src="../../public/mascots/mission.png" alt="Focused spy on a secret mission"><div class="copy"><h2>On a mission</h2><p>Hat low. Eyes on the target.</p><div class="small"><img src="../../public/mascots/mission.png" alt="">64px preview</div></div></article>
+      <article><img class="hero" src="../../public/mascots/results.png" alt="Happy spy celebrating the results"><div class="copy"><h2>Mission accomplished</h2><p>A hat tip and a winning smile.</p><div class="small"><img src="../../public/mascots/results.png" alt="">64px preview</div></div></article>
+    </div>
+    <footer>Original app icon retained · Cream #efe5c6 · Red #e5484d · Near-black #12100c</footer>
+  </main>
+</body>
+</html>

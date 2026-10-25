@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { validateGameInput } from '../utils/validation';
+import { WINNING_SCORE } from '../utils/gameSettings';
 import { Game, Player } from '../types';
 import AvatarPicker from './AvatarPicker';
 import Modal from './common/Modal';
@@ -344,7 +345,7 @@ function Home() {
           <Step number="1" text="Every agent receives secret tasks to pull off on the others." />
           <Step number="2" text="Pull yours off without being noticed — and if you spot someone working on you, call them out to bust them." />
           <Step number="3" text={'Say "Gotcha!" out loud, then claim it in the app. Your target can accept — or dispute it to a group vote.'} />
-          <Step number="4" text="First to the target score takes the game. Then everyone's missions are revealed." />
+          <Step number="4" text={`First to ${WINNING_SCORE} points wins. Then everyone's missions are revealed.`} />
         </div>
         <div className="type" style={{ fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: '1.25rem' }}>
           field-tested at house parties, dinners, pre-drinks &amp; game nights

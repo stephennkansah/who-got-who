@@ -8,6 +8,7 @@ import Lobby from './components/Lobby';
 import Game from './components/Game';
 import HolidayChallengeGame from './components/HolidayChallengeGame';
 import Recap from './components/Recap';
+import StatsPage from './components/StatsPage';
 import InstallPrompt from './components/InstallPrompt';
 import FeedbackButton from './components/FeedbackButton';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -59,7 +60,8 @@ const ErrorToastBridge: React.FC = () => {
 // Floating pills only where they belong — never over live gameplay.
 const FloatingWidgets: React.FC = () => {
   const { pathname } = useLocation();
-  const showInstall = pathname === '/' || pathname.startsWith('/lobby');
+  // After a game is the best moment to keep it on the home screen for next time.
+  const showInstall = pathname === '/' || pathname.startsWith('/lobby') || pathname.startsWith('/recap');
   const showFeedback = pathname === '/' || pathname.startsWith('/recap');
   const showUpdate = !pathname.startsWith('/game');
 
@@ -85,6 +87,7 @@ function App() {
               <Route path="/lobby/:gameId" element={<Lobby />} />
               <Route path="/game/:gameId" element={<GameWrapper />} />
               <Route path="/recap/:gameId" element={<Recap />} />
+              <Route path="/stats" element={<StatsPage />} />
             </Routes>
             <ErrorToastBridge />
             <SheetHistorySync />

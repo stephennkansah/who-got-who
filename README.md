@@ -77,6 +77,17 @@ Build the signed Android App Bundle with:
 .\gradlew.bat :app:bundleRelease
 ```
 
+## Play statistics
+
+The game server keeps anonymous counters (games started and finished, players per game, rematches, guests who later host, disputes, and how often each mission is dealt, swapped or completed) in a `Stats` DynamoDB table. No names, photos, messages or game codes are stored.
+
+- **Private page:** set `STATS_ADMIN_KEY` to a long passcode in the Amplify console (Hosting → Environment variables), redeploy, then open `https://whogotwho.club/stats` and enter it. Without the variable the page stays off.
+- **Command line** (needs an AWS login for the account): `npm run stats` or `npm run stats -- --days 7`.
+
+## Link previews
+
+Invite links show a preview card in WhatsApp, iMessage and social apps from the Open Graph tags in `public/index.html` and `public/og-image.png`. Edit `assets/branding/og-card.html` and run `npm run export:og` to regenerate the image (keep it under 300 KB for WhatsApp).
+
 ## Important paths
 
 ```text

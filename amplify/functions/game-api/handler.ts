@@ -1,10 +1,11 @@
 import type { AppSyncResolverHandler } from 'aws-lambda';
-import { createHash } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import {
   DeleteCommand,
   DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
+  ScanCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { ConditionalCheckFailedException, DynamoDBClient } from '@aws-sdk/client-dynamodb';
@@ -22,12 +23,16 @@ import {
 } from './domain';
 import { pushMessages } from './push';
 import { generateVapidKeys, sendWebPush, type VapidKeys } from './webpush';
+import { dayKey, statsForChange, type StatIncrement } from './stats';
+import { buildStatsReport } from './statsReport';
 
 type ResolverArguments = {
   action?: string;
   gameId?: string;
   requestId?: string;
   payload?: unknown;
+  key?: string;
+  days?: number;
 };
 
 type ResolverEventShape = {
@@ -44,6 +49,8 @@ const bucketName = process.env.MEDIA_BUCKET_NAME;
 if (!tableName) throw new Error('GAME_TABLE_NAME is not configured');
 if (!rateLimitTableName) throw new Error('RATE_LIMIT_TABLE_NAME is not configured');
 if (!bucketName) throw new Error('MEDIA_BUCKET_NAME is not configured');
+// Optional: anonymous play statistics are best-effort and never block a game action.
+const statsTableName = process.env.STATS_TABLE_NAME;
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}), {
   marshallOptions: { removeUndefinedValues: true },
@@ -133,6 +140,59 @@ async function getStoredGame(id: string): Promise<StoredGame> {
   return game;
 }
 
+/** Adds anonymous counters. Failures are logged, never surfaced to players. */
+async function recordStats(increments: StatIncrement[]): Promise<void> {
+  if (!statsTableName || !increments.length) return;
+  const results = await Promise.allSettled(
+    increments.map(({ key, counts }) => {
+      const fields = Object.entries(counts);
+      return dynamo.send(
+        new UpdateCommand({
+          TableName: statsTableName,
+          Key: { key },
+          UpdateExpression: `ADD ${fields.map((_, index) => `#f${index} :v${index}`).join(', ')}`,
+          ExpressionAttributeNames: Object.fromEntries(fields.map(([field], index) => [`#f${index}`, field])),
+          ExpressionAttributeValues: Object.fromEntries(fields.map(([, by], index) => [`:v${index}`, by])),
+        }),
+      );
+    }),
+  );
+  const failed = results.filter((result) => result.status === 'rejected').length;
+  if (failed) console.warn('Some play statistics were not recorded', { failed });
+}
+
+/**
+ * Remembers, under a one-way hash of the device identity, whether someone has
+ * joined or hosted before — that's how "guests who became hosts" is counted.
+ * Expires after 400 days of inactivity.
+ */
+async function trackPerson(identity: string, role: 'joined' | 'hosted', now: Date): Promise<void> {
+  if (!statsTableName) return;
+  try {
+    const who = createHash('sha256').update(`who-got-who-stats:${identity}`).digest('hex').slice(0, 32);
+    const previous = await dynamo.send(
+      new UpdateCommand({
+        TableName: statsTableName,
+        Key: { key: `who#${who}` },
+        UpdateExpression: 'ADD #role :one SET expiresAt = :expires',
+        ExpressionAttributeNames: { '#role': role },
+        ExpressionAttributeValues: { ':one': 1, ':expires': Math.floor(now.getTime() / 1000) + 400 * 86400 },
+        ReturnValues: 'ALL_OLD',
+      }),
+    );
+    if (role !== 'hosted') return;
+    const before = previous.Attributes as { joined?: number; hosted?: number } | undefined;
+    const field = before?.hosted
+      ? 'repeatHosts'
+      : before?.joined
+        ? 'guestsWhoBecameHosts'
+        : 'brandNewHosts';
+    await recordStats([{ key: dayKey(now), counts: { [field]: 1 } }]);
+  } catch (error) {
+    console.warn('Host statistics were not recorded', { errorName: error instanceof Error ? error.name : 'UnknownError' });
+  }
+}
+
 async function create(payload: unknown, ownerIdentity: string, requestId: string): Promise<GameEvent> {
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const id = deterministicGameCode(requestId, attempt);
@@ -145,6 +205,8 @@ async function create(payload: unknown, ownerIdentity: string, requestId: string
           ConditionExpression: 'attribute_not_exists(gameId)',
         }),
       );
+      const now = new Date();
+      await Promise.all([recordStats(statsForChange(null, game, now)), trackPerson(ownerIdentity, 'hosted', now)]);
       return { gameId: id, revision: game.revision };
     } catch (error) {
       if (!(error instanceof ConditionalCheckFailedException)) throw error;
@@ -245,13 +307,14 @@ async function mutate(
 ): Promise<GameEvent> {
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const existing = await getStoredGame(id);
+    const now = new Date();
     const result = await applyAction(
       existing,
       action,
       ownerIdentity,
       payload,
       requestId,
-      new Date(),
+      now,
       proofExists,
     );
     if (!result.changed) return { gameId: id, revision: existing.revision };
@@ -276,7 +339,12 @@ async function mutate(
             ExpressionAttributeValues: { ':revision': existing.revision },
           }),
         );
-        await deliverPushes(existing, result.game);
+        const newcomer = result.game.players.length > existing.players.length;
+        await Promise.all([
+          deliverPushes(existing, result.game),
+          recordStats(statsForChange(existing, result.game, now)),
+          newcomer ? trackPerson(ownerIdentity, 'joined', now) : Promise.resolve(),
+        ]);
       }
       return { gameId: id, revision: result.game.revision };
     } catch (error) {
@@ -317,6 +385,26 @@ async function rematch(oldId: string, ownerIdentity: string, requestId: string):
   return linked;
 }
 
+/** The private /stats page. Off unless STATS_ADMIN_KEY is set; wrong passcodes are throttled. */
+async function statsReport(ownerIdentity: string, args: ResolverArguments) {
+  await enforceRateLimit(ownerIdentity, 'stats', 10, 60);
+  const adminKey = process.env.STATS_ADMIN_KEY;
+  if (!adminKey || !statsTableName) throw new GameRuleError('Stats are not switched on yet');
+  const digest = (value: string) => createHash('sha256').update(value).digest();
+  if (typeof args.key !== 'string' || !timingSafeEqual(digest(args.key), digest(adminKey))) {
+    throw new GameRuleError('Wrong passcode');
+  }
+  const days = Math.min(365, Math.max(1, Math.round(Number(args.days) || 30)));
+  const items: Array<Record<string, unknown>> = [];
+  let start: Record<string, unknown> | undefined;
+  do {
+    const page = await dynamo.send(new ScanCommand({ TableName: statsTableName, ExclusiveStartKey: start }));
+    items.push(...(page.Items ?? []));
+    start = page.LastEvaluatedKey;
+  } while (start);
+  return buildStatsReport(items, days);
+}
+
 function mediaUrl(key: string): Promise<string> {
   if (!key.startsWith('avatars/') && !key.startsWith('proofs/')) return Promise.resolve('');
   return getSignedUrl(s3, new GetObjectCommand({ Bucket: bucketName, Key: key }), {
@@ -337,6 +425,8 @@ export const handler: AppSyncResolverHandler<ResolverArguments, unknown> = async
       const pushKey = await vapidKeys().then((keys) => keys.publicKey).catch(() => undefined);
       return { ...view, payload: { ...(view.payload as Record<string, unknown>), pushKey } };
     }
+
+    if (operation === 'getStats') return await statsReport(ownerIdentity, event.arguments);
 
     if (operation !== 'gameAction') throw new GameRuleError('Unknown operation');
     await enforceRateLimit(ownerIdentity, 'action', 120, 60);

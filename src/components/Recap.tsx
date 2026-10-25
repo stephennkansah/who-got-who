@@ -125,7 +125,7 @@ const RevealDossier: React.FC<{
 export default function Recap() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const { state, rematch, leaveGame } = useGame();
+  const { state, rematch, leaveGame, createGame } = useGame();
   const [showTimeline, setShowTimeline] = useState(false);
 
   const currentGame = state.currentGame;
@@ -217,6 +217,19 @@ export default function Recap() {
       // Best-effort; still go home.
     }
     navigate('/', { replace: true });
+  };
+
+  // The growth loop: a guest who just had fun becomes a host in one tap.
+  // The new lobby loads and the draft-game effect above takes them there.
+  const handleHostOwn = async () => {
+    const me = currentPlayer;
+    if (!me) return;
+    const photo = me.avatarType === 'photo' && !!me.avatarKey;
+    try {
+      await createGame(me.name, photo ? me.avatarKey : me.avatar, photo ? 'photo' : 'emoji');
+    } catch {
+      // Errors surface via the global toast bridge.
+    }
   };
 
   if (!currentGame) {
@@ -354,6 +367,21 @@ export default function Recap() {
           </button>
         </div>
       </div>
+
+      {/* Guests: run the next one yourself */}
+      {!currentPlayer?.isHost && (
+        <div className="paper-card host-cta">
+          <div className="type host-cta-label">Your turn to run the op</div>
+          <h3>Host Your Own Game</h3>
+          <p>
+            Take it to your next party, dinner or trip. You get a code, your friends get a link —
+            no app, no sign-up.
+          </p>
+          <button className="btn btn-success" onClick={handleHostOwn} disabled={state.isLoading}>
+            Start My Own Game
+          </button>
+        </div>
+      )}
 
       {/* The Reveal: everyone's dossier, declassified */}
       {!isHoliday && (
