@@ -8,7 +8,7 @@ import type { Task, TaskPack, Challenge, HolidayChallengePack } from '../../../s
 // up without giving it away. Keep ids stable — live games store them as
 // `templateId`. Retired ids (do not reuse): v012, v020, v029, p009, p026.
 
-// Category 1: Correction Tasks (11 Tasks)
+// Category 1: Correction Tasks (13 Tasks)
 const coreCorrectTasks: Task[] = [
   {
     id: 'c001',
@@ -64,10 +64,20 @@ const coreCorrectTasks: Task[] = [
     id: 'c011',
     text: 'Get a player to correct your maths.',
     tips: 'Get the bill split, the tip or the score slightly wrong out loud.'
+  },
+  {
+    id: 'c012',
+    text: 'Get a player to show you the "right" way to do something you\'re doing wrong.',
+    tips: 'Peel a banana from the wrong end or hold your glass oddly.'
+  },
+  {
+    id: 'c013',
+    text: 'Get a player to correct you when you call them by the wrong name.',
+    tips: 'Call them by a friend\'s or sibling\'s name, the way parents do.'
   }
 ];
 
-// Category 2: Verbal & Conversational (27 Tasks)
+// Category 2: Verbal & Conversational (33 Tasks)
 const coreVerbalTasks: Task[] = [
   {
     id: 'v001',
@@ -203,10 +213,40 @@ const coreVerbalTasks: Task[] = [
     id: 'v030',
     text: 'Get a player to start a sentence with "No offense, but..."',
     tips: 'Ask for their honest opinion of your outfit or music taste.'
+  },
+  {
+    id: 'v031',
+    text: 'Get a player to give you a nickname.',
+    tips: 'Complain you\'ve never had a nickname and ask what yours should be.'
+  },
+  {
+    id: 'v032',
+    text: 'Get a player to finish your sentence.',
+    tips: 'Start a well-known saying and trail off: "The early bird..."'
+  },
+  {
+    id: 'v033',
+    text: 'Get a player to make you a promise.',
+    tips: 'Ask "Promise you\'ll come to my thing next month?"'
+  },
+  {
+    id: 'v034',
+    text: 'Get a player to use a word you made up.',
+    tips: 'Slip your new word into conversation a few times until it catches on.'
+  },
+  {
+    id: 'v035',
+    text: 'Get a player to tell you their star sign.',
+    tips: 'Guess their star sign wrong on purpose.'
+  },
+  {
+    id: 'v036',
+    text: 'Get a player to argue with you about whether a hot dog is a sandwich.',
+    tips: 'State your side as if it\'s obvious and wait for them to bite.'
   }
 ];
 
-// Category 3: Physical & Interactive (28 Tasks)
+// Category 3: Physical & Interactive (33 Tasks)
 const corePhysicalTasks: Task[] = [
   {
     id: 'p001',
@@ -347,10 +387,35 @@ const corePhysicalTasks: Task[] = [
     id: 'p030',
     text: 'Get a player to take a photo of you.',
     tips: 'Hand them your phone and say you need a new profile picture.'
+  },
+  {
+    id: 'p031',
+    text: 'Get a player to try on something of yours (hat, sunglasses or jacket).',
+    tips: 'Say "This would look better on you" and hand it over.'
+  },
+  {
+    id: 'p032',
+    text: 'Get a player to balance something on their head.',
+    tips: 'Balance a coaster on yours and say nobody can beat 10 seconds.'
+  },
+  {
+    id: 'p033',
+    text: 'Get a player to stand on one leg.',
+    tips: 'Mention a balance test you saw online and try it yourself.'
+  },
+  {
+    id: 'p034',
+    text: 'Get a player to try to lick their elbow.',
+    tips: 'Claim it\'s impossible to lick your own elbow.'
+  },
+  {
+    id: 'p035',
+    text: 'Get a player to fix something on you (a tag, your collar or your hair).',
+    tips: 'Leave your label sticking out and wait for them to tuck it in.'
   }
 ];
 
-// Category 4: Funny & Performative (15 Tasks)
+// Category 4: Funny & Performative (20 Tasks)
 const corePerformativeTasks: Task[] = [
   {
     id: 'f001',
@@ -426,10 +491,35 @@ const corePerformativeTasks: Task[] = [
     id: 'f015',
     text: 'Get a player to tell you that you\'re funny.',
     tips: 'Land a good joke, then ask "Was that not funny?"'
+  },
+  {
+    id: 'f016',
+    text: 'Get a player to count down from ten.',
+    tips: 'Suggest a countdown for a photo, a toast or a dare.'
+  },
+  {
+    id: 'f017',
+    text: 'Get a player to act out a slow-motion replay of something that just happened.',
+    tips: 'Say "Wait, do that again in slow motion!"'
+  },
+  {
+    id: 'f018',
+    text: 'Get a player to narrate something in the room like a nature documentary.',
+    tips: 'Start whispering like a wildlife presenter about the snacks, then hand over.'
+  },
+  {
+    id: 'f019',
+    text: 'Get a player to do their best evil laugh.',
+    tips: 'Do a terrible one yourself and say "Bet you can\'t do better."'
+  },
+  {
+    id: 'f020',
+    text: 'Get a player to make up a rhyme about the party or the host.',
+    tips: 'Start a rhyme and leave the last line for them.'
   }
 ];
 
-// Category 5: Technology & Meta-Game (14 Tasks)
+// Category 5: Technology & Meta-Game (16 Tasks)
 const coreTechnologyTasks: Task[] = [
   {
     id: 't001',
@@ -500,6 +590,16 @@ const coreTechnologyTasks: Task[] = [
     id: 't014',
     text: 'Get a player to recommend a social media creator.',
     tips: 'Say your feed is boring and ask who you should follow.'
+  },
+  {
+    id: 't015',
+    text: 'Get a player to play a song you ask for.',
+    tips: 'Say "Put on that song, you know the one..." and hum it badly.'
+  },
+  {
+    id: 't016',
+    text: 'Get a player to set a timer or alarm on their phone.',
+    tips: 'Say the food needs ten minutes and you\'ll definitely forget.'
   }
 ];
 
