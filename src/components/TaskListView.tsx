@@ -217,11 +217,15 @@ export default function TaskListView({
               <div className="mission-actions">
                 {!lockReason && (
                   <>
-                    <button onClick={() => act(task, 'passed')} className="btn btn-success" style={{ flex: 2 }}>
+                    <button onClick={() => act(task, 'passed')} className="btn btn-success mission-primary">
                       Got it!
                     </button>
-                    <button onClick={() => act(task, 'failed')} className="btn btn-secondary" style={{ flex: 1 }}>
-                      Caught
+                    <button
+                      onClick={() => act(task, 'failed')}
+                      className="btn btn-secondary"
+                      aria-label="I got caught trying this mission"
+                    >
+                      I Got Caught
                     </button>
                   </>
                 )}
@@ -232,7 +236,7 @@ export default function TaskListView({
                   }}
                   className="btn btn-secondary"
                   disabled={swapsLeft <= 0}
-                  style={{ flex: 1 }}
+                  style={lockReason ? { gridColumn: '1 / -1' } : undefined}
                   aria-label={`Swap this mission, ${swapsLeft} of ${swapsTotal} swaps left`}
                 >
                   Swap {swapsLeft}/{swapsTotal}

@@ -17,6 +17,7 @@ import { LeaderboardWidget } from './game/LeaderboardWidget';
 import { FullLeaderboard } from './game/FullLeaderboard';
 import PhaseBanner from './game/PhaseBanner';
 import HostMenu from './game/HostMenu';
+import RulesSheet from './game/RulesSheet';
 import { ConfirmationModal } from './common/ConfirmationModal';
 import StampSplash from './common/StampSplash';
 import LoadingScreen from './common/LoadingScreen';
@@ -50,6 +51,7 @@ export default function Game() {
     resumeGame,
   } = useGame();
   const [showHostMenu, setShowHostMenu] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const phase = useGamePhase(state.currentGame);
   const wasBriefing = useRef(phase.briefing);
   const [selectedTask, setSelectedTask] = useState<TaskInstance | null>(null);
@@ -296,6 +298,7 @@ export default function Game() {
         isHoliday={false}
         onOpenNow={hostAction(openClaims)}
         onResume={hostAction(resumeGame)}
+        onShowRules={() => setShowRules(true)}
       />
 
       <LeaderboardWidget
@@ -333,6 +336,12 @@ export default function Game() {
           lockReason={phase.lockReason}
         />
       </section>
+
+      <button className="btn btn-ghost" onClick={() => setShowRules(true)} style={{ marginTop: '0.25rem' }}>
+        How to play
+      </button>
+
+      <RulesSheet game={currentGame} isOpen={showRules} onClose={() => setShowRules(false)} />
 
       <HostMenu
         isOpen={showHostMenu}

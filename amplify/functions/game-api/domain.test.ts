@@ -297,6 +297,44 @@ async function run() {
     assert.ok(Math.abs(shifted - 60 * 60 * 1000) < 5000, 'the claim timer is pushed back by the pause');
   }
 
+  {
+    // Lobby: ready check, profile edits, and handing the host role over.
+    let game = createGame('LOB234', 'lobby-host', playerPayload('Host'), nextRequest());
+    game = await action(game, 'JOIN', 'lobby-guest', playerPayload('Guest'));
+    game = await action(game, 'SET_READY', 'lobby-guest', { ready: true });
+    assert.equal(game.players[1].lockedIn, true);
+    game = await action(game, 'UPDATE_NAME', 'lobby-guest', { name: 'Agent G', avatar: '🦊', avatarType: 'emoji' });
+    assert.equal(game.players[1].name, 'Agent G');
+    assert.equal(game.players[1].avatar, '🦊');
+    await assert.rejects(
+      () => action(game, 'UPDATE_NAME', 'lobby-guest', {
+        name: 'Agent G',
+        avatar: 'avatars/someone-else/x.jpg',
+        avatarType: 'photo',
+      }),
+      (error: unknown) => error instanceof GameRuleError && /uploaded correctly/.test(error.message),
+    );
+    await assert.rejects(
+      () => action(game, 'TRANSFER_HOST', 'lobby-guest', { playerId: game.players[0].id }),
+      (error: unknown) => error instanceof GameRuleError && /Only the host/.test(error.message),
+    );
+    // Weekend settings: longer game and a longer window to answer claims.
+    await assert.rejects(
+      () => action(game, 'UPDATE_SETTINGS', 'lobby-host', { gameLength: 'forever' }),
+      (error: unknown) => error instanceof GameRuleError && /game length/.test(error.message),
+    );
+    game = await action(game, 'UPDATE_SETTINGS', 'lobby-host', { gameLength: 'weekend', responseMinutes: 30 });
+    assert.equal(game.settings.gameLength, 'weekend');
+    assert.equal(game.settings.disputeTimeoutSeconds, 1800);
+    game = await action(game, 'TRANSFER_HOST', 'lobby-host', { playerId: game.players[1].id });
+    assert.equal(game.hostId, game.players[1].id);
+    assert.equal(game.players[0].isHost, false);
+    assert.equal(game.players[1].isHost, true);
+    game = await action(game, 'SELECT_PACK', 'lobby-guest', { packId: 'core' });
+    game = await action(game, 'START', 'lobby-guest');
+    assert.equal(game.settings.targetScore, 12, 'a weekend game plays to 12 points');
+  }
+
   console.log('AWS game domain checks passed');
 }
 

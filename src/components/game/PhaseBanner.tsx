@@ -9,10 +9,13 @@ interface PhaseBannerProps {
   isHoliday: boolean;
   onOpenNow: () => void;
   onResume: () => void;
+  onShowRules: () => void;
 }
 
 /** Settling-in countdown, or the paused notice — whichever is holding play. */
-export default function PhaseBanner({ phase, isHost, hostName, isHoliday, onOpenNow, onResume }: PhaseBannerProps) {
+export default function PhaseBanner({
+  phase, isHost, hostName, isHoliday, onOpenNow, onResume, onShowRules,
+}: PhaseBannerProps) {
   if (phase.paused) {
     return (
       <div className="phase-banner paused" role="status">
@@ -42,11 +45,16 @@ export default function PhaseBanner({ phase, isHost, hostName, isHoliday, onOpen
           ? 'Read the challenges and get your bearings. Claims open when the clock hits zero.'
           : 'Read your missions, grab a drink, blend in. Gotchas only count once the clock hits zero.'}
       </p>
-      {isHost && (
-        <button className="btn btn-secondary btn-small" onClick={onOpenNow} style={{ margin: '0 auto' }}>
-          Everyone's ready — open now
+      <div className="flex-column gap-1" style={{ alignItems: 'center' }}>
+        <button className="link-btn phase-rules" onClick={onShowRules}>
+          New here? How to play
         </button>
-      )}
+        {isHost && (
+          <button className="btn btn-secondary btn-small" onClick={onOpenNow}>
+            Everyone's ready — open now
+          </button>
+        )}
+      </div>
     </div>
   );
 }

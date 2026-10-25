@@ -27,11 +27,30 @@ export type GameActionName =
   | 'UPDATE_SETTINGS'
   | 'OPEN_CLAIMS'
   | 'PAUSE'
-  | 'RESUME';
+  | 'RESUME'
+  | 'SET_READY'
+  | 'TRANSFER_HOST';
 
 /** Minutes between dealing missions and opening gotchas that a host may choose. */
 export const BRIEFING_OPTIONS = [0, 5, 10, 15, 30];
 export const DEFAULT_BRIEFING_MINUTES = 10;
+
+/** Winning score by game length: [groups under 7, groups of 7 or more]. */
+export const GAME_LENGTH_TARGETS = {
+  quick: [3, 4],
+  standard: [4, 5],
+  long: [8, 10],
+  weekend: [12, 15],
+} as const;
+export type GameLength = keyof typeof GAME_LENGTH_TARGETS;
+
+/** Minutes a target has to accept or dispute a claim. Longer suits all-weekend games. */
+export const RESPONSE_OPTIONS = [2, 10, 30];
+
+function targetScoreFor(length: GameLength | undefined, playerCount: number): number {
+  const [small, large] = GAME_LENGTH_TARGETS[length ?? 'standard'];
+  return playerCount >= 7 ? large : small;
+}
 
 /** Actions only the Lambda itself may apply; clients cannot send them directly. */
 export const INTERNAL_ACTIONS: ReadonlySet<string> = new Set(['LINK_REMATCH']);
@@ -116,6 +135,7 @@ export type StoredGame = {
     holidaySilverPoints?: number;
     holidayMaxSilverPerChallenge?: number;
     briefingMinutes?: number;
+    gameLength?: GameLength;
   };
   currentPhase: 'draft' | 'play' | 'ended';
   challengeCompletions: Array<{
@@ -273,6 +293,7 @@ export function createGame(
       selectedPack: null,
       tasksLoaded: false,
       briefingMinutes: DEFAULT_BRIEFING_MINUTES,
+      gameLength: 'standard',
     },
     currentPhase: 'draft',
     challengeCompletions: [],
@@ -491,7 +512,7 @@ export async function applyAction(
         throw new GameRuleError('Choose a pack before starting');
       }
       const largeGame = game.players.length >= 7;
-      game.settings.targetScore = largeGame ? 5 : 4;
+      game.settings.targetScore = targetScoreFor(game.settings.gameLength, game.players.length);
       if (game.gameType === 'holiday-challenge') {
         game.selectedChallenges = getRandomHolidayChallenges(10);
         game.settings.holidayChallengeWinCondition = getHolidayChallengeWinCondition(
@@ -523,10 +544,25 @@ export async function applyAction(
     case 'UPDATE_SETTINGS': {
       host(game, identityId);
       requireStatus(game, 'draft');
-      const briefing = Number(body.briefingMinutes);
-      if (!BRIEFING_OPTIONS.includes(briefing)) throw new GameRuleError('Choose a listed settling-in time');
-      if (game.settings.briefingMinutes === briefing) break;
-      game.settings.briefingMinutes = briefing;
+      const next = { ...game.settings };
+      if (body.briefingMinutes !== undefined) {
+        const briefing = Number(body.briefingMinutes);
+        if (!BRIEFING_OPTIONS.includes(briefing)) throw new GameRuleError('Choose a listed settling-in time');
+        next.briefingMinutes = briefing;
+      }
+      if (body.gameLength !== undefined) {
+        if (typeof body.gameLength !== 'string' || !(body.gameLength in GAME_LENGTH_TARGETS)) {
+          throw new GameRuleError('Choose a listed game length');
+        }
+        next.gameLength = body.gameLength as GameLength;
+      }
+      if (body.responseMinutes !== undefined) {
+        const minutes = Number(body.responseMinutes);
+        if (!RESPONSE_OPTIONS.includes(minutes)) throw new GameRuleError('Choose a listed response time');
+        next.disputeTimeoutSeconds = minutes * 60;
+      }
+      if (JSON.stringify(next) === JSON.stringify(game.settings)) break;
+      game.settings = next;
       changed = true;
       break;
     }
@@ -620,6 +656,36 @@ export async function applyAction(
       }
       player.name = name;
       if (player.isHost) game.createdBy = name;
+      // The lobby's profile editor can change the avatar at the same time.
+      if (body.avatar !== undefined || body.avatarType !== undefined) {
+        const { avatar, avatarType } = avatarFromPayload(body, identityId);
+        player.avatar = avatar;
+        player.avatarType = avatarType;
+      }
+      changed = true;
+      break;
+    }
+
+    case 'SET_READY': {
+      requireStatus(game, 'draft');
+      const player = member(game, identityId);
+      const ready = body.ready === true;
+      if (player.lockedIn === ready) break;
+      player.lockedIn = ready;
+      changed = true;
+      break;
+    }
+
+    case 'TRANSFER_HOST': {
+      const current = host(game, identityId);
+      if (game.status === 'ended') throw new GameRuleError('That game has already ended');
+      const playerId = text(body.playerId, 'Player', 64);
+      const next = game.players.find((player) => player.id === playerId);
+      if (!next) throw new GameRuleError('Player not found');
+      if (next.id === current.id) break;
+      current.isHost = false;
+      next.isHost = true;
+      game.hostId = next.id;
       changed = true;
       break;
     }

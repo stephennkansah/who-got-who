@@ -40,6 +40,17 @@ export interface GameSettings {
   holidaySilverPoints?: number; // points for subsequent completions
   holidayMaxSilverPerChallenge?: number; // max silver points per challenge
   briefingMinutes?: number; // settling-in time between dealing missions and opening gotchas
+  gameLength?: GameLength; // sets the winning score at the start
+  holidayChallengeCount?: number; // challenges dealt in a holiday game
+}
+
+export type GameLength = 'quick' | 'standard' | 'long' | 'weekend';
+
+/** Lobby settings the host can change before the start. */
+export interface SettingsUpdate {
+  briefingMinutes?: number;
+  gameLength?: GameLength;
+  responseMinutes?: number;
 }
 
 export interface Player {
@@ -179,7 +190,9 @@ export interface GameContextType {
   endGame: () => Promise<void>;
   leaveGame: () => Promise<void>;
   kickPlayer: (playerId: string) => Promise<void>;
-  updatePlayerName: (newName: string) => Promise<void>;
+  transferHost: (playerId: string) => Promise<void>;
+  setReady: (ready: boolean) => Promise<void>;
+  updateProfile: (name: string, avatar?: string, avatarType?: 'emoji' | 'photo') => Promise<void>;
   swapTask: (taskId: string) => Promise<void>;
   claimGotcha: (taskId: string, targetId: string) => Promise<void>;
   disputeGotcha: (taskInstanceId: string, reason?: string) => Promise<void>;
@@ -188,7 +201,7 @@ export interface GameContextType {
   /** Opens (or joins) a rematch lobby for everyone in the finished game. */
   rematch: () => Promise<void>;
   // Host pacing controls
-  setBriefingMinutes: (minutes: number) => Promise<void>;
+  updateSettings: (settings: SettingsUpdate) => Promise<void>;
   openClaims: () => Promise<void>;
   pauseGame: () => Promise<void>;
   resumeGame: () => Promise<void>;

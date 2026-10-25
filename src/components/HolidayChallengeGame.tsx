@@ -13,6 +13,7 @@ import LoadingScreen from './common/LoadingScreen';
 import { LeaderboardWidget } from './game/LeaderboardWidget';
 import PhaseBanner from './game/PhaseBanner';
 import HostMenu from './game/HostMenu';
+import RulesSheet from './game/RulesSheet';
 import { useGamePhase } from '../hooks/useGamePhase';
 
 export default function HolidayChallengeGame() {
@@ -21,6 +22,7 @@ export default function HolidayChallengeGame() {
   const { state, completeChallenge, endGame, leaveGame, openClaims, pauseGame, resumeGame } = useGame();
   const [finale, setFinale] = useState<{ title: string; subtitle: string; tone: 'success' | 'amber' } | null>(null);
   const [showHostMenu, setShowHostMenu] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const sawLive = useRef(false);
   const phase = useGamePhase(state.currentGame);
   useGameFeed();
@@ -233,6 +235,7 @@ export default function HolidayChallengeGame() {
         isHoliday
         onOpenNow={hostAction(openClaims)}
         onResume={hostAction(resumeGame)}
+        onShowRules={() => setShowRules(true)}
       />
 
       <LeaderboardWidget
@@ -479,6 +482,12 @@ export default function HolidayChallengeGame() {
           </div>
         </Modal>
       )}
+
+      <button className="btn btn-ghost" onClick={() => setShowRules(true)}>
+        How to play
+      </button>
+
+      <RulesSheet game={currentGame} isOpen={showRules} onClose={() => setShowRules(false)} />
 
       <HostMenu
         isOpen={showHostMenu}
