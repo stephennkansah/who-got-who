@@ -135,6 +135,31 @@ async function run() {
     );
   }
 
+  // Bigger holiday groups get more challenges and a lower target, and the
+  // lobby already shows both before the game starts.
+  for (const [playerCount, challenges, target] of [
+    [4, 10, 18],
+    [9, 12, 12],
+    [15, 15, 12],
+  ] as const) {
+    const label = `holiday with ${playerCount} players`;
+    const identities = Array.from({ length: playerCount }, (_, index) => `${label}-${index}`);
+    let game = createGame('HOL567', identities[0], playerPayload('Host'), nextRequest());
+    game = await action(game, 'SELECT_PACK', identities[0], { packId: 'holiday-challenge' });
+    for (let index = 1; index < identities.length; index += 1) {
+      game = await action(game, 'JOIN', identities[index], playerPayload(`Player ${index + 1}`));
+    }
+    assert.equal(game.settings.holidayChallengeCount, challenges, label);
+    assert.equal(game.settings.holidayChallengeWinCondition, target, label);
+    game = await action(game, 'START', identities[0]);
+    assert.equal(game.selectedChallenges.length, challenges, label);
+    assert.equal(
+      new Set(game.selectedChallenges.map((challenge) => challenge.id)).size,
+      challenges,
+      `${label}: a challenge repeated`,
+    );
+  }
+
   {
     let game = createGame('HOST23', 'leaving-host', playerPayload('Host'), nextRequest());
     game = await action(game, 'JOIN', 'new-host', playerPayload('Next Host'));

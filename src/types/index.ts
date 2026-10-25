@@ -17,7 +17,7 @@ export interface Game {
   settings: GameSettings;
   currentPhase: 'draft' | 'play' | 'ended';
   challengeCompletions?: ChallengeCompletion[]; // for holiday challenge games
-  selectedChallenges?: Challenge[]; // for holiday challenge games - random selection of 10 challenges
+  selectedChallenges?: Challenge[]; // for holiday challenge games - random selection of 10-15 challenges
 }
 
 export interface GameSettings {
@@ -30,6 +30,7 @@ export interface GameSettings {
   selectedPack?: 'core' | 'remote' | 'holiday-challenge' | null;
   tasksLoaded?: boolean;
   // Holiday Challenge Pack specific settings
+  holidayChallengeCount?: number; // challenges in the game (more for bigger groups)
   holidayChallengeWinCondition?: number; // points needed to win
   holidayGoldPoints?: number; // points for first completion
   holidaySilverPoints?: number; // points for subsequent completions

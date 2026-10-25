@@ -154,7 +154,7 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
         <div style={{ textAlign: 'center', marginBottom: '0.9rem' }}>
           <h3 style={{ margin: '0 0 0.15rem' }}>You Got Who?</h3>
           <p style={{ fontSize: '0.82rem', margin: 0 }}>
-            Everyone races the <strong>same 10 challenges</strong> — no stealth, all speed.
+            Everyone races the <strong>same 10–15 challenges</strong> — no stealth, all speed.
           </p>
         </div>
 

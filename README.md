@@ -18,7 +18,7 @@ Who Got Who is a mobile-first party game for completing secret social tasks with
 ### Holiday Challenge
 
 - 2-20 players
-- The server selects exactly 10 challenges for the game
+- The server selects 10 challenges for the game, 12 for 9-12 players, or 15 for 13 or more
 - First completion earns 3 gold points
 - The next two completions can earn 1 silver point each
 - Challenges marked for proof require an image upload

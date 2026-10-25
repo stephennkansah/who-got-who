@@ -78,6 +78,7 @@ export default function Lobby() {
   const playerCount = players.length;
   const canStart = playerCount >= 2;
   const isHoliday = currentGame?.gameType === 'holiday-challenge';
+  const challengeCount = currentGame?.settings?.holidayChallengeCount ?? 10;
   const hostName = players.find((p) => p.isHost)?.name || 'the host';
 
   useEffect(() => {
@@ -173,7 +174,7 @@ export default function Lobby() {
         <div className="card">
           {isHoliday ? (
             <div className="flex-column gap-2">
-              <RuleCard title="Everyone gets the same 10 challenges" tone="danger">
+              <RuleCard title={`Everyone gets the same ${challengeCount} challenges`} tone="danger">
                 Unlike classic Who Got Who, <strong>everyone sees the same challenges</strong>.
                 Race to complete them first!
               </RuleCard>
@@ -183,7 +184,7 @@ export default function Lobby() {
                 <strong>Next 2 players:</strong> 1 silver point each<br />
                 <strong>First to {currentGame.settings?.holidayChallengeWinCondition || 18} points wins.</strong><br />
                 Some challenges need photo proof.<br />
-                <em>The target scales with group size — more players, lower target.</em>
+                <em>Bigger groups get more challenges and a lower target.</em>
               </RuleCard>
 
               <RuleCard title="Social holiday challenges" tone="warning">
@@ -377,7 +378,7 @@ export default function Lobby() {
         </div>
         <p className="type" style={{ fontSize: '0.82rem', margin: 0, color: 'var(--paper-dim)' }}>
           {isHoliday
-            ? 'everyone races the same 10 challenges once the game starts.'
+            ? `everyone races the same ${challengeCount} challenges once the game starts.`
             : `${playerCount >= 7 ? 8 : 7} missions decrypt when the host starts. tell no one.`}
         </p>
       </div>

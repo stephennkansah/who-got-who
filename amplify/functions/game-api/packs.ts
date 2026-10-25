@@ -1568,14 +1568,34 @@ const holidayChallenges: Challenge[] = [
   { id: 'hc027', text: 'Teach someone outside your group a dance move', requiresProof: false },
   { id: 'hc028', text: 'With their permission, record someone saying \'best holiday ever\'', requiresProof: true },
   { id: 'hc029', text: 'Ask someone to take a boomerang of your group', requiresProof: true },
-  { id: 'hc030', text: 'Get someone to share their favourite birthday memory', requiresProof: false }
+  { id: 'hc030', text: 'Get someone to share their favourite birthday memory', requiresProof: false },
+  { id: 'hc031', text: 'Learn how to say \'thank you\' in the local language from a local, then use it', requiresProof: false },
+  { id: 'hc032', text: 'Get a sunset or sunrise photo with your group in it', requiresProof: true },
+  { id: 'hc033', text: 'Find someone from a country nobody in your group has visited', requiresProof: false },
+  { id: 'hc034', text: 'Build a sandcastle or towel sculpture and get a stranger to rate it out of 10', requiresProof: true },
+  { id: 'hc035', text: 'Ask a waiter or bartender for their favourite thing on the menu, and order it', requiresProof: true },
+  { id: 'hc036', text: 'Take a trick-perspective photo, like holding up a landmark in your hand', requiresProof: true },
+  { id: 'hc037', text: 'Photograph a local animal (cat, lizard, bird) without touching it', requiresProof: true },
+  { id: 'hc038', text: 'Get a stranger to tell you the funniest thing that\'s happened on their trip', requiresProof: false },
+  { id: 'hc039', text: 'With their permission, get someone outside your group to join a game you\'re playing', requiresProof: true },
+  { id: 'hc040', text: 'Write a postcard and post it', requiresProof: true },
+  { id: 'hc041', text: 'Congratulate a stranger who\'s celebrating something (birthday, honeymoon, anniversary)', requiresProof: false },
+  { id: 'hc042', text: 'Get directions from a local without using your phone', requiresProof: false },
+  { id: 'hc043', text: 'Find a stranger with the same birthday month as you', requiresProof: false },
+  { id: 'hc044', text: 'Ask a stranger to guess what you do for a living', requiresProof: false },
+  { id: 'hc045', text: 'Get someone to teach you a local card game or game', requiresProof: false },
+  { id: 'hc046', text: 'Photograph a sign with a funny translation or spelling', requiresProof: true },
+  { id: 'hc047', text: 'Get a round of applause from people outside your group', requiresProof: false },
+  { id: 'hc048', text: 'Find someone who has been to your home town', requiresProof: false },
+  { id: 'hc049', text: 'With their permission, get a photo with a street performer or musician (and tip them)', requiresProof: true },
+  { id: 'hc050', text: 'With their permission, get a photo with a staff member who\'s made your trip better', requiresProof: true }
 ];
 
 // Holiday Challenge Pack definition
 export const holidayChallengePack: HolidayChallengePack = {
   id: 'holiday-challenge',
   name: 'YOU GOT WHO?',
-  description: 'Everyone gets the same 10 random challenges! Race to complete them and earn points. Dynamic scoring based on group size!',
+  description: 'Everyone gets the same random challenges (10, or up to 15 in big groups)! Race to complete them and earn points. Dynamic scoring based on group size!',
   challenges: holidayChallenges,
   winCondition: (playerCount: number) => {
     if (playerCount >= 9) return 12; // 9+ players: 12 points (4 golds or mix)
@@ -1606,10 +1626,17 @@ export function getAllHolidayChallenges(): Challenge[] {
   return holidayChallenges;
 }
 
+// How many challenges a game gets. Each challenge only scores for its first
+// 3 finishers, so bigger groups need more of them for everyone to have a shot.
+export function getHolidayChallengeCount(playerCount: number): number {
+  if (playerCount >= 13) return 15; // 13+ players: 45 scoring places
+  if (playerCount >= 9) return 12; // 9-12 players: 36 scoring places
+  return 10; // 2-8 players: 30 scoring places
+}
+
 // Get random selection of challenges for YOU GOT WHO? game
 export function getRandomHolidayChallenges(count: number = 10): Challenge[] {
-  const shuffled = [...holidayChallenges].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, Math.min(count, holidayChallenges.length));
+  return shuffle(holidayChallenges).slice(0, Math.min(count, holidayChallenges.length));
 }
 
 // Check if a challenge requires proof
