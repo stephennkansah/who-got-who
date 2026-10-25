@@ -31,9 +31,12 @@ release mode is an alternative if separate signing secrets are added here.
 ## Apple account setup
 
 1. App ID `club.whogotwho.app` with Associated Domains was registered on 25 October 2026.
-2. Create an iOS App Store Connect app named **Who Got Who**, SKU
-   `who-got-who-ios`, using this bundle ID.
-3. In this repository's Actions secrets, add:
+2. App Store Connect app **Who Got Who** was created on 25 October 2026:
+   Apple ID `6826935487`, SKU `who-got-who-ios`, English (U.K.), version `1.0`.
+   The description, keywords, support URL and no-account review instructions
+   are saved. The primary category is Games / Casual. Submission is still pending.
+3. The shared workflow already has the existing signing secrets. Do not ask
+   Stephen to copy them again. Only if moving signing to this repository, add:
    - `APP_STORE_CONNECT_KEY_P8`: the App Store Connect API private key.
    - `APP_STORE_CONNECT_KEY_ID`: that key's ID.
    - `APP_STORE_CONNECT_ISSUER_ID`: its issuer ID.
