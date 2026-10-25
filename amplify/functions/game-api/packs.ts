@@ -171,8 +171,8 @@ const coreVerbalTasks: Task[] = [
   },
   {
     id: 'v023',
-    text: 'Get a player to mention a holiday.',
-    tips: 'Ask what they\'ve got planned for the next long weekend.'
+    text: 'Get a player to tell you about a holiday that went wrong.',
+    tips: 'Share your own travel disaster first and ask if they can top it.'
   },
   {
     id: 'v024',
@@ -250,8 +250,8 @@ const corePhysicalTasks: Task[] = [
   },
   {
     id: 'p010',
-    text: 'Get a player to take off their shoes.',
-    tips: 'Kick off your own shoes and say "Make yourself at home."'
+    text: 'Get a player to take off or put on a jacket or jumper.',
+    tips: 'Say it\'s getting chilly, or that it\'s boiling in here.'
   },
   {
     id: 'p011',
@@ -280,7 +280,7 @@ const corePhysicalTasks: Task[] = [
   },
   {
     id: 'p016',
-    text: 'Get a player to take something out of their pocket or bag.',
+    text: 'Get a player to lend you something from their pocket or bag.',
     tips: 'Ask if anyone has a pen, lip balm or a mint.'
   },
   {
@@ -315,8 +315,8 @@ const corePhysicalTasks: Task[] = [
   },
   {
     id: 'p023',
-    text: 'Get a player to fist-bump someone.',
-    tips: 'Hold out a fist when they make a good point.'
+    text: 'Get a player to make up a secret handshake with you.',
+    tips: 'Say every good team needs a handshake and start one off.'
   },
   {
     id: 'p024',
@@ -325,8 +325,8 @@ const corePhysicalTasks: Task[] = [
   },
   {
     id: 'p025',
-    text: 'Get a player to lean in to hear better.',
-    tips: 'Drop your voice mid-sentence like you\'re sharing a secret.'
+    text: 'Get a player to whisper something to you.',
+    tips: 'Whisper a bit of gossip to them first and wait for them to whisper back.'
   },
   {
     id: 'p027',
@@ -468,8 +468,8 @@ const coreTechnologyTasks: Task[] = [
   },
   {
     id: 't008',
-    text: 'Get a player to say the name of the game ("Who Got Who").',
-    tips: 'Pretend you\'ve forgotten: "What\'s this game called again?"'
+    text: 'Get a player to tell you how many points they have.',
+    tips: 'Joke that you\'re doing so badly you need to know who to copy.'
   },
   {
     id: 't009',
@@ -488,8 +488,8 @@ const coreTechnologyTasks: Task[] = [
   },
   {
     id: 't012',
-    text: 'Get a player to accuse someone (anyone) of having a task.',
-    tips: 'Act a little too innocent, or point out someone else acting strangely.'
+    text: 'Get a player to accuse you of doing a task when you aren\'t.',
+    tips: 'Do something oddly specific for no reason and let them get suspicious.'
   },
   {
     id: 't013',
