@@ -228,9 +228,9 @@ export default function Lobby() {
               </RuleCard>
 
               <RuleCard title="Example tasks" tone="warning">
-                <ExampleBox title="“Get a player to correct a movie quote”" hint="Say: “Peter, I am your father” → wait for the correction" />
-                <ExampleBox title="“Get someone to take a group selfie”" hint="Suggest a photo without being obvious" />
-                <ExampleBox title="“Get someone to scratch your back for 10 secs”" hint="Ask casually — “my back is killing me…”" />
+                <ExampleBox title="“Get a player to correct you when you misquote a movie”" hint="Say: “Peter, I am your father” → wait for the correction" />
+                <ExampleBox title="“Get a player to take a group selfie”" hint="Suggest a photo without being obvious" />
+                <ExampleBox title="“Get a player to scratch your back for 10 seconds”" hint="Ask casually — “my back is killing me…”" />
               </RuleCard>
             </div>
           )}
