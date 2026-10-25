@@ -78,10 +78,14 @@ export default function RulesContent({ game }: { game: Game }) {
           {summary.briefingMinutes > 0 && <> Challenges open {summary.briefingMinutes} minutes after the start.</>}
         </RuleCard>
 
-        <RuleCard title="Example challenges" tone="warning">
-          <ExampleBox title="“Get someone to take a group photo of your team”" hint="Requires photo proof" />
-          <ExampleBox title="“Borrow sunscreen from another group”" hint="A simple social mission" />
-          <ExampleBox title="“Make a new friend and learn their name”" hint="Holiday networking!" />
+        {/* Invented examples (EXAMPLE_ONLY_KEYWORDS in packs.ts) — never real challenges. */}
+        <RuleCard title="Challenges look like this" tone="warning">
+          <ExampleBox title="“Get a local to tell you where the best ice cream is”" hint="Chat to someone new" />
+          <ExampleBox title="“Get someone to show you a magic trick”" hint="Strangers love showing off" />
+          <ExampleBox title="“Get a photo of your whole group saluting a statue”" hint="Needs photo proof" />
+          <div style={{ fontSize: '0.88rem', fontStyle: 'italic', marginTop: '0.25rem' }}>
+            Made-up examples — your real challenges appear when the game starts.
+          </div>
         </RuleCard>
       </div>
     );
@@ -113,19 +117,25 @@ export default function RulesContent({ game }: { game: Game }) {
         the love. When it's over, everyone's missions are revealed.
       </RuleCard>
 
+      {/* Invented examples (EXAMPLE_ONLY_KEYWORDS in packs.ts) — never real missions,
+          so showing them can't spoil anyone's hand. */}
       <RuleCard title="How a gotcha plays out" tone="info">
         <ol className="rules-story">
-          <li>Your mission: <em>“Get a player to say ‘literally’.”</em></li>
-          <li>You tell Jordan a wild story. Jordan: “That's <strong>literally</strong> insane.”</li>
-          <li>You: <strong>“Gotcha, Jordan!”</strong> Tap the mission, hit Got it!, pick Jordan.</li>
-          <li>Jordan accepts on their phone — you score. If Jordan had called you out first, you'd be busted.</li>
+          <li>Your secret mission: <em>“Get a player to pick up something you dropped and hand it back to you.”</em></li>
+          <li>Chatting to Jordan, you “accidentally” knock your keys off the table by their feet.</li>
+          <li>You keep talking. Jordan bends down, picks it up and hands it over: “Here you go.”</li>
+          <li><strong>“GOTCHA, Jordan!”</strong> Tap the mission → Got it! → Jordan. You score.</li>
+          <li>But if Jordan had clocked it first — “You dropped that on purpose!” — you'd be busted.</li>
         </ol>
       </RuleCard>
 
-      <RuleCard title="Example missions" tone="warning">
-        <ExampleBox title="“Get a player to correct you when you misquote a movie”" hint="Say: “Peter, I am your father” → wait for the correction" />
-        <ExampleBox title="“Get a player to take a group selfie”" hint="Suggest a photo without being obvious" />
-        <ExampleBox title="“Get a player to scratch your back for 10 seconds”" hint="Ask casually — “my back is killing me…”" />
+      <RuleCard title="Missions look like this" tone="warning">
+        <ExampleBox title="“Get a player to do 10 push-ups”" hint="Bet them they can't — then look doubtful" />
+        <ExampleBox title="“Get a player to start a conga line”" hint="Wait for the right song and look bored of sitting" />
+        <ExampleBox title="“Get a player to challenge you to a thumb war”" hint="Brag that your thumbs are undefeated" />
+        <div style={{ fontSize: '0.88rem', fontStyle: 'italic', marginTop: '0.25rem' }}>
+          Made-up examples — your real missions are a surprise.
+        </div>
       </RuleCard>
     </div>
   );

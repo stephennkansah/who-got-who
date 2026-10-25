@@ -162,13 +162,13 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
           <PackTile
             name="Core Pack"
             description="Classic stealth missions for in-person groups — parties, dinners, game nights."
-            example="e.g. “Get a player to scratch your back for 10 seconds”"
+            example="e.g. “Get a player to pick up something you dropped and hand it back”"
             {...tile('core')}
           />
           <PackTile
             name="Remote Pack"
             description="Stealth missions built for group chats and long-distance friends."
-            example="e.g. “Get a player to send you a voice note”"
+            example="e.g. “Get a player to send you a photo of their fridge”"
             {...tile('remote')}
           />
         </div>
@@ -185,7 +185,7 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
         <PackTile
           name="Holiday Challenge Pack"
           description="Social challenges perfect for holidays, trips, and big gatherings."
-          example="e.g. “Get someone to take a group photo of your team”"
+          example="e.g. “Get a local to tell you where the best ice cream is”"
           {...tile('holiday-challenge')}
         />
       </div>

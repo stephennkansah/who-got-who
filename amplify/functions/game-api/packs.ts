@@ -8,6 +8,13 @@ import type { Task, TaskPack, Challenge, HolidayChallengePack } from '../../../s
 // up without giving it away. Keep ids stable — live games store them as
 // `templateId`. Retired ids (do not reuse): v012, v020, v029, p009, p026.
 
+// Made-up missions the app shows as examples (rules screen, pack picker).
+// Never add these as real missions — the examples would spoil them for
+// whoever is dealt one. packs.test.ts fails if any pack text matches.
+export const EXAMPLE_ONLY_KEYWORDS = [
+  'dropped', 'push-up', 'conga', 'thumb war', 'fridge', 'ice cream', 'magic trick', 'salut',
+];
+
 // Category 1: Correction Tasks (15 Tasks)
 const coreCorrectTasks: Task[] = [
   {
@@ -91,8 +98,8 @@ const coreCorrectTasks: Task[] = [
 const coreVerbalTasks: Task[] = [
   {
     id: 'v001',
-    text: 'Get a player to say "delicious."',
-    tips: 'Offer them a bite of something and ask how it is.'
+    text: 'Get a player to tell you who their celebrity crush is.',
+    tips: 'Bring up a film or a famous couple, then "confess" a ridiculous crush of your own first.'
   },
   {
     id: 'v002',
@@ -340,8 +347,8 @@ const corePhysicalTasks: Task[] = [
   },
   {
     id: 'p012',
-    text: 'Get a player to pick something up that was dropped.',
-    tips: 'Drop a napkin or bottle cap near them and keep talking.'
+    text: 'Get a player to help you up off the floor.',
+    tips: 'Sit down to "stretch your back", then reach a hand up mid-conversation.'
   },
   {
     id: 'p013',
