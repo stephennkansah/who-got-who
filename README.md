@@ -6,9 +6,10 @@ Who Got Who is a mobile-first party game for completing secret social tasks with
 
 ### Traditional
 
-- 2-10 players
+- 2-18 players with the Core Pack, 2-13 with the Remote Pack
 - 7 tasks per player, or 8 in games with 7 or more players
-- 2 task swaps per player
+- No two players ever get the same task, swaps included
+- 2 task swaps per player, fewer in the biggest groups so swaps never run out of unused tasks
 - A target must accept a successful Gotcha or dispute it
 - Uninvolved players vote on disputes; the host default resolves a tie
 - A valid Gotcha scores 1 point, plus 0.5 for a first-time target
@@ -16,6 +17,7 @@ Who Got Who is a mobile-first party game for completing secret social tasks with
 
 ### Holiday Challenge
 
+- 2-20 players
 - The server selects exactly 10 challenges for the game
 - First completion earns 3 gold points
 - The next two completions can earn 1 silver point each

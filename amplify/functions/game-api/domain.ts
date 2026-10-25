@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import {
+  dealTasks,
   getAllHolidayChallenges,
   getHolidayChallengeWinCondition,
+  getMaxPlayers,
   getRandomHolidayChallenges,
-  getRandomTasks,
   getReplacementTask,
+  getSwapsAllowed,
   isBonusTask,
+  MAX_PLAYERS,
 } from './packs';
 
 export type GameActionName =
@@ -247,7 +250,7 @@ export function createGame(
       disputeTimeoutSeconds: 120,
       hostDefaultOnTie: true,
       enableNegativeScoring: false,
-      maxPlayers: 10,
+      maxPlayers: MAX_PLAYERS,
       targetScore: 4,
       selectedPack: null,
       tasksLoaded: false,
@@ -338,8 +341,26 @@ function resolveExpired(game: StoredGame, now: Date): boolean {
   return changed;
 }
 
-function makeTasks(game: StoredGame, player: StoredPlayer, count: number): StoredTask[] {
-  return getRandomTasks(game.packId, count).map((task) => ({
+function handSize(playerCount: number): number {
+  return playerCount >= 7 ? 8 : 7;
+}
+
+// Bigger groups get fewer swaps, so a swap never repeats another player's task.
+function updateSwapAllowance(game: StoredGame): void {
+  if (!game.packId || game.gameType === 'holiday-challenge') return;
+  game.settings.swapsAllowed = getSwapsAllowed(
+    game.packId,
+    game.players.length,
+    handSize(game.players.length),
+  );
+}
+
+function makeTasks(
+  game: StoredGame,
+  player: StoredPlayer,
+  hand: Array<{ id: string; text: string; tips?: string }>,
+): StoredTask[] {
+  return hand.map((task) => ({
     id: randomUUID(),
     templateId: task.id,
     gameId: game.gameId,
@@ -380,6 +401,7 @@ export async function applyAction(
         throw new GameRuleError('That name is already in use');
       }
       game.players.push(joining);
+      updateSwapAllowance(game);
       changed = true;
       break;
     }
@@ -389,9 +411,15 @@ export async function applyAction(
       requireStatus(game, 'draft');
       const packId = text(body.packId, 'Pack', 32);
       if (!allowedPacks.has(packId)) throw new GameRuleError('Unknown game pack');
+      const maxPlayers = getMaxPlayers(packId);
+      if (game.players.length > maxPlayers) {
+        throw new GameRuleError(`This pack fits up to ${maxPlayers} players`);
+      }
+      game.settings.maxPlayers = maxPlayers;
       game.packId = packId;
       game.gameType = packId === 'holiday-challenge' ? 'holiday-challenge' : 'traditional';
       game.settings.selectedPack = packId as StoredGame['settings']['selectedPack'];
+      updateSwapAllowance(game);
       game.settings.tasksLoaded = false;
       game.challengeCompletions = [];
       game.selectedChallenges = [];
@@ -422,8 +450,12 @@ export async function applyAction(
           player.challengeCompletions = [];
         }
       } else {
-        const count = largeGame ? 8 : 7;
-        for (const player of game.players) player.tasks = makeTasks(game, player, count);
+        updateSwapAllowance(game);
+        const hands = dealTasks(game.packId, game.players.length, handSize(game.players.length));
+        game.players.forEach((player, index) => {
+          player.tasks = makeTasks(game, player, hands[index]);
+          player.swapsLeft = game.settings.swapsAllowed;
+        });
       }
       game.settings.tasksLoaded = true;
       game.status = 'live';
@@ -445,6 +477,7 @@ export async function applyAction(
       const leaving = member(game, identityId);
       if (game.status === 'ended') break;
       game.players = game.players.filter((player) => player.id !== leaving.id);
+      if (game.status === 'draft') updateSwapAllowance(game);
       for (const dispute of game.disputes) {
         if (dispute.result !== 'pending') continue;
         if (dispute.accuserId === leaving.id || dispute.targetId === leaving.id) {
@@ -503,6 +536,10 @@ export async function applyAction(
         text: candidate.text,
         tips: candidate.tips,
       }));
+      // Never hand out a task another player already holds.
+      const takenIds = game.players.flatMap((other) =>
+        other.tasks.map((candidate) => candidate.templateId),
+      );
       const replacement = getReplacementTask(
         game.packId,
         templates,
@@ -511,6 +548,7 @@ export async function applyAction(
           text: task.text,
           tips: task.tips,
         }),
+        takenIds,
       );
       if (!replacement) throw new GameRuleError('No replacement task is available');
       task.templateId = replacement.id;

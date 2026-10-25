@@ -8,7 +8,7 @@ import type { Task, TaskPack, Challenge, HolidayChallengePack } from '../../../s
 // up without giving it away. Keep ids stable — live games store them as
 // `templateId`. Retired ids (do not reuse): v012, v020, v029, p009, p026.
 
-// Category 1: Correction Tasks (13 Tasks)
+// Category 1: Correction Tasks (15 Tasks)
 const coreCorrectTasks: Task[] = [
   {
     id: 'c001',
@@ -74,10 +74,20 @@ const coreCorrectTasks: Task[] = [
     id: 'c013',
     text: 'Get a player to correct you when you call them by the wrong name.',
     tips: 'Call them by a friend\'s or sibling\'s name, the way parents do.'
+  },
+  {
+    id: 'c014',
+    text: 'Get a player to point out something you\'re wearing wrong (inside out, back to front or odd socks).',
+    tips: 'Put your jumper on inside out and act like nothing\'s wrong.'
+  },
+  {
+    id: 'c015',
+    text: 'Get a player to correct you when you point the wrong way to somewhere.',
+    tips: 'Confidently point the wrong way to the toilets, the beach or the car.'
   }
 ];
 
-// Category 2: Verbal & Conversational (33 Tasks)
+// Category 2: Verbal & Conversational (39 Tasks)
 const coreVerbalTasks: Task[] = [
   {
     id: 'v001',
@@ -243,10 +253,40 @@ const coreVerbalTasks: Task[] = [
     id: 'v036',
     text: 'Get a player to argue with you about whether a hot dog is a sandwich.',
     tips: 'State your side as if it\'s obvious and wait for them to bite.'
+  },
+  {
+    id: 'v037',
+    text: 'Get a player to say "best day ever."',
+    tips: 'Ask what the highlight of today was while everyone\'s buzzing.'
+  },
+  {
+    id: 'v038',
+    text: 'Get a player to say "I\'m so full."',
+    tips: 'Offer them one more helping right after a big meal.'
+  },
+  {
+    id: 'v039',
+    text: 'Get a player to wish you happy birthday when it isn\'t your birthday.',
+    tips: 'Mention you\'re "a year older today" and look a bit sad nobody noticed.'
+  },
+  {
+    id: 'v040',
+    text: 'Get a player to say "Let\'s do it!"',
+    tips: 'Pitch a fun spur-of-the-moment plan with lots of energy.'
+  },
+  {
+    id: 'v041',
+    text: 'Get a player to ask you "Are you okay?"',
+    tips: 'Sigh dramatically and stare into the distance.'
+  },
+  {
+    id: 'v042',
+    text: 'Get a player to name your imaginary band.',
+    tips: 'Say you\'re starting a band and can\'t think of a name.'
   }
 ];
 
-// Category 3: Physical & Interactive (33 Tasks)
+// Category 3: Physical & Interactive (39 Tasks)
 const corePhysicalTasks: Task[] = [
   {
     id: 'p001',
@@ -412,10 +452,40 @@ const corePhysicalTasks: Task[] = [
     id: 'p035',
     text: 'Get a player to fix something on you (a tag, your collar or your hair).',
     tips: 'Leave your label sticking out and wait for them to tuck it in.'
+  },
+  {
+    id: 'p036',
+    text: 'Get a player to sit on the floor.',
+    tips: 'Sit on the floor yourself and say it\'s comfier down here.'
+  },
+  {
+    id: 'p037',
+    text: 'Get a player to put on sunglasses indoors.',
+    tips: 'Wear yours inside, complain it\'s bright and offer them a spare pair.'
+  },
+  {
+    id: 'p038',
+    text: 'Get a player to touch their toes.',
+    tips: 'Try to touch your own toes, fail, and ask if they can.'
+  },
+  {
+    id: 'p039',
+    text: 'Get a player to pat their head and rub their tummy at the same time.',
+    tips: 'Try it yourself, get it wrong, and say it\'s impossible.'
+  },
+  {
+    id: 'p040',
+    text: 'Get a player to catch something soft you toss to them.',
+    tips: 'Say "Catch!" as you lob them a napkin or a grape.'
+  },
+  {
+    id: 'p041',
+    text: 'Get a player to help you open something (a jar, bottle or packet).',
+    tips: 'Struggle with a tight lid and look helpless.'
   }
 ];
 
-// Category 4: Funny & Performative (20 Tasks)
+// Category 4: Funny & Performative (24 Tasks)
 const corePerformativeTasks: Task[] = [
   {
     id: 'f001',
@@ -516,10 +586,30 @@ const corePerformativeTasks: Task[] = [
     id: 'f020',
     text: 'Get a player to make up a rhyme about the party or the host.',
     tips: 'Start a rhyme and leave the last line for them.'
+  },
+  {
+    id: 'f021',
+    text: 'Get a player to do a silly walk across the room.',
+    tips: 'Do one yourself and say nobody could ever top it.'
+  },
+  {
+    id: 'f022',
+    text: 'Get a player to play tour guide and describe the room or the view.',
+    tips: 'Say "Give us the tour, then" in your best tourist voice.'
+  },
+  {
+    id: 'f023',
+    text: 'Get a player to play air guitar or air drums.',
+    tips: 'Turn the music up for a big solo and start air-drumming yourself.'
+  },
+  {
+    id: 'f024',
+    text: 'Get a player to strike a superhero pose.',
+    tips: 'Say they\'d make a great superhero and ask how they\'d pose for the poster.'
   }
 ];
 
-// Category 5: Technology & Meta-Game (16 Tasks)
+// Category 5: Technology & Meta-Game (18 Tasks)
 const coreTechnologyTasks: Task[] = [
   {
     id: 't001',
@@ -600,6 +690,16 @@ const coreTechnologyTasks: Task[] = [
     id: 't016',
     text: 'Get a player to set a timer or alarm on their phone.',
     tips: 'Say the food needs ten minutes and you\'ll definitely forget.'
+  },
+  {
+    id: 't017',
+    text: 'Get a player to show you their most-used emoji.',
+    tips: 'Guess their most-used emoji wrong and ask them to prove it.'
+  },
+  {
+    id: 't018',
+    text: 'Get a player to take a panorama photo.',
+    tips: 'Say the view is far too big to fit in one photo.'
   }
 ];
 
@@ -1256,7 +1356,9 @@ export const gamePacks: { [key: string]: TaskPack } = {
     ],
     difficulty: 'medium',
     minPlayers: 2,
-    maxPlayers: 10
+    // Every player gets different tasks: 18 x 8 = 144 of the 150. Swaps shrink
+    // as the group grows (see getSwapsAllowed): 2 up to 15 players, 1 at 16, 0 at 17-18.
+    maxPlayers: 18
   },
   'remote': {
     id: 'remote',
@@ -1265,7 +1367,8 @@ export const gamePacks: { [key: string]: TaskPack } = {
     tasks: remoteTasks,
     difficulty: 'medium',
     minPlayers: 2,
-    maxPlayers: 10
+    // 13 x 8 = 104 of the 109 tasks. Swaps: 2 up to 10 players, 1 at 11-12, 0 at 13.
+    maxPlayers: 13
   }
 };
 
@@ -1302,64 +1405,93 @@ export function getPackTasks(packId: string): Task[] {
   return pack ? pack.tasks : [];
 }
 
-// Get random tasks from a pack with guaranteed 1 bonus task (for Core pack)
-export function getRandomTasks(packId: string, count: number): Task[] {
+// Holiday challenges are shared by everyone, so group size only changes the win target
+const HOLIDAY_MAX_PLAYERS = 20;
+
+// Most players a pack supports
+export function getMaxPlayers(packId: string): number {
+  if (packId === 'holiday-challenge') return HOLIDAY_MAX_PLAYERS;
+  return getPackById(packId)?.maxPlayers ?? 0;
+}
+
+// Largest group any pack supports (the limit before the host picks a pack)
+export const MAX_PLAYERS = Math.max(HOLIDAY_MAX_PLAYERS, ...getAllPacks().map(pack => pack.maxPlayers));
+
+// Core tasks other than the bonus (connection) tasks
+const coreRegularTasks: Task[] = [
+  ...coreCorrectTasks,
+  ...coreVerbalTasks,
+  ...corePhysicalTasks,
+  ...corePerformativeTasks,
+  ...coreTechnologyTasks
+];
+
+// Fisher-Yates shuffle into a new array
+function shuffle<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+// Deal one hand per player so no task appears twice anywhere in the game.
+// Core hands get 1 bonus task each while bonus tasks last.
+export function dealTasks(packId: string, playerCount: number, count: number): Task[][] {
   const pack = getPackById(packId);
   if (!pack || count <= 0) return [];
 
-  if (packId === 'core') {
-    // Core pack logic: always include 1 bonus task
-    const regularTasks = [
-      ...coreCorrectTasks,
-      ...coreVerbalTasks,
-      ...corePhysicalTasks,
-      ...corePerformativeTasks,
-      ...coreTechnologyTasks
-    ];
-    
-    // Always include 1 bonus task
-    const shuffledBonusTasks = [...coreConnectionTasks].sort(() => Math.random() - 0.5);
-    const selectedBonus = shuffledBonusTasks.slice(0, 1);
-    
-    // Fill remaining slots with regular tasks
-    const remainingCount = count - 1;
-    const shuffledRegularTasks = [...regularTasks].sort(() => Math.random() - 0.5);
-    const selectedRegular = shuffledRegularTasks.slice(0, remainingCount);
-    
-    // Combine and shuffle the final selection
-    const finalTasks = [...selectedBonus, ...selectedRegular];
-    return finalTasks.sort(() => Math.random() - 0.5);
-  } else {
-    // Remote pack logic: random selection from all tasks
-    const shuffledTasks = [...pack.tasks].sort(() => Math.random() - 0.5);
-    return shuffledTasks.slice(0, count);
-  }
+  const regularTasks = shuffle(packId === 'core' ? coreRegularTasks : pack.tasks);
+  const bonusTasks = packId === 'core' ? shuffle(coreConnectionTasks) : [];
+
+  return Array.from({ length: playerCount }, () => {
+    const hand = bonusTasks.splice(0, 1);
+    hand.push(...regularTasks.splice(0, count - hand.length));
+    return shuffle(hand);
+  });
 }
 
-// Helper function to get a replacement task for swapping (respects bonus task limit for Core pack)
-export function getReplacementTask(packId: string, currentTasks: Task[], isSwappingBonusTask: boolean): Task | null {
+// Swaps per player (up to `maxSwaps`) that can never run out of tasks nobody
+// holds: the regular tasks left after the deal are shared out evenly, so
+// bigger groups get fewer swaps.
+export function getSwapsAllowed(packId: string, playerCount: number, count: number, maxSwaps = 2): number {
+  const pack = getPackById(packId);
+  if (!pack || playerCount <= 0) return 0;
+
+  const regularCount = packId === 'core' ? coreRegularTasks.length : pack.tasks.length;
+  const bonusDealt = packId === 'core' ? Math.min(playerCount, coreConnectionTasks.length) : 0;
+  const spareRegular = regularCount - (playerCount * count - bonusDealt);
+  return Math.max(0, Math.min(maxSwaps, Math.floor(spareRegular / playerCount)));
+}
+
+// Get random tasks for a single player (with 1 bonus task for Core pack)
+export function getRandomTasks(packId: string, count: number): Task[] {
+  return dealTasks(packId, 1, count)[0] ?? [];
+}
+
+// Helper function to get a replacement task for swapping (respects bonus task limit for Core pack).
+// `takenIds` are tasks other players hold, so a swap never duplicates another player's task.
+export function getReplacementTask(
+  packId: string,
+  currentTasks: Task[],
+  isSwappingBonusTask: boolean,
+  takenIds: string[] = []
+): Task | null {
   const pack = getPackById(packId);
   if (!pack) return null;
 
+  // Tasks this player or anyone else in the game already has
+  const usedTaskIds = [...currentTasks.map(task => task.id), ...takenIds];
+
   if (packId === 'core') {
     // Core pack logic: maintain 1 bonus task rule
-    const regularTasks = [
-      ...coreCorrectTasks,
-      ...coreVerbalTasks,
-      ...corePhysicalTasks,
-      ...corePerformativeTasks,
-      ...coreTechnologyTasks
-    ];
-
     // Check if player currently has a bonus task
     const hasBonusTask = currentTasks.some(task => coreConnectionTasks.some(bonus => bonus.id === task.id));
-    
-    // Get tasks the player doesn't already have
-    const usedTaskIds = currentTasks.map(task => task.id);
-    
+
     if (isSwappingBonusTask) {
       // Swapping away a bonus task - can get any type as replacement
-      const availableRegular = regularTasks.filter(task => !usedTaskIds.includes(task.id));
+      const availableRegular = coreRegularTasks.filter(task => !usedTaskIds.includes(task.id));
       const availableBonus = coreConnectionTasks.filter(task => !usedTaskIds.includes(task.id));
       const allAvailable = [...availableRegular, ...availableBonus];
       
@@ -1369,12 +1501,12 @@ export function getReplacementTask(packId: string, currentTasks: Task[], isSwapp
       // Swapping a regular task
       if (hasBonusTask) {
         // Already has bonus task - only give regular tasks
-        const availableRegular = regularTasks.filter(task => !usedTaskIds.includes(task.id));
+        const availableRegular = coreRegularTasks.filter(task => !usedTaskIds.includes(task.id));
         if (availableRegular.length === 0) return null;
         return availableRegular[Math.floor(Math.random() * availableRegular.length)];
       } else {
         // No bonus task yet - can give any type (but prefer regular to maintain 1 bonus rule)
-        const availableRegular = regularTasks.filter(task => !usedTaskIds.includes(task.id));
+        const availableRegular = coreRegularTasks.filter(task => !usedTaskIds.includes(task.id));
         if (availableRegular.length === 0) {
           // Only bonus tasks left
           const availableBonus = coreConnectionTasks.filter(task => !usedTaskIds.includes(task.id));
@@ -1386,7 +1518,6 @@ export function getReplacementTask(packId: string, currentTasks: Task[], isSwapp
     }
   } else {
     // Remote pack logic: simple random replacement
-    const usedTaskIds = currentTasks.map(task => task.id);
     const availableTasks = pack.tasks.filter(task => !usedTaskIds.includes(task.id));
     
     if (availableTasks.length === 0) return null;
