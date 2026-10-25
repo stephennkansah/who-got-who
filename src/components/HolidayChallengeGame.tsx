@@ -95,7 +95,7 @@ export default function HolidayChallengeGame() {
       if (!sessionStorage.getItem(key)) {
         sessionStorage.setItem(key, '1');
         setShowIntro(true);
-        NotificationService.notifyIfHidden('The game has started', 'Your challenges are in — open the game to see them.', 'game-started');
+        NotificationService.notifyIfHidden('The game has started', 'Your challenges are in — open the game to see them.', `game-started-${gameId}`);
       }
     }
   }, [currentGame?.status, currentPlayer, gameId]);

@@ -7,6 +7,7 @@ import {
   getReplacementTask,
   isBonusTask,
 } from './packs';
+import { parsePushSubscription, type PushSubscriptionKeys } from './webpush';
 
 export type GameActionName =
   | 'JOIN'
@@ -29,7 +30,8 @@ export type GameActionName =
   | 'PAUSE'
   | 'RESUME'
   | 'SET_READY'
-  | 'TRANSFER_HOST';
+  | 'TRANSFER_HOST'
+  | 'SAVE_PUSH';
 
 /** Minutes between dealing missions and opening gotchas that a host may choose. */
 export const BRIEFING_OPTIONS = [0, 5, 10, 15, 30];
@@ -89,6 +91,8 @@ export type StoredPlayer = {
   avatarType?: 'emoji' | 'photo';
   challengeScore?: number;
   challengeCompletions?: string[];
+  /** This player's phone, for buzzes while it is locked. Never sent to other players. */
+  push?: PushSubscriptionKeys;
 };
 
 export type StoredDispute = {
@@ -901,6 +905,27 @@ export async function applyAction(
       break;
     }
 
+    case 'SAVE_PUSH': {
+      const player = member(game, identityId);
+      if (body.subscription == null) {
+        if (!player.push) break;
+        delete player.push;
+      } else {
+        const subscription = parsePushSubscription(body.subscription);
+        if (!subscription) throw new GameRuleError('Notifications from this browser are not supported');
+        if (
+          player.push?.endpoint === subscription.endpoint &&
+          player.push.p256dh === subscription.p256dh &&
+          player.push.auth === subscription.auth
+        ) {
+          break;
+        }
+        player.push = subscription;
+      }
+      changed = true;
+      break;
+    }
+
     default:
       throw new GameRuleError('Unknown game action');
   }
@@ -937,7 +962,7 @@ export async function projectGameView(
         player.avatarType === 'photo' && player.avatar
           ? await mediaUrl(player.avatar)
           : player.avatar;
-      const { identityId: _identityId, ...safePlayer } = player;
+      const { identityId: _identityId, push: _push, ...safePlayer } = player;
       return {
         ...safePlayer,
         avatar,

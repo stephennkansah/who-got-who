@@ -17,12 +17,15 @@ import {
   uploadPrivateImage,
 } from '../services/aws';
 import { serverNow, syncServerClock } from '../utils/serverClock';
+import { currentPushSubscription, PUSH_PERMISSION_EVENT } from '../services/pushService';
 
 type GameViewPayload = {
   game: Game;
   currentPlayer: Player;
   activeDisputes?: GameState['activeDisputes'];
   serverTime?: string;
+  /** The server's public push key, for subscribing this phone. */
+  pushKey?: string;
 };
 
 type AwsGameAction =
@@ -154,6 +157,7 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const stateRef = useRef(state);
   const revisionRef = useRef(0);
+  const [pushKey, setPushKey] = useState<string>();
 
   useEffect(() => {
     stateRef.current = state;
@@ -168,6 +172,7 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
     if (response.errors?.length || !response.data) throw dataError(response.errors);
     const view = reviveView(response.data.payload);
     revisionRef.current = response.data.revision || revisionRef.current;
+    if (view.pushKey) setPushKey(view.pushKey);
     dispatch({ type: 'VIEW', value: view });
     return view;
   }, []);
@@ -489,6 +494,36 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
       unsubscribe?.();
     };
   }, [state.currentGame?.id, state.isConnected, subscriptionAttempt, syncGame]);
+
+  // Give the server this phone's push subscription once per game (and again if it changes),
+  // so claims and votes reach the player even with the phone locked.
+  const [pushPermission, setPushPermission] = useState(0);
+  useEffect(() => {
+    const onGranted = () => setPushPermission((n) => n + 1);
+    window.addEventListener(PUSH_PERMISSION_EVENT, onGranted);
+    return () => window.removeEventListener(PUSH_PERMISSION_EVENT, onGranted);
+  }, []);
+  const pushGameId = state.currentGame?.status === 'ended' ? undefined : state.currentGame?.id;
+  const pushPlayerId = state.currentPlayer?.id;
+  useEffect(() => {
+    if (!pushGameId || !pushPlayerId || !pushKey) return undefined;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const subscription = await currentPushSubscription(pushKey);
+        if (cancelled || !subscription?.endpoint) return;
+        const savedKey = `wgw-push:${pushGameId}:${pushPlayerId}`;
+        if (localStorage.getItem(savedKey) === subscription.endpoint) return;
+        await sendAction('SAVE_PUSH', { subscription }, pushGameId, false);
+        localStorage.setItem(savedKey, subscription.endpoint);
+      } catch {
+        // Push is a bonus: in-app buzzes still work without it.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pushGameId, pushPlayerId, pushKey, pushPermission, sendAction]);
 
   // Phones sleep mid-party: resync the moment the app is visible or back online.
   useEffect(() => {

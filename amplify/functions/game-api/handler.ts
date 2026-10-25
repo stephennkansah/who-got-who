@@ -20,6 +20,8 @@ import {
   type GameActionName,
   type StoredGame,
 } from './domain';
+import { pushMessages } from './push';
+import { generateVapidKeys, sendWebPush, type VapidKeys } from './webpush';
 
 type ResolverArguments = {
   action?: string;
@@ -170,6 +172,70 @@ async function proofExists(key: string): Promise<boolean> {
   }
 }
 
+/** Not a valid game code, so no client can ever read this row. It has no TTL. */
+const VAPID_ROW = '#vapid-keys';
+const VAPID_SUBJECT = 'https://whogotwho.club';
+let vapidKeysPromise: Promise<VapidKeys> | null = null;
+
+/** The app's push sender keys: made once on first use and kept in the game table. */
+function vapidKeys(): Promise<VapidKeys> {
+  if (!vapidKeysPromise) {
+    vapidKeysPromise = (async () => {
+      const read = async () =>
+        (await dynamo.send(new GetCommand({ TableName: tableName, Key: { gameId: VAPID_ROW }, ConsistentRead: true })))
+          .Item as (VapidKeys & { gameId: string }) | undefined;
+      const existing = await read();
+      if (existing?.publicKey && existing.privateKey) return existing;
+      const created = generateVapidKeys();
+      try {
+        await dynamo.send(
+          new PutCommand({
+            TableName: tableName,
+            Item: { gameId: VAPID_ROW, ...created },
+            ConditionExpression: 'attribute_not_exists(gameId)',
+          }),
+        );
+        return created;
+      } catch (error) {
+        if (!(error instanceof ConditionalCheckFailedException)) throw error;
+        const winner = await read(); // another Lambda made them first
+        if (!winner) throw error;
+        return winner;
+      }
+    })().catch((error) => {
+      vapidKeysPromise = null;
+      throw error;
+    });
+  }
+  return vapidKeysPromise;
+}
+
+/** Buzzes the phones this change concerns. Never fails the action that caused it. */
+async function deliverPushes(before: StoredGame, after: StoredGame): Promise<void> {
+  try {
+    const messages = pushMessages(before, after).filter(
+      (message) => after.players.find((player) => player.id === message.playerId)?.push,
+    );
+    if (!messages.length) return;
+    const keys = await vapidKeys();
+    const results = await Promise.allSettled(
+      messages.map(({ playerId, title, body, tag, ttlSeconds, urgency }) =>
+        sendWebPush(
+          after.players.find((player) => player.id === playerId)!.push!,
+          { title, body, tag, gameId: after.gameId },
+          keys,
+          VAPID_SUBJECT,
+          { ttlSeconds, urgency },
+        ),
+      ),
+    );
+    const failed = results.filter((result) => result.status === 'rejected' || result.value >= 400).length;
+    if (failed) console.warn('Some push notifications were not delivered', { failed, total: results.length });
+  } catch (error) {
+    console.error('Push notifications failed', { errorName: error instanceof Error ? error.name : 'UnknownError' });
+  }
+}
+
 async function mutate(
   id: string,
   action: GameActionName,
@@ -210,6 +276,7 @@ async function mutate(
             ExpressionAttributeValues: { ':revision': existing.revision },
           }),
         );
+        await deliverPushes(existing, result.game);
       }
       return { gameId: id, revision: result.game.revision };
     } catch (error) {
@@ -265,7 +332,10 @@ export const handler: AppSyncResolverHandler<ResolverArguments, unknown> = async
       await enforceRateLimit(ownerIdentity, 'read', 180, 60);
       const id = gameCode(event.arguments.gameId);
       const game = await getStoredGame(id);
-      return projectGameView(game, ownerIdentity, mediaUrl);
+      const view = await projectGameView(game, ownerIdentity, mediaUrl);
+      // Phones need the public sender key to subscribe; play goes on without it.
+      const pushKey = await vapidKeys().then((keys) => keys.publicKey).catch(() => undefined);
+      return { ...view, payload: { ...(view.payload as Record<string, unknown>), pushKey } };
     }
 
     if (operation !== 'gameAction') throw new GameRuleError('Unknown operation');

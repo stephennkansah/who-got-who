@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import NotificationService from '../services/notificationService';
+import { PUSH_PERMISSION_EVENT } from '../services/pushService';
 
 interface NotificationPromptProps {
   onPermissionGranted?: () => void;
@@ -31,6 +32,7 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
     if (granted) {
       setPermission('granted');
       onPermissionGranted?.();
+      window.dispatchEvent(new Event(PUSH_PERMISSION_EVENT));
       // Test notification
       NotificationService.showNotification(
         'Notifications on',
@@ -85,8 +87,8 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
         fontSize: '0.88em',
         lineHeight: 1.45
       }}>
-        Get a buzz when someone claims a gotcha on you, so you never miss the 2-minute
-        window to dispute — works while the game is open in the background.
+        Get a buzz when someone claims a gotcha on you or the group needs your vote,
+        even with your phone locked.
       </p>
       <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
         <button

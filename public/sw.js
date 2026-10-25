@@ -19,6 +19,32 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// A push from the game server: a claim on you, a vote, your claim decided, start or end.
+// Every push must show a notification (iPhones revoke push otherwise). If the player is
+// looking at the game it shows silently. If the page already showed this event (same tag),
+// the replacement doesn't buzz again.
+self.addEventListener('push', (event) => {
+  let message = {};
+  try {
+    message = event.data ? event.data.json() : {};
+  } catch {
+    message = { body: event.data ? event.data.text() : '' };
+  }
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const watching = clients.some((client) => client.visibilityState === 'visible' && client.focused);
+      return self.registration.showNotification(message.title || 'Who Got Who', {
+        body: message.body || 'Something happened in your game.',
+        tag: message.tag || 'feed',
+        renotify: false,
+        silent: watching,
+        icon: '/logo192.png',
+        badge: '/logo192.png',
+      });
+    }),
+  );
+});
+
 // Tapping a game notification brings the open game back to the front.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();

@@ -40,7 +40,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "typecheck": "tsc --noEmit",
-    "backend:check": "tsx amplify/functions/game-api/domain.test.ts",
+    "backend:check": "tsx amplify/functions/game-api/domain.test.ts && tsx amplify/functions/game-api/push.test.ts && tsx amplify/functions/game-api/webpush.test.ts",
     "sandbox": "ampx sandbox --outputs-out-dir public",
     "sandbox:delete": "ampx sandbox delete",
     "eject": "react-scripts eject"

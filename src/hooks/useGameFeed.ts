@@ -66,7 +66,7 @@ export function useGameFeed(onMyClaimResolved?: (outcome: ClaimOutcome) => void)
 
     const announce = (message: string) => {
       showToast(message, 'info');
-      NotificationService.notifyIfHidden('Who Got Who', message, 'feed');
+      NotificationService.notifyIfHidden('Who Got Who', message, 'feed', true);
     };
 
     // The host already knows they paused; everyone else gets told.
@@ -135,7 +135,7 @@ export function useGameFeed(onMyClaimResolved?: (outcome: ClaimOutcome) => void)
         winner && winner.score >= target
           ? `${winner.id === me.id ? 'You win' : `${winner.name} wins`} with ${winner.score} points — see the results.`
           : 'The host ended the game — see the results.',
-        'game-over',
+        `game-over-${game.id}`,
       );
     }
   }, [game, me, state.activeDisputes]);

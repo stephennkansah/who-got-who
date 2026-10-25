@@ -126,6 +126,6 @@ describe('useGameFeed notifications', () => {
   it('tells everyone when the game ends', () => {
     const update = renderFeed(stateFor(game('live', players), 'voter'));
     update(stateFor(game('ended', [player('host', 6), player('target'), player('voter')]), 'voter'));
-    expect(notify).toHaveBeenCalledWith('Game over', expect.stringContaining('HOST wins with 6 points'), 'game-over');
+    expect(notify).toHaveBeenCalledWith('Game over', expect.stringContaining('HOST wins with 6 points'), 'game-over-GAME23');
   });
 });

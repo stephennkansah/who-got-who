@@ -167,7 +167,7 @@ export default function Game() {
       if (!sessionStorage.getItem(key)) {
         sessionStorage.setItem(key, '1');
         setShowIntro(true);
-        NotificationService.notifyIfHidden('The game has started', 'Your missions are in — open the game to read them.', 'game-started');
+        NotificationService.notifyIfHidden('The game has started', 'Your missions are in — open the game to read them.', `game-started-${gameId}`);
       }
     }
   }, [currentGame?.status, currentPlayer, gameId]);
