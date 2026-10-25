@@ -14,6 +14,7 @@ import { LeaderboardWidget } from './game/LeaderboardWidget';
 import PhaseBanner from './game/PhaseBanner';
 import HostMenu from './game/HostMenu';
 import { useGamePhase } from '../hooks/useGamePhase';
+import NotificationService from '../services/notificationService';
 
 export default function HolidayChallengeGame() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -23,6 +24,7 @@ export default function HolidayChallengeGame() {
   const [showHostMenu, setShowHostMenu] = useState(false);
   const sawLive = useRef(false);
   const phase = useGamePhase(state.currentGame);
+  const wasBriefing = useRef(phase.briefing);
   useGameFeed();
 
   const hostAction = (action: () => Promise<void>) => async () => {
@@ -91,9 +93,20 @@ export default function HolidayChallengeGame() {
       if (!sessionStorage.getItem(key)) {
         sessionStorage.setItem(key, '1');
         setShowIntro(true);
+        NotificationService.notifyIfHidden('The game has started', 'Your challenges are in — open the game to see them.', 'game-started');
       }
     }
   }, [currentGame?.status, currentPlayer, gameId]);
+
+  // The settling-in clock just hit zero: everyone hears the starting gun.
+  useEffect(() => {
+    if (wasBriefing.current && !phase.briefing && !phase.paused && currentGame?.status === 'live') {
+      navigator.vibrate?.([150, 80, 150]);
+      showToast('Challenges are open — go!', 'success');
+      NotificationService.notifyIfHidden('Challenges are open!', 'The briefing is over — go get them.', 'claims-open');
+    }
+    wasBriefing.current = phase.briefing;
+  }, [phase.briefing, phase.paused, currentGame?.status]);
 
   if (!currentGame || !currentPlayer) {
     return <LoadingScreen message="loading the challenge…" showBack />;

@@ -18,7 +18,8 @@ export class NotificationService {
   /** Shows a notification only when the app is in the background. */
   static notifyIfHidden(title: string, body: string, tag: string): void {
     if (document.visibilityState === 'visible') return;
-    this.showNotification(title, { body, tag });
+    // Without renotify, a newer notification with the same tag replaces the old one silently.
+    this.showNotification(title, { body, tag, renotify: true });
   }
 
   static showNotification(title: string, options?: NotificationOptions): void {

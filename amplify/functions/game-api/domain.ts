@@ -697,15 +697,18 @@ export async function applyAction(
     }
 
     case 'ACCEPT_GOTCHA': {
-      requireStatus(game, 'live');
       const target = member(game, identityId);
       const taskId = text(body.taskId, 'Task', 64);
-      const dispute = game.disputes.find(
-        (candidate) =>
-          candidate.taskInstanceId === taskId &&
-          candidate.targetId === target.id &&
-          candidate.phase === 'response' &&
-          candidate.result === 'pending',
+      const claims = game.disputes.filter(
+        (candidate) => candidate.taskInstanceId === taskId && candidate.targetId === target.id,
+      );
+      // The timer ran out (or another tap landed) first: the claim already stands.
+      if (claims.some((candidate) => candidate.phase === 'response' && candidate.result === 'upheld')) {
+        break;
+      }
+      requireStatus(game, 'live');
+      const dispute = claims.find(
+        (candidate) => candidate.phase === 'response' && candidate.result === 'pending',
       );
       if (!dispute) throw new GameRuleError('Pending claim not found');
       awardGotcha(game, dispute);

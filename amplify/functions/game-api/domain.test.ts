@@ -118,6 +118,25 @@ async function run() {
   }
 
   {
+    // The target's auto-accept lands just after the response timer: no error, and it still counts.
+    let game = await liveGame(['late-accept-host', 'late-accept-target']);
+    const task = game.players[0].tasks[0];
+    game.players[0].score = 3;
+    game = await action(game, 'CLAIM_GOTCHA', 'late-accept-host', {
+      taskId: task.id,
+      targetId: game.players[1].id,
+      outcome: 'success',
+    });
+    const justAfter = new Date(new Date(game.disputes[0].closesAt).getTime() + 1000);
+    game = await actionAt(justAfter, game, 'ACCEPT_GOTCHA', 'late-accept-target', { taskId: task.id });
+    assert.equal(game.disputes[0].result, 'upheld');
+    assert.equal(game.players[0].score, 4.5);
+    assert.equal(game.status, 'ended', 'the expired claim can still win the game');
+    game = await actionAt(justAfter, game, 'ACCEPT_GOTCHA', 'late-accept-target', { taskId: task.id });
+    assert.equal(game.players[0].score, 4.5, 'a second tap does not score twice');
+  }
+
+  {
     const identities = ['holiday-host', 'holiday-two', 'holiday-three', 'holiday-four'];
     let game = createGame('HOL234', identities[0], playerPayload('Host'), nextRequest());
     for (let index = 1; index < identities.length; index += 1) {

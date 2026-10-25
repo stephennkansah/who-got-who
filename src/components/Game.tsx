@@ -165,6 +165,7 @@ export default function Game() {
       if (!sessionStorage.getItem(key)) {
         sessionStorage.setItem(key, '1');
         setShowIntro(true);
+        NotificationService.notifyIfHidden('The game has started', 'Your missions are in — open the game to read them.', 'game-started');
       }
     }
   }, [currentGame?.status, currentPlayer, gameId]);
@@ -365,6 +366,7 @@ export default function Game() {
 
       {responseClaim && (
         <DisputeModal
+          key={responseClaim.id}
           dispute={responseClaim}
           accuserName={nameOf(responseClaim.accuserId)}
           canDispute={currentGame.players.length > 2}

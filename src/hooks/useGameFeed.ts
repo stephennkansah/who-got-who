@@ -11,9 +11,11 @@ export interface ClaimOutcome {
 
 interface Snapshot {
   gameId: string;
+  status: string;
   tasks: Map<string, string>;
   completions: Set<string>;
   claimsOnMe: Set<string>;
+  votesForMe: Set<string>;
   myScore: number;
   paused: boolean;
 }
@@ -36,11 +38,23 @@ export function useGameFeed(onMyClaimResolved?: (outcome: ClaimOutcome) => void)
     const nameOf = (id?: string) => game.players.find((player) => player.id === id)?.name || 'someone';
     const snapshot: Snapshot = {
       gameId: game.id,
+      status: game.status,
       tasks: new Map(game.players.flatMap((player) => player.tasks.map((task) => [task.id, task.status]))),
       completions: new Set((game.challengeCompletions || []).map((completion) => completion.id)),
       claimsOnMe: new Set(
         state.activeDisputes
           .filter((dispute) => dispute.targetId === me.id && dispute.phase === 'response')
+          .map((dispute) => dispute.id),
+      ),
+      votesForMe: new Set(
+        state.activeDisputes
+          .filter(
+            (dispute) =>
+              dispute.phase === 'voting' &&
+              dispute.accuserId !== me.id &&
+              dispute.targetId !== me.id &&
+              !dispute.votes.some((vote) => vote.voterId === me.id),
+          )
           .map((dispute) => dispute.id),
       ),
       myScore: me.score,
@@ -99,6 +113,29 @@ export function useGameFeed(onMyClaimResolved?: (outcome: ClaimOutcome) => void)
         'Gotcha claimed!',
         `${nameOf(dispute.accuserId)} says they got you — open the game to accept or dispute.`,
         `claim-${dispute.id}`,
+      );
+    }
+
+    for (const dispute of state.activeDisputes) {
+      if (!snapshot.votesForMe.has(dispute.id) || before.votesForMe.has(dispute.id)) continue;
+      navigator.vibrate?.([120, 60, 120]);
+      NotificationService.notifyIfHidden(
+        'Your vote is needed',
+        `${nameOf(dispute.targetId)} disputes ${nameOf(dispute.accuserId)}'s gotcha — open the game to vote.`,
+        `vote-${dispute.id}`,
+      );
+    }
+
+    if (before.status === 'live' && snapshot.status === 'ended') {
+      const holiday = game.gameType === 'holiday-challenge';
+      const target = holiday ? game.settings.holidayChallengeWinCondition || 18 : game.settings.targetScore;
+      const winner = [...game.players].sort((a, b) => b.score - a.score)[0];
+      NotificationService.notifyIfHidden(
+        'Game over',
+        winner && winner.score >= target
+          ? `${winner.id === me.id ? 'You win' : `${winner.name} wins`} with ${winner.score} points — see the results.`
+          : 'The host ended the game — see the results.',
+        'game-over',
       );
     }
   }, [game, me, state.activeDisputes]);
