@@ -1,0 +1,47 @@
+name: iOS store screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      check_run_id:
+        description: Successful iPhone app check run containing the simulator artifact
+        required: true
+        type: string
+        default: '40237396424'
+      artifact_name:
+        description: Simulator artifact name from that run
+        required: true
+        type: string
+        default: ios-check-1
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  screenshots:
+    runs-on: macos-15
+    timeout-minutes: 35
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          run-id: ${{ inputs.check_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/ios-check
+      - name: Capture iPhone and iPad with fictional game data
+        run: bash scripts/ios-store-screenshots.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-store-screenshots
+          path: ${{ runner.temp }}/store-screenshots/
+          retention-days: 30
