@@ -6,6 +6,7 @@ import ResultsShare from './ResultsShare';
 import PlayerAvatar from './PlayerAvatar';
 import LoadingScreen from './common/LoadingScreen';
 import BrandMark from './common/BrandMark';
+import Mascot from './common/Mascot';
 import PhotoAlbum from './PhotoAlbum';
 
 const CONFETTI_COLORS = ['#e5484d', '#e8b554', '#3f9b5b', '#efe5c6', '#d13c41', '#c9ac68'];
@@ -252,7 +253,9 @@ export default function Recap() {
         padding: '1.75rem 1.25rem 1.5rem',
         marginBottom: '0.9rem',
       }}>
-        <BrandMark size={64} alt="Who Got Who" className="brand-mark-centered" />
+        {isHoliday
+          ? <BrandMark size={64} alt="Who Got Who" className="brand-mark-centered" />
+          : <Mascot pose="happy" size={112} className="mascot-centered" />}
         <div className="type" style={{
           fontSize: '0.76rem',
           letterSpacing: '0.18em',

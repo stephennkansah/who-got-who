@@ -2,6 +2,7 @@ import React from 'react';
 import { Player } from '../types';
 import PlayerAvatar from './PlayerAvatar';
 import Modal from './common/Modal';
+import Mascot from './common/Mascot';
 
 interface TargetSelectModalProps {
   isOpen: boolean;
@@ -31,7 +32,10 @@ export default function TargetSelectModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} labelledBy="target-select-title">
       <div style={{ marginBottom: '1.25rem', textAlign: 'center' }}>
-        <h2 id="target-select-title" style={{ marginBottom: '0.8rem' }}>{title}</h2>
+        <div className="mascot-dialog-heading">
+          <Mascot pose={isReverse ? 'caught' : 'sneaky'} size={56} />
+          <h2 id="target-select-title">{title}</h2>
+        </div>
         <div style={{
           background: 'rgba(0, 0, 0, 0.05)',
           padding: '0.85rem 1rem',

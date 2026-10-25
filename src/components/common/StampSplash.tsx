@@ -1,11 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import Mascot, { MascotPose } from './Mascot';
 
 interface StampSplashProps {
   title: string;
   subtitle?: string;
   tone?: 'success' | 'danger' | 'amber';
   durationMs?: number;
+  mascot?: MascotPose;
   onDone: () => void;
 }
 
@@ -19,6 +21,7 @@ export default function StampSplash({
   subtitle,
   tone = 'success',
   durationMs = 1600,
+  mascot,
   onDone,
 }: StampSplashProps) {
   const onDoneRef = useRef(onDone);
@@ -33,6 +36,7 @@ export default function StampSplash({
 
   return ReactDOM.createPortal(
     <div className="slam-overlay" onClick={() => onDoneRef.current()} role="status" aria-live="assertive">
+      {mascot && <Mascot pose={mascot} size={176} className="mascot-splash" />}
       <div className={`slam-stamp ${tone}`}>{title}</div>
       {subtitle && <div className="slam-sub">{subtitle}</div>}
     </div>,

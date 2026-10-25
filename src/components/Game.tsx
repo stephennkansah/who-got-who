@@ -22,8 +22,9 @@ import RulesSheet from './game/RulesSheet';
 import { ConfirmationModal } from './common/ConfirmationModal';
 import StampSplash from './common/StampSplash';
 import LoadingScreen from './common/LoadingScreen';
+import { MascotPose } from './common/Mascot';
 
-type Slam = { title: string; subtitle?: string; tone: 'success' | 'danger' | 'amber'; durationMs?: number };
+type Slam = { title: string; subtitle?: string; tone: 'success' | 'danger' | 'amber'; mascot: MascotPose; durationMs?: number };
 
 /** Shown to the target while the group decides on their dispute. */
 function JuryBanner({ accuserName, closesAt, pausedAt }: { accuserName: string; closesAt: Date; pausedAt?: string }) {
@@ -106,11 +107,13 @@ export default function Game() {
                 ? `gotcha on ${outcome.targetName} confirmed — first-time bonus included`
                 : `gotcha on ${outcome.targetName} confirmed`,
               tone: 'success',
+              mascot: 'happy',
             }
           : {
               title: 'Overturned',
               subtitle: `the group sided with ${outcome.targetName}`,
               tone: 'danger',
+              mascot: 'caught',
             },
       );
     }, []),
@@ -157,6 +160,7 @@ export default function Game() {
       title: !reached ? 'Case Closed' : winner.id === currentPlayer?.id ? 'You Win' : `${winner.name} Wins`,
       subtitle: reached ? `${winner.score} points — the debrief is in` : 'the host ended the game',
       tone: reached && winner.id === currentPlayer?.id ? 'success' : 'amber',
+      mascot: 'happy',
       durationMs: 2400,
     });
   }, [currentGame, currentPlayer?.id, navigate, targetScore]);
@@ -177,7 +181,7 @@ export default function Game() {
   useEffect(() => {
     if (wasBriefing.current && !phase.briefing && !phase.paused && currentGame?.status === 'live') {
       navigator.vibrate?.([150, 80, 150]);
-      setSlam({ title: 'Gotchas Open', subtitle: 'the briefing is over — happy hunting', tone: 'success' });
+      setSlam({ title: 'Gotchas Open', subtitle: 'the briefing is over — happy hunting', tone: 'success', mascot: 'mission' });
       NotificationService.notifyIfHidden('Gotchas are open!', 'The briefing is over — go get them.', 'claims-open');
     }
     wasBriefing.current = phase.briefing;
@@ -226,12 +230,19 @@ export default function Game() {
     try {
       if (result === 'failed') {
         await claimGotcha(task.id, `caught:${targetId}`);
+        setSlam({
+          title: 'You Got Caught',
+          subtitle: `${nameOf(targetId)} spotted you — try another mission`,
+          tone: 'danger',
+          mascot: 'caught',
+        });
       } else {
         await claimGotcha(task.id, targetId);
         setSlam({
           title: 'Gotcha!',
           subtitle: `claim filed on ${nameOf(targetId)} — waiting for their call`,
           tone: 'success',
+          mascot: 'sneaky',
         });
       }
     } catch {
@@ -288,6 +299,7 @@ export default function Game() {
         currentPlayer={currentPlayer}
         playerCount={currentGame.players.length}
         targetScore={targetScore}
+        briefing={phase.briefing}
         onOpenHostMenu={() => setShowHostMenu(true)}
         onLeaveGame={handleLeaveGame}
         onShowLeaderboard={() => setShowLeaderboard(true)}
@@ -404,6 +416,7 @@ export default function Game() {
             ? 'read up and settle in — gotchas open when the clock runs out'
             : `case file ${currentGame.id} · trust no one`}
           tone="amber"
+          mascot="mission"
           durationMs={1900}
           onDone={() => setShowIntro(false)}
         />
@@ -411,9 +424,11 @@ export default function Game() {
 
       {slam && !finale && (
         <StampSplash
+          key={`${slam.title}-${slam.subtitle}`}
           title={slam.title}
           subtitle={slam.subtitle}
           tone={slam.tone}
+          mascot={slam.mascot}
           onDone={() => setSlam(null)}
         />
       )}
@@ -423,6 +438,7 @@ export default function Game() {
           title={finale.title}
           subtitle={finale.subtitle}
           tone={finale.tone}
+          mascot={finale.mascot}
           durationMs={finale.durationMs}
           onDone={() => navigate(`/recap/${currentGame.id}`, { replace: true })}
         />

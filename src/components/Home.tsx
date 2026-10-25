@@ -9,8 +9,19 @@ import Modal from './common/Modal';
 import { showToast } from './common/Toast';
 import LoadingScreen from './common/LoadingScreen';
 import BrandMark from './common/BrandMark';
+import { useBackToClose } from '../hooks/useBackToClose';
+import './Home.css';
 
 const PROFILE_KEY = 'wgw-profile';
+const WELCOME_SEEN_KEY = 'wgw-welcome-seen';
+
+function welcomeSeen(): boolean {
+  try {
+    return localStorage.getItem(WELCOME_SEEN_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
 
 // avatarChosen: only an avatar the player actually picked is remembered and shown again.
 type Profile = { name: string; avatar: string; avatarType: 'emoji' | 'photo'; avatarChosen?: boolean };
@@ -69,12 +80,28 @@ function Home() {
   const [avatarType, setAvatarType] = useState<'emoji' | 'photo'>(
     profile?.avatarChosen ? profile.avatarType : 'emoji',
   );
-  const [mode, setMode] = useState<'join' | 'welcome'>(requestedCode ? 'join' : 'welcome');
   const [showBriefing, setShowBriefing] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
   // A game that was already open when Home appeared is offered back, never left silently.
   const gameOnArrival = useRef(state.isLoading ? null : state.currentGame?.id ?? null);
+
+  // New players see one friendly screen explaining the game before being asked anything.
+  const [screen, setScreen] = useState<'welcome' | 'setup'>(() =>
+    gameOnArrival.current || welcomeSeen() ? 'setup' : 'welcome',
+  );
+  const [cameFromWelcome, setCameFromWelcome] = useState(false);
+  const goToSetup = () => {
+    try {
+      localStorage.setItem(WELCOME_SEEN_KEY, 'true');
+    } catch {
+      // Private mode: they'll just see the welcome again next time.
+    }
+    setCameFromWelcome(true);
+    setScreen('setup');
+  };
+  // The phone's back button on the second screen returns to the welcome.
+  useBackToClose(screen === 'setup' && cameFromWelcome, () => setScreen('welcome'));
   const activeGame = state.currentGame && state.currentGame.status !== 'ended' ? state.currentGame : null;
   const showRejoin = !!activeGame && activeGame.id === gameOnArrival.current;
 
@@ -161,41 +188,81 @@ function Home() {
   };
 
   if (state.isLoading && !state.currentGame) {
-    return <LoadingScreen message="establishing secure channel…" />;
+    return <LoadingScreen message="getting things ready…" />;
   }
 
+  // ---------- Screen 1: what is this? ----------
+  if (screen === 'welcome') {
+    return (
+      <div className="container home-welcome">
+        <div className="home-welcome-body">
+          <BrandMark size={68} className="brand-mark-centered" />
+          <h1 className="home-title">Who Got Who</h1>
+          <p className="home-line">
+            The party game where everyone gets secret missions to pull off on each other, without getting caught.
+          </p>
+
+          {/* A made-up example (never a real mission), so it can't spoil anyone's hand. */}
+          <div className="paper-card home-example">
+            <div className="home-example-label">Example mission</div>
+            <div className="home-example-mission">
+              “Get someone to pick up something you dropped and hand it back to you.”
+            </div>
+            <ol className="home-example-steps">
+              <li>You knock your keys off the table.</li>
+              <li>A friend hands them back to you.</li>
+              <li>Say <strong>“Gotcha!”</strong> That's a point to you.</li>
+            </ol>
+          </div>
+        </div>
+
+        <div className="home-welcome-actions">
+          <p className="home-note">Free · no download or sign-up needed</p>
+          <button className="btn btn-primary home-cta" onClick={goToSetup}>
+            {requestedCode ? `Join Game ${requestedCode}` : "Let's Play"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- Screen 2: who are you, and which game? ----------
+  const invited = !!requestedCode;
+  const canJoin = gameId.length === 6 && !!playerName.trim() && !state.isLoading;
+  const codeInput = (
+    <input
+      aria-label="Game code"
+      type="text"
+      className="type home-code"
+      placeholder="CODE"
+      value={gameId}
+      onChange={(e) => setGameId(extractCode(e.target.value))}
+      autoCapitalize="characters"
+      autoComplete="off"
+      autoCorrect="off"
+      spellCheck={false}
+      enterKeyHint="go"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && canJoin) void handleJoinGame();
+      }}
+    />
+  );
+
   return (
-    <div className="container" style={{ justifyContent: 'space-between', textAlign: 'center' }}>
-      {/* Masthead */}
-      <header className="home-masthead">
-        <BrandMark size={104} className="brand-mark-centered" />
-        <div className="overline" style={{ marginBottom: '0.7rem' }}>
-          Classified · Party Ops
-        </div>
-        <h1 style={{ fontSize: 'clamp(3.5rem, 20vw, 5rem)', marginBottom: '0.5rem' }}>
-          Who<br />Got Who
-        </h1>
-        <p className="type" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          secret tasks. stealth claims.<br />plausible deniability.
-        </p>
-        <div
-          className="stamp danger"
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: 'calc(2vh + 135px)',
-            right: '2px',
-            fontSize: '0.82rem',
-            opacity: 0.9,
-            transform: 'rotate(10deg)',
-          }}
-        >
-          Top Secret
-        </div>
+    <div className="container home-setup">
+      <button
+        className="link-btn home-back"
+        onClick={() => (cameFromWelcome ? navigate(-1) : setScreen('welcome'))}
+      >
+        {cameFromWelcome ? '← Back' : "← What's this game?"}
+      </button>
+
+      <header className="home-setup-head">
+        <BrandMark size={56} className="brand-mark-centered" />
+        <h1 className="home-title small">Who Got Who</h1>
       </header>
 
-      {/* Action zone */}
-      <div style={{ margin: '2rem 0' }}>
+      <div className="home-setup-body">
         {state.error && (
           <div role="alert" className="game-error" style={{ marginBottom: '1rem' }}>
             {state.error}
@@ -205,7 +272,7 @@ function Home() {
         {showRejoin && activeGame ? (
           <div className="paper-card" style={{ padding: '1.25rem', textAlign: 'center' }}>
             <div className="mission-number type" style={{ marginBottom: '0.5rem' }}>
-              Operation in progress
+              You're already in a game
             </div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', letterSpacing: '0.14em', lineHeight: 1 }}>
               {activeGame.id}
@@ -230,8 +297,8 @@ function Home() {
           </div>
         ) : (
           <>
-            {/* Agent identity: one row */}
-            <div className="flex gap-1" style={{ alignItems: 'center', marginBottom: '1rem' }}>
+            <label className="home-label" htmlFor="home-name">Pick a face and your name</label>
+            <div className="home-identity">
               <AvatarPicker
                 selectedAvatar={selectedAvatar}
                 onAvatarChange={(avatar, isPhoto) => {
@@ -241,65 +308,54 @@ function Home() {
                 style={{ width: '58px', height: '58px', flexShrink: 0 }}
               />
               <input
-                aria-label="Player name"
+                id="home-name"
                 type="text"
-                placeholder="Your agent name"
+                placeholder="Your name"
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 maxLength={24}
                 autoComplete="nickname"
-                enterKeyHint={mode === 'join' ? 'next' : 'go'}
+                enterKeyHint="go"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && mode === 'welcome' && playerName.trim()) void handleStartGame();
+                  if (e.key !== 'Enter' || !playerName.trim()) return;
+                  if (!invited) void handleStartGame();
+                  else if (canJoin) void handleJoinGame();
                 }}
                 style={{ textAlign: 'left', paddingLeft: '1.1rem' }}
               />
             </div>
 
-            {mode === 'welcome' ? (
+            {invited ? (
+              // Came from an invite: joining is the whole point, starting your own is the side door.
               <div className="flex-column gap-1">
+                {codeInput}
+                <button className="btn btn-primary home-cta" onClick={handleJoinGame} disabled={!canJoin}>
+                  {state.isLoading ? 'Joining…' : 'Join the Game'}
+                </button>
                 <button
-                  className="btn btn-primary"
+                  className="link-btn home-alt"
                   onClick={handleStartGame}
                   disabled={!playerName.trim() || state.isLoading}
-                  style={{ fontSize: '1.4rem', padding: '1.05rem' }}
                 >
-                  {state.isLoading ? 'Opening a case file…' : 'Start a New Game'}
-                </button>
-                <button className="btn btn-secondary" onClick={() => setMode('join')}>
-                  I Have a Code
+                  or start my own game instead
                 </button>
               </div>
             ) : (
               <div className="flex-column gap-1">
-                <input
-                  aria-label="Game code"
-                  type="text"
-                  className="type"
-                  placeholder="GAME CODE"
-                  value={gameId}
-                  onChange={(e) => setGameId(extractCode(e.target.value))}
-                  autoCapitalize="characters"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  enterKeyHint="go"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && gameId.length === 6 && playerName.trim()) void handleJoinGame();
-                  }}
-                  style={{ textTransform: 'uppercase', letterSpacing: '6px', fontSize: '1.15rem' }}
-                />
                 <button
-                  className="btn btn-primary"
-                  onClick={handleJoinGame}
-                  disabled={gameId.length !== 6 || !playerName.trim() || state.isLoading}
-                  style={{ fontSize: '1.4rem', padding: '1.05rem' }}
+                  className="btn btn-primary home-cta"
+                  onClick={handleStartGame}
+                  disabled={!playerName.trim() || state.isLoading}
                 >
-                  {state.isLoading ? 'Joining…' : 'Join the Party'}
+                  {state.isLoading ? 'Starting…' : 'Start a New Game'}
                 </button>
-                <button className="btn btn-ghost" onClick={() => setMode('welcome')}>
-                  ← Back
-                </button>
+                <div className="home-or"><span>or join a friend's game</span></div>
+                <div className="home-join-row">
+                  {codeInput}
+                  <button className="btn btn-secondary home-join-btn" onClick={handleJoinGame} disabled={!canJoin}>
+                    Join
+                  </button>
+                </div>
               </div>
             )}
           </>
@@ -307,21 +363,15 @@ function Home() {
       </div>
 
       {/* Foot — clear of the floating Feedback / Install buttons */}
-      <footer style={{ paddingBottom: '3.5rem' }}>
-        <button
-          className="btn btn-ghost"
-          onClick={() => setShowBriefing(true)}
-          style={{ textDecoration: 'underline', textUnderlineOffset: '4px' }}
-        >
-          How does it work?
+      <footer className="home-foot">
+        <button className="link-btn" onClick={() => setShowBriefing(true)}>
+          How to play
         </button>
-        <p style={{ fontSize: '0.8rem', margin: '0.4rem 0 0' }}>
-          <a href="/privacy.html" style={{ color: 'var(--text-muted)' }}>Privacy</a>
-          {' · '}Only upload photos with everyone&apos;s permission.
-        </p>
+        <span aria-hidden="true"> · </span>
+        <a href="/privacy.html">Privacy</a>
       </footer>
 
-      {/* The briefing, on request */}
+      {/* The rules, on request */}
       <Modal
         isOpen={showBriefing}
         onClose={() => setShowBriefing(false)}
@@ -329,29 +379,18 @@ function Home() {
         showClose
         maxWidth={420}
       >
-        <div className="type" style={{
-          fontSize: '0.76rem',
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-          color: 'var(--paper-dim)',
-          marginBottom: '1rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-        }}>
-          <span>Briefing № 001</span>
-          <span>Eyes only</span>
-        </div>
+        <h2 style={{ color: 'var(--paper-ink)' }}>How to Play</h2>
         <div className="flex-column" style={{ gap: '0.8rem', textAlign: 'left', marginBottom: '1.25rem' }}>
-          <Step number="1" text="Every agent receives secret tasks to pull off on the others." />
-          <Step number="2" text="Pull yours off without being noticed — and if you spot someone working on you, call them out to bust them." />
-          <Step number="3" text={'Say "Gotcha!" out loud, then claim it in the app. Your target can accept — or dispute it to a group vote.'} />
+          <Step number="1" text="Everyone gets secret missions to pull off on the other players." />
+          <Step number="2" text="Pull yours off without anyone noticing. If you spot someone trying one on you, call it out to bust them." />
+          <Step number="3" text={'Done one? Say "Gotcha!" out loud, then claim it in the app. Your target can accept, or dispute it to a group vote.'} />
           <Step number="4" text={`First to ${WINNING_SCORE} points wins. Then everyone's missions are revealed.`} />
         </div>
         <div className="type" style={{ fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: '1.25rem' }}>
-          field-tested at house parties, dinners, pre-drinks &amp; game nights
+          Best at house parties, dinners, pre-drinks &amp; game nights.
         </div>
         <button className="btn btn-primary" onClick={() => setShowBriefing(false)}>
-          Understood
+          Got It
         </button>
       </Modal>
     </div>

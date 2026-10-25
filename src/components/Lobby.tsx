@@ -6,6 +6,7 @@ import NotificationPrompt from './NotificationPrompt';
 import { ConfirmationModal } from './common/ConfirmationModal';
 import LoadingScreen from './common/LoadingScreen';
 import BrandMark from './common/BrandMark';
+import Mascot from './common/Mascot';
 import { showToast } from './common/Toast';
 import { getAllPackOptions } from '../data/packCatalog';
 import { lobbySummary } from '../utils/gameSettings';
@@ -165,7 +166,9 @@ export default function Lobby() {
           ← Lobby
         </button>
         <header style={{ textAlign: 'center', margin: '0.25rem 0 1.25rem' }}>
-          <BrandMark className="brand-mark-centered" />
+          {isHoliday
+            ? <BrandMark className="brand-mark-centered" />
+            : <Mascot pose="mission" size={80} className="mascot-centered" />}
           <h1 style={{ fontSize: '1.9rem', marginBottom: '0.2rem' }}>
             {isHoliday ? 'You Got Who?' : 'Who Got Who'}
           </h1>

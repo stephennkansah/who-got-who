@@ -1,0 +1,164 @@
+/* Home: a friendly "what is this?" screen, then a short "who are you?" screen. */
+
+.home-title {
+  font-size: clamp(2.6rem, 13vw, 3.4rem);
+  margin-bottom: 0.5rem;
+}
+.home-title.small {
+  font-size: 2.1rem;
+  margin-bottom: 0;
+}
+
+/* ---------- Screen 1: welcome ---------- */
+
+.home-welcome {
+  text-align: center;
+  justify-content: space-between;
+}
+
+.home-welcome-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 1vh;
+}
+
+.home-line {
+  font-size: 1.06rem;
+  line-height: 1.42;
+  color: var(--text-main);
+  max-width: 22em;
+  margin: 0 auto 1.1rem;
+}
+
+.home-example {
+  padding: 0.85rem 1.1rem 0.9rem;
+  text-align: left;
+  transform: rotate(-0.6deg);
+}
+
+.home-example-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+}
+
+.home-example-mission {
+  font-family: var(--font-type);
+  font-size: 1.02rem;
+  line-height: 1.38;
+  margin: 0.3rem 0 0.6rem;
+}
+
+.home-example-steps {
+  margin: 0;
+  padding-left: 1.35rem;
+  font-size: 0.98rem;
+  line-height: 1.35;
+}
+.home-example-steps li + li { margin-top: 0.15rem; }
+.home-example-steps li::marker {
+  font-family: var(--font-display);
+  color: var(--primary-deep);
+}
+
+/* Clear of the floating Feedback / Install buttons. */
+.home-welcome-actions {
+  padding: 1rem 0 2.5rem;
+  flex-shrink: 0;
+}
+
+.home-cta {
+  font-size: 1.45rem;
+  padding: 1.05rem;
+}
+
+.home-note {
+  margin: 0 0 0.55rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+/* ---------- Screen 2: setup ---------- */
+
+.home-setup { text-align: center; }
+
+.home-back {
+  align-self: flex-start;
+  margin: -0.6rem 0 0 -0.25rem;
+  color: var(--text-muted);
+}
+
+.home-setup-head { flex-shrink: 0; }
+
+.home-setup-body {
+  margin: auto 0;
+  padding: 1.25rem 0;
+  flex-shrink: 0;
+}
+
+.home-label {
+  display: block;
+  text-align: left;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.home-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.home-or {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.35rem 0;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+.home-or::before,
+.home-or::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--line-strong);
+}
+
+.home-join-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+input.home-code {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  font-size: 1.2rem;
+}
+
+.home-join-btn {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 0 1.5rem;
+}
+
+.home-alt {
+  align-self: center;
+  color: var(--text-muted);
+}
+
+.home-foot {
+  flex-shrink: 0;
+  padding-bottom: 3.2rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.home-foot a { color: var(--text-muted); }

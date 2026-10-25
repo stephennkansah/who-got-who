@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 import ShareButton from '../ShareButton';
 import BrandMark from '../common/BrandMark';
+import Mascot from '../common/Mascot';
 import { showToast } from '../common/Toast';
 
 interface InvitePanelProps {
@@ -48,7 +49,9 @@ export default function InvitePanel({ gameId, gameType, playerCount, maxPlayers 
 
   return (
     <header className="invite-panel">
-      <BrandMark size={64} className="brand-mark-centered" />
+      {gameType === 'holiday-challenge'
+        ? <BrandMark size={64} className="brand-mark-centered" />
+        : <Mascot pose="lobby" size={104} className="mascot-centered" />}
       <div className="overline" style={{ marginBottom: '0.6rem' }}>
         {gameType === 'holiday-challenge' ? 'You Got Who? · Operation' : 'Who Got Who · Operation'}
       </div>

@@ -1,12 +1,13 @@
 import React from 'react';
 import { Player } from '../../types';
 import { AnimatedScore } from '../common/AnimatedScore';
-import BrandMark from '../common/BrandMark';
+import Mascot from '../common/Mascot';
 
 interface GameHeaderProps {
   currentPlayer: Player | null;
   playerCount: number;
   targetScore: number;
+  briefing?: boolean;
   onOpenHostMenu: () => void;
   onLeaveGame: () => void;
   onShowLeaderboard: () => void;
@@ -16,6 +17,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   currentPlayer,
   playerCount,
   targetScore,
+  briefing = false,
   onOpenHostMenu,
   onLeaveGame,
   onShowLeaderboard
@@ -36,7 +38,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
       {/* Center: Title */}
       <div className="header-title" style={{ textAlign: 'center' }}>
-        <BrandMark className="brand-mark-centered brand-mark-header" />
+        <Mascot pose={briefing ? 'mission' : 'sneaky'} size={56} className="mascot-centered mascot-header" />
         <h1>Who Got Who</h1>
         <div className="player-count">
           {playerCount} AGENTS

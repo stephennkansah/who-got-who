@@ -220,10 +220,13 @@ const AvatarPicker: React.FC<AvatarPickerProps> = ({
               marginBottom: '22px',
               textAlign: 'center'
             }}>
-              <h4 style={{ margin: '0 0 14px 0', color: 'var(--info-ink)' }}>
+              <h4 style={{ margin: '0 0 4px 0', color: 'var(--info-ink)' }}>
                 Take a Selfie
               </h4>
-              
+              <p style={{ margin: '0 0 14px', fontSize: '0.85rem', color: 'var(--info-ink)' }}>
+                Only use photos with everyone&apos;s permission.
+              </p>
+
               {showCamera ? (
                 <div style={{ marginBottom: '15px' }}>
                   <video
