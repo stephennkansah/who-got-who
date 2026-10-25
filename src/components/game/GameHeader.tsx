@@ -5,7 +5,8 @@ import { AnimatedScore } from '../common/AnimatedScore';
 interface GameHeaderProps {
   currentPlayer: Player | null;
   playerCount: number;
-  onEndGame: () => void;
+  targetScore: number;
+  onOpenHostMenu: () => void;
   onLeaveGame: () => void;
   onShowLeaderboard: () => void;
 }
@@ -13,22 +14,23 @@ interface GameHeaderProps {
 export const GameHeader: React.FC<GameHeaderProps> = ({
   currentPlayer,
   playerCount,
-  onEndGame,
+  targetScore,
+  onOpenHostMenu,
   onLeaveGame,
   onShowLeaderboard
 }) => {
   return (
     <div className="game-header">
-      {/* Left: your score — opens the leaderboard */}
+      {/* Left: your score toward the win — opens the leaderboard */}
       <button
         onClick={onShowLeaderboard}
         className="rank-badge"
-        aria-label="Show leaderboard"
+        aria-label={`Your score ${currentPlayer?.score || 0} of ${targetScore}. Show leaderboard`}
       >
         <div style={{ fontSize: '1.3rem', lineHeight: 1 }}>
           <AnimatedScore value={currentPlayer?.score || 0} />
         </div>
-        <div style={{ fontSize: '0.55rem', letterSpacing: '0.2em', opacity: 0.8 }}>PTS</div>
+        <div style={{ fontSize: '0.6rem', letterSpacing: '0.16em', opacity: 0.8 }}>OF {targetScore}</div>
       </button>
 
       {/* Center: Title */}
@@ -43,11 +45,11 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
       <div style={{ display: 'flex', gap: '0.5rem' }}>
         {currentPlayer?.isHost && (
           <button
-            onClick={onEndGame}
-            className="chip-btn danger"
-            aria-label="End game for everyone"
+            onClick={onOpenHostMenu}
+            className="chip-btn"
+            aria-label="Host controls: pause, open early, or end the game"
           >
-            End
+            Host
           </button>
         )}
         <button

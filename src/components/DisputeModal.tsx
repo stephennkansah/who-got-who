@@ -1,13 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dispute } from '../types';
 import Modal from './common/Modal';
+import { formatSeconds, useSecondsLeft } from '../hooks/useCountdown';
 
 interface DisputeModalProps {
   dispute: Dispute;
   /** Name of the player claiming the Gotcha (resolved by the parent). */
   accuserName?: string;
-  /** Text of the claimed task, when visible to this client. */
-  taskText?: string;
+  /** False when nobody else is in the game to vote. */
+  canDispute: boolean;
+  /** When the host paused the game; the response timer is frozen meanwhile. */
+  pausedAt?: string;
   onAccept: () => void;
   onDispute: (reason?: string) => void;
 }
@@ -15,47 +18,30 @@ interface DisputeModalProps {
 export default function DisputeModal({
   dispute,
   accuserName,
-  taskText,
+  canDispute,
+  pausedAt,
   onAccept,
   onDispute,
 }: DisputeModalProps) {
+  const taskText = dispute.taskText;
+  const paused = !!pausedAt;
   const [reason, setReason] = useState('');
   const [showReason, setShowReason] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(() => {
-    const remaining = new Date(dispute.closesAt).getTime() - Date.now();
-    return Math.max(0, Math.ceil(remaining / 1000));
-  });
+  const timeLeft = useSecondsLeft(dispute.closesAt, pausedAt);
   const expiredRef = useRef(false);
   const buzzedRef = useRef(false);
 
   useEffect(() => {
-    const updateTimer = () => {
-      const remaining = Math.max(
-        0,
-        Math.ceil((new Date(dispute.closesAt).getTime() - Date.now()) / 1000),
-      );
-      setTimeLeft(remaining);
-
-      if (remaining <= 10 && !buzzedRef.current) {
-        buzzedRef.current = true;
-        navigator.vibrate?.(200);
-      }
-      if (remaining === 0 && !expiredRef.current) {
-        expiredRef.current = true;
-        onAccept(); // No response in time = automatic accept
-      }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [dispute.closesAt, onAccept]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+    if (paused) return;
+    if (timeLeft <= 10 && !buzzedRef.current) {
+      buzzedRef.current = true;
+      navigator.vibrate?.(200);
+    }
+    if (timeLeft === 0 && !expiredRef.current) {
+      expiredRef.current = true;
+      onAccept(); // No response in time = automatic accept
+    }
+  }, [timeLeft, paused, onAccept]);
 
   const claimer = accuserName || 'Another player';
 
@@ -64,8 +50,12 @@ export default function DisputeModal({
       <h2 style={{ marginBottom: '0.75rem' }}>Gotcha Claimed</h2>
 
       <div style={{ marginBottom: '1rem' }}>
-        <span className={`timer ${timeLeft <= 30 ? 'urgent' : ''}`} role="timer" aria-label={`Time to respond: ${formatTime(timeLeft)}`}>
-          {formatTime(timeLeft)}
+        <span
+          className={`timer ${timeLeft <= 30 && !paused ? 'urgent' : ''}`}
+          role="timer"
+          aria-label={paused ? 'Timer frozen while the game is paused' : `Time to respond: ${formatSeconds(timeLeft)}`}
+        >
+          {paused ? `Paused · ${formatSeconds(timeLeft)}` : formatSeconds(timeLeft)}
         </span>
       </div>
 
@@ -95,7 +85,7 @@ export default function DisputeModal({
           Fair &amp; Square — Accept
         </button>
 
-        {!showReason ? (
+        {!canDispute || paused ? null : !showReason ? (
           <button className="btn btn-danger" onClick={() => setShowReason(true)}>
             No Way — Dispute It
           </button>
@@ -131,8 +121,18 @@ export default function DisputeModal({
         textAlign: 'left',
         lineHeight: 1.5
       }}>
-        <strong>How disputes work:</strong> the other players vote, majority decides.
-        No response before the timer ends counts as accepting.
+        {paused ? (
+          <><strong>Game paused:</strong> the timer is frozen. Accept now, or decide once play resumes.</>
+        ) : (
+          <>
+            {canDispute ? (
+              <><strong>How disputes work:</strong> the other players vote, majority decides.</>
+            ) : (
+              <><strong>Just the two of you:</strong> there's no jury, so settle it out loud.</>
+            )}{' '}
+            No response before the timer ends counts as accepting.
+          </>
+        )}
       </p>
     </Modal>
   );

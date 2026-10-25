@@ -14,7 +14,9 @@ import {
   applyAction,
   createGame,
   GameRuleError,
+  INTERNAL_ACTIONS,
   projectGameView,
+  rematchPlayerPayload,
   type GameActionName,
   type StoredGame,
 } from './domain';
@@ -217,6 +219,44 @@ async function mutate(
   throw new GameRuleError('The game changed too quickly; please try again');
 }
 
+/**
+ * Opens a fresh lobby for the same group and links it from the finished game.
+ * Returns the finished game's event so everyone still on the results screen is
+ * notified and can join with one tap.
+ */
+async function rematch(oldId: string, ownerIdentity: string, requestId: string): Promise<GameEvent> {
+  const old = await getStoredGame(oldId);
+  const { packId, ...player } = rematchPlayerPayload(old, ownerIdentity);
+  if (old.rematchGameId) return { gameId: oldId, revision: old.revision };
+
+  const created = await create(player, ownerIdentity, requestId);
+  if (packId) {
+    await mutate(created.gameId, 'SELECT_PACK', ownerIdentity, { packId }, `${requestId}-pack`);
+  }
+  const linked = await mutate(
+    oldId,
+    'LINK_REMATCH',
+    ownerIdentity,
+    { rematchGameId: created.gameId },
+    requestId,
+  );
+  const after = await getStoredGame(oldId);
+  if (after.rematchGameId !== created.gameId) {
+    // Another player linked their rematch first; drop ours and let the client join theirs.
+    await dynamo
+      .send(new DeleteCommand({ TableName: tableName, Key: { gameId: created.gameId } }))
+      .catch(() => undefined);
+  }
+  return linked;
+}
+
+function mediaUrl(key: string): Promise<string> {
+  if (!key.startsWith('avatars/') && !key.startsWith('proofs/')) return Promise.resolve('');
+  return getSignedUrl(s3, new GetObjectCommand({ Bucket: bucketName, Key: key }), {
+    expiresIn: 60 * 60,
+  });
+}
+
 export const handler: AppSyncResolverHandler<ResolverArguments, unknown> = async (event) => {
   const operation = resolverOperation(event);
   try {
@@ -225,14 +265,7 @@ export const handler: AppSyncResolverHandler<ResolverArguments, unknown> = async
       await enforceRateLimit(ownerIdentity, 'read', 180, 60);
       const id = gameCode(event.arguments.gameId);
       const game = await getStoredGame(id);
-      return projectGameView(game, ownerIdentity, async (key) => {
-        if (!key.startsWith('avatars/')) return '';
-        return getSignedUrl(
-          s3,
-          new GetObjectCommand({ Bucket: bucketName, Key: key }),
-          { expiresIn: 60 * 60 },
-        );
-      });
+      return projectGameView(game, ownerIdentity, mediaUrl);
     }
 
     if (operation !== 'gameAction') throw new GameRuleError('Unknown operation');
@@ -243,7 +276,12 @@ export const handler: AppSyncResolverHandler<ResolverArguments, unknown> = async
       await enforceRateLimit(ownerIdentity, 'create', 10, 60 * 60);
       return create(event.arguments.payload, ownerIdentity, requestId);
     }
+    if (!action || INTERNAL_ACTIONS.has(action)) throw new GameRuleError('Unknown game action');
     const id = gameCode(event.arguments.gameId);
+    if (action === 'REMATCH') {
+      await enforceRateLimit(ownerIdentity, 'create', 10, 60 * 60);
+      return rematch(id, ownerIdentity, requestId);
+    }
     return mutate(
       id,
       action as GameActionName,

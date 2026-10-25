@@ -2,6 +2,7 @@ import { defineBackend } from '@aws-amplify/backend';
 import { AttributeType, BillingMode, Table, TableEncryption } from 'aws-cdk-lib/aws-dynamodb';
 import { Duration, RemovalPolicy } from 'aws-cdk-lib';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
+import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Function as LambdaFunction } from 'aws-cdk-lib/aws-lambda';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
@@ -46,6 +47,21 @@ backend.storage.resources.bucket.grantRead(lambda, 'proofs/*');
 mutableLambda.addEnvironment(
   'MEDIA_BUCKET_NAME',
   backend.storage.resources.bucket.bucketName,
+);
+
+// Every player is a Cognito guest, but `allow.entity('identity')` in storage/resource.ts
+// only grants the signed-in role. Give the guest role the same per-identity folders so
+// photo avatars and challenge proofs can upload — each guest can only touch their own.
+const mediaBucketArn = backend.storage.resources.bucket.bucketArn;
+backend.auth.resources.unauthenticatedUserIamRole.addToPrincipalPolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ['s3:PutObject', 's3:GetObject', 's3:DeleteObject'],
+    resources: [
+      `${mediaBucketArn}/avatars/\${cognito-identity.amazonaws.com:sub}/*`,
+      `${mediaBucketArn}/proofs/\${cognito-identity.amazonaws.com:sub}/*`,
+    ],
+  }),
 );
 
 (backend.storage.resources.bucket as Bucket).addLifecycleRule({

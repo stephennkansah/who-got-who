@@ -18,6 +18,11 @@ export interface Game {
   currentPhase: 'draft' | 'play' | 'ended';
   challengeCompletions?: ChallengeCompletion[]; // for holiday challenge games
   selectedChallenges?: Challenge[]; // for holiday challenge games - random selection of 10 challenges
+  startedAt?: string;
+  endedAt?: string;
+  rematchGameId?: string; // set once someone opens a rematch lobby for this group
+  claimsOpenAt?: string; // missions are dealt at the start; gotchas count from here
+  pausedAt?: string; // set while the host has paused play
 }
 
 export interface GameSettings {
@@ -34,6 +39,7 @@ export interface GameSettings {
   holidayGoldPoints?: number; // points for first completion
   holidaySilverPoints?: number; // points for subsequent completions
   holidayMaxSilverPerChallenge?: number; // max silver points per challenge
+  briefingMinutes?: number; // settling-in time between dealing missions and opening gotchas
 }
 
 export interface Player {
@@ -49,6 +55,7 @@ export interface Player {
   stats: PlayerStats;
   avatar?: string;
   avatarType?: 'emoji' | 'photo';
+  avatarKey?: string; // storage key of your own photo avatar (only sent for yourself)
   // Holiday Challenge Pack specific fields
   challengeScore?: number; // separate score for challenge games
   challengeCompletions?: string[]; // array of completed challenge IDs
@@ -86,6 +93,7 @@ export interface Dispute {
   phase?: 'response' | 'voting';
   votes: Vote[];
   description?: string;
+  taskText?: string; // the claimed mission, shown to the target and the jury
 }
 
 export interface Vote {
@@ -127,7 +135,7 @@ export interface ChallengeCompletion {
   completedAt: Date;
   points: number; // 3 for gold, 1 for silver
   type: 'gold' | 'silver';
-  proofImageUrl?: string;
+  proofUrl?: string; // short-lived link to the proof photo
 }
 
 export interface HolidayChallengePack {
@@ -141,107 +149,26 @@ export interface HolidayChallengePack {
   maxSilverPerChallenge?: number; // optional limit on silver points per challenge
 }
 
-// Real-time Events
-export interface SocketEvents {
-  // Player events
-  'player:join': { player: Player };
-  'player:leave': { playerId: string };
-  'player:update': { player: Player };
-  'player:lock': { playerId: string };
-
-  // Game events
-  'game:start': { game: Game };
-  'game:end': { game: Game; winner?: Player };
-  'game:update': { game: Game };
-
-  // Task events
-  'task:swap': { playerId: string; oldTaskId: string; newTaskId: string };
-  'task:gotcha': { taskInstance: TaskInstance };
-  'task:fail': { taskInstanceId: string };
-
-  // Dispute events
-  'dispute:create': { dispute: Dispute };
-  'dispute:vote': { disputeId: string; vote: Vote };
-  'dispute:resolve': { dispute: Dispute };
-  'dispute:timeout': { disputeId: string };
-
-  // Holiday Challenge events
-  'challenge:complete': { completion: ChallengeCompletion };
-  'challenge:gold-claimed': { challengeId: string; playerId: string };
-  'challenge:silver-awarded': { challengeId: string; playerId: string };
-
-  // System events
-  'error': { message: string; code?: string };
-  'notification': { message: string; type: 'info' | 'warning' | 'error' };
-}
-
 // UI State Types
 export interface GameState {
   currentGame: Game | null;
   currentPlayer: Player | null;
   isConnected: boolean;
+  /** Whether live updates are flowing; 'reconnecting' after a dropped connection. */
+  connection: 'live' | 'reconnecting';
   isLoading: boolean;
   error: string | null;
   activeDisputes: Dispute[];
   leaderboard: Player[];
 }
 
-export interface LobbyState {
-  selectedTasks: string[];
-  availableTasks: Task[];
-  swapsRemaining: number;
-  allPlayersLocked: boolean;
-}
-
-export interface GameplayState {
-  selectedTask: TaskInstance | null;
-  selectedTarget: Player | null;
-  showTargetModal: boolean;
-  showDisputeModal: boolean;
-  currentDispute: Dispute | null;
-}
-
 // Award Types
-export interface Award {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  criteria: (game: Game, player: Player) => boolean;
-}
-
-export type AwardType = 
+export type AwardType =
   | 'sneakiest'      // Most successful Gotchas
   | 'social'         // Most unique targets
   | 'detective'      // Caught the most people
-  | 'untouchable'    // Least times caught
-  | 'jester'         // Most failed attempts
-  | 'chaos';         // Most disputes created
-
-// Utility Types
-export type CreateGameRequest = Omit<Game, 'id' | 'createdAt' | 'players'>;
-export type JoinGameRequest = { gameId: string; playerName: string };
-export type SwapTaskRequest = { taskId: string; playerId: string };
-export type GotchaRequest = { taskInstanceId: string; targetId: string };
-export type DisputeRequest = { taskInstanceId: string; reason?: string };
-export type VoteRequest = { disputeId: string; vote: boolean };
-
-// API Response Types
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
-}
-
-export interface GameSummary {
-  id: string;
-  mode: GameMode;
-  playerCount: number;
-  status: GameStatus;
-  createdAt: Date;
-  canRejoin: boolean;
-} 
+  | 'untouchable'    // Never caught, with at least one Gotcha
+  | 'jester';        // Most failed attempts
 
 export interface GameContextType {
   state: GameState;
@@ -251,17 +178,20 @@ export interface GameContextType {
   startGame: () => Promise<void>;
   endGame: () => Promise<void>;
   leaveGame: () => Promise<void>;
+  kickPlayer: (playerId: string) => Promise<void>;
   updatePlayerName: (newName: string) => Promise<void>;
   swapTask: (taskId: string) => Promise<void>;
   claimGotcha: (taskId: string, targetId: string) => Promise<void>;
   disputeGotcha: (taskInstanceId: string, reason?: string) => Promise<void>;
   voteOnDispute: (disputeId: string, vote: boolean) => Promise<void>;
   acceptGotcha: (taskInstanceId: string) => Promise<void>;
-  forceGameState?: (status: 'draft' | 'live' | 'ended') => void;
-  simulateScore?: (points: number) => void;
-  updatePlayerTasks: (playerId: string, updatedTasks: TaskInstance[]) => void;
-  socket: null;
+  /** Opens (or joins) a rematch lobby for everyone in the finished game. */
+  rematch: () => Promise<void>;
+  // Host pacing controls
+  setBriefingMinutes: (minutes: number) => Promise<void>;
+  openClaims: () => Promise<void>;
+  pauseGame: () => Promise<void>;
+  resumeGame: () => Promise<void>;
   // Holiday Challenge methods
   completeChallenge: (challengeId: string, proofImage?: File) => Promise<void>;
-  uploadProofImage: (file: File, challengeId: string) => Promise<string>;
 }

@@ -10,6 +10,8 @@ interface TargetSelectModalProps {
   availableTargets: Player[];
   taskText: string;
   isReverse?: boolean; // true if "who got you", false if "who you got"
+  /** Players you've already scored on — everyone else is worth the +0.5 bonus. */
+  previousTargets?: string[];
 }
 
 export default function TargetSelectModal({
@@ -18,12 +20,13 @@ export default function TargetSelectModal({
   onSelectTarget,
   availableTargets,
   taskText,
-  isReverse = false
+  isReverse = false,
+  previousTargets = [],
 }: TargetSelectModalProps) {
   const title = isReverse ? 'Who Caught You?' : 'Who Did You Get?';
   const instruction = isReverse
-    ? 'Select the player who caught you trying this task:'
-    : 'Select the player you completed this task on:';
+    ? 'Pick the player who caught you trying this mission:'
+    : 'Pick the player you pulled this mission off on:';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} labelledBy="target-select-title">
@@ -45,22 +48,27 @@ export default function TargetSelectModal({
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
-        {availableTargets.map((player) => (
-          <button
-            key={player.id}
-            className="btn btn-secondary"
-            onClick={() => onSelectTarget(player.id)}
-            style={{
-              marginBottom: '0.5rem',
-              justifyContent: 'flex-start',
-              gap: '12px',
-              padding: '12px 16px'
-            }}
-          >
-            <PlayerAvatar player={player} size="small" showBorder={false} />
-            <span style={{ fontWeight: 600 }}>{player.name}</span>
-          </button>
-        ))}
+        {availableTargets.map((player) => {
+          const isNew = !isReverse && !previousTargets.includes(player.id);
+          return (
+            <button
+              key={player.id}
+              className="btn btn-secondary"
+              onClick={() => onSelectTarget(player.id)}
+              aria-label={isNew ? `${player.name}, first time: +0.5 bonus` : player.name}
+              style={{
+                marginBottom: '0.5rem',
+                justifyContent: 'flex-start',
+                gap: '12px',
+                padding: '12px 16px'
+              }}
+            >
+              <PlayerAvatar player={player} size="small" showBorder={false} />
+              <span style={{ fontWeight: 600, flex: 1, textAlign: 'left' }}>{player.name}</span>
+              {isNew && <span className="bonus-tag" aria-hidden="true">+0.5 new</span>}
+            </button>
+          );
+        })}
       </div>
 
       <button className="btn btn-ghost" onClick={onClose}>

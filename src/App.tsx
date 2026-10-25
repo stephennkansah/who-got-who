@@ -12,6 +12,8 @@ import InstallPrompt from './components/InstallPrompt';
 import FeedbackButton from './components/FeedbackButton';
 import ErrorBoundary from './components/ErrorBoundary';
 import ToastHost, { showToast } from './components/common/Toast';
+import ConnectionPill from './components/common/ConnectionPill';
+import UpdateNotice from './components/common/UpdateNotice';
 
 // Wrapper component to extract gameId from URL params
 const PackSelectWrapper: React.FC = () => {
@@ -36,17 +38,19 @@ const GameWrapper: React.FC = () => {
 };
 
 // Home renders errors inline; every other screen surfaces them as a toast.
+// Without a game we're on our way home, where the error will show inline.
 const ErrorToastBridge: React.FC = () => {
   const { state } = useGame();
   const location = useLocation();
   const lastError = useRef<string | null>(null);
+  const hasGame = !!state.currentGame;
 
   useEffect(() => {
-    if (state.error && state.error !== lastError.current && location.pathname !== '/') {
+    if (state.error && state.error !== lastError.current && location.pathname !== '/' && hasGame) {
       showToast(state.error, 'error');
     }
     lastError.current = state.error;
-  }, [state.error, location.pathname]);
+  }, [state.error, location.pathname, hasGame]);
 
   return null;
 };
@@ -56,11 +60,14 @@ const FloatingWidgets: React.FC = () => {
   const { pathname } = useLocation();
   const showInstall = pathname === '/' || pathname.startsWith('/lobby');
   const showFeedback = pathname === '/' || pathname.startsWith('/recap');
+  const showUpdate = !pathname.startsWith('/game');
 
   return (
     <>
       {showInstall && <InstallPrompt />}
       {showFeedback && <FeedbackButton />}
+      {showUpdate && <UpdateNotice />}
+      <ConnectionPill />
     </>
   );
 };

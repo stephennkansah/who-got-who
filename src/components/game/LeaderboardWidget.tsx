@@ -5,11 +5,19 @@ import { AnimatedScore } from '../common/AnimatedScore';
 interface LeaderboardWidgetProps {
   players: Player[];
   currentPlayerId: string;
+  targetScore: number;
+  scoreOf?: (player: Player) => number;
   onShowLeaderboard: () => void;
 }
 
-export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({ players, currentPlayerId, onShowLeaderboard }) => {
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
+  players,
+  currentPlayerId,
+  targetScore,
+  scoreOf = (player) => player.score,
+  onShowLeaderboard,
+}) => {
+  const sortedPlayers = [...players].sort((a, b) => scoreOf(b) - scoreOf(a));
   const topThree = sortedPlayers.slice(0, 3);
 
   return (
@@ -20,7 +28,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({ players, c
         style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'inherit' }}
       >
         <div className="leaderboard-label">
-          Live leaderboard · tap for all
+          Leaderboard · first to {targetScore} · tap for all
         </div>
 
         <div className="leaderboard-grid">
@@ -36,8 +44,14 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({ players, c
                 {player.id === currentPlayerId ? `${player.name} (You)` : player.name}
               </span>
               <span className="player-score">
-                <AnimatedScore value={player.score} />
+                <AnimatedScore value={scoreOf(player)} />
               </span>
+              <div className="progress-track" aria-hidden="true">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${Math.min(100, (scoreOf(player) / targetScore) * 100)}%` }}
+                />
+              </div>
             </div>
           ))}
         </div>

@@ -66,7 +66,7 @@ const PackTile: React.FC<PackTileProps> = ({
 );
 
 const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
-  const { state, selectPack } = useGame();
+  const { state, selectPack, leaveGame } = useGame();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -74,19 +74,38 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
   const currentGame = state.currentGame;
   const isHost = currentGame?.hostId === state.currentPlayer?.id;
   const packAlreadySelected = currentGame?.settings?.selectedPack;
+  const canChoose = isHost && currentGame?.status === 'draft';
 
   const handlePackSelect = async (packId: PackId) => {
-    if (packAlreadySelected || !isHost || isLoading) return;
+    if (!canChoose || isLoading) return;
+    if (packId === packAlreadySelected) {
+      navigate(`/lobby/${gameId}`, { replace: true });
+      return;
+    }
 
     setIsLoading(true);
     try {
       await selectPack(packId);
-      navigate(`/lobby/${gameId}`);
+      navigate(`/lobby/${gameId}`, { replace: true });
     } catch {
       // Errors surface via the global toast bridge.
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleBack = async () => {
+    if (packAlreadySelected) {
+      navigate(`/lobby/${gameId}`, { replace: true });
+      return;
+    }
+    // Backing out before choosing a pack abandons the brand-new game.
+    try {
+      await leaveGame();
+    } catch {
+      // Best-effort; still go home.
+    }
+    navigate('/', { replace: true });
   };
 
   if (!currentGame) {
@@ -106,8 +125,8 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
 
   const tile = (packId: PackId) => ({
     selected: packAlreadySelected === packId,
-    dimmed: !!packAlreadySelected && packAlreadySelected !== packId,
-    clickable: !packAlreadySelected && isHost && !isLoading,
+    dimmed: !canChoose && !!packAlreadySelected && packAlreadySelected !== packId,
+    clickable: canChoose && !isLoading,
     onSelect: () => handlePackSelect(packId),
   });
 
@@ -118,11 +137,11 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
       <header style={{ textAlign: 'center', margin: '0.5rem 0 1.25rem' }}>
         <h1 style={{ fontSize: '1.9rem', marginBottom: '0.2rem' }}>Choose Your Game</h1>
         <div className="app-subtitle">
-          {packAlreadySelected
-            ? `Pack selected: ${selectedName || 'Unknown pack'}`
-            : isHost
-              ? 'Pick a pack — the lobby opens right after'
-              : 'The host is choosing a pack for everyone…'}
+          {!isHost
+            ? 'The host is choosing a pack for everyone…'
+            : packAlreadySelected
+              ? `Current pack: ${selectedName || 'Unknown pack'} — tap another to switch`
+              : 'Pick a pack — the lobby opens right after'}
         </div>
       </header>
 
@@ -175,10 +194,10 @@ const PackSelect: React.FC<PackSelectProps> = ({ gameId }) => {
       <div style={{ textAlign: 'center' }}>
         <button
           className="btn btn-ghost btn-small"
-          onClick={() => navigate('/')}
+          onClick={handleBack}
           style={{ color: 'rgba(255,255,255,0.9)' }}
         >
-          Back to home
+          {packAlreadySelected ? 'Back to lobby' : 'Back to home'}
         </button>
       </div>
     </div>

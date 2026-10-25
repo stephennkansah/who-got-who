@@ -14,6 +14,7 @@ export type GameActionName =
   | 'START'
   | 'END'
   | 'LEAVE'
+  | 'KICK'
   | 'UPDATE_NAME'
   | 'SWAP_TASK'
   | 'CLAIM_GOTCHA'
@@ -21,7 +22,19 @@ export type GameActionName =
   | 'DISPUTE_GOTCHA'
   | 'VOTE_DISPUTE'
   | 'COMPLETE_CHALLENGE'
-  | 'RESOLVE_EXPIRED';
+  | 'RESOLVE_EXPIRED'
+  | 'LINK_REMATCH'
+  | 'UPDATE_SETTINGS'
+  | 'OPEN_CLAIMS'
+  | 'PAUSE'
+  | 'RESUME';
+
+/** Minutes between dealing missions and opening gotchas that a host may choose. */
+export const BRIEFING_OPTIONS = [0, 5, 10, 15, 30];
+export const DEFAULT_BRIEFING_MINUTES = 10;
+
+/** Actions only the Lambda itself may apply; clients cannot send them directly. */
+export const INTERNAL_ACTIONS: ReadonlySet<string> = new Set(['LINK_REMATCH']);
 
 export type StoredTask = {
   id: string;
@@ -102,6 +115,7 @@ export type StoredGame = {
     holidayGoldPoints?: number;
     holidaySilverPoints?: number;
     holidayMaxSilverPerChallenge?: number;
+    briefingMinutes?: number;
   };
   currentPhase: 'draft' | 'play' | 'ended';
   challengeCompletions: Array<{
@@ -122,6 +136,13 @@ export type StoredGame = {
   disputes: StoredDispute[];
   requestIds: string[];
   expiresAt: number;
+  startedAt?: string;
+  endedAt?: string;
+  rematchGameId?: string;
+  /** Missions are dealt at the start; gotchas only count from this moment. */
+  claimsOpenAt?: string;
+  /** Set while the host has paused play; claim timers are frozen. */
+  pausedAt?: string;
 };
 
 export type ActionResult = {
@@ -251,6 +272,7 @@ export function createGame(
       targetScore: 4,
       selectedPack: null,
       tasksLoaded: false,
+      briefingMinutes: DEFAULT_BRIEFING_MINUTES,
     },
     currentPhase: 'draft',
     challengeCompletions: [],
@@ -277,6 +299,22 @@ function host(game: StoredGame, identityId: string): StoredPlayer {
 
 function requireStatus(game: StoredGame, status: StoredGame['status']): void {
   if (game.status !== status) throw new GameRuleError(`Game must be ${status}`);
+}
+
+/** New gotchas and challenge claims only count after the briefing and while play isn't paused. */
+function requirePlayable(game: StoredGame, now: Date): void {
+  const what = game.gameType === 'holiday-challenge' ? 'challenges' : 'gotchas';
+  if (game.pausedAt) throw new GameRuleError(`The game is paused — no ${what} until the host resumes`);
+  if (game.claimsOpenAt && new Date(game.claimsOpenAt) > now) {
+    const minutes = Math.ceil((new Date(game.claimsOpenAt).getTime() - now.getTime()) / 60000);
+    throw new GameRuleError(
+      `${what[0].toUpperCase()}${what.slice(1)} open in ${minutes} minute${minutes === 1 ? '' : 's'} — read your missions and settle in`,
+    );
+  }
+}
+
+function requireNotPaused(game: StoredGame, message: string): void {
+  if (game.pausedAt) throw new GameRuleError(message);
 }
 
 function findTask(game: StoredGame, player: StoredPlayer, taskId: unknown): StoredTask {
@@ -317,6 +355,12 @@ function overturnGotcha(game: StoredGame, dispute: StoredDispute): void {
   dispute.result = 'overturned';
 }
 
+function eligibleVoterCount(game: StoredGame, dispute: StoredDispute): number {
+  return game.players.filter(
+    (player) => player.id !== dispute.accuserId && player.id !== dispute.targetId,
+  ).length;
+}
+
 function resolveVote(game: StoredGame, dispute: StoredDispute): void {
   const uphold = dispute.votes.filter((vote) => vote.vote).length;
   const overturn = dispute.votes.length - uphold;
@@ -328,6 +372,8 @@ function resolveVote(game: StoredGame, dispute: StoredDispute): void {
 }
 
 function resolveExpired(game: StoredGame, now: Date): boolean {
+  // Claim timers are frozen while the game is paused.
+  if (game.pausedAt) return false;
   let changed = false;
   for (const dispute of game.disputes) {
     if (dispute.result !== 'pending' || new Date(dispute.closesAt) > now) continue;
@@ -336,6 +382,35 @@ function resolveExpired(game: StoredGame, now: Date): boolean {
     changed = true;
   }
   return changed;
+}
+
+/** Drops a player and settles any claims that can no longer be decided without them. */
+function removePlayer(game: StoredGame, leaving: StoredPlayer): void {
+  game.players = game.players.filter((player) => player.id !== leaving.id);
+  for (const dispute of game.disputes) {
+    if (dispute.result !== 'pending') continue;
+    if (dispute.accuserId === leaving.id || dispute.targetId === leaving.id) {
+      const claimant = game.players.find((player) => player.id === dispute.accuserId);
+      const task = claimant?.tasks.find((candidate) => candidate.id === dispute.taskInstanceId);
+      if (task?.status === 'disputed') {
+        task.status = 'pending';
+        delete task.targetId;
+        delete task.disputeId;
+        delete task.gotAt;
+      }
+      dispute.result = 'overturned';
+    } else if (dispute.phase === 'voting') {
+      // A departing voter may have been the last vote outstanding.
+      dispute.votes = dispute.votes.filter((vote) => vote.voterId !== leaving.id);
+      if (dispute.votes.length >= eligibleVoterCount(game, dispute)) resolveVote(game, dispute);
+    }
+  }
+  if (game.players.length > 0 && leaving.isHost) {
+    game.players.forEach((player, index) => {
+      player.isHost = index === 0;
+    });
+    game.hostId = game.players[0].id;
+  }
 }
 
 function makeTasks(game: StoredGame, player: StoredPlayer, count: number): StoredTask[] {
@@ -369,15 +444,24 @@ export async function applyAction(
 
   switch (action) {
     case 'JOIN': {
-      requireStatus(game, 'draft');
       const existing = game.players.find((player) => player.identityId === identityId);
       if (existing) break;
+      if (game.status === 'ended') throw new GameRuleError('That game has already ended');
       if (game.players.length >= game.settings.maxPlayers) {
         throw new GameRuleError('This game is full');
       }
       const joining = newPlayer(identityId, game.gameId, body, false);
       if (game.players.some((player) => player.name.toLowerCase() === joining.name.toLowerCase())) {
         throw new GameRuleError('That name is already in use');
+      }
+      // Late arrivals jump straight into a live game with a full hand.
+      if (game.status === 'live') {
+        if (game.gameType === 'holiday-challenge') {
+          joining.challengeScore = 0;
+          joining.challengeCompletions = [];
+        } else {
+          joining.tasks = makeTasks(game, joining, game.settings.targetScore >= 5 ? 8 : 7);
+        }
       }
       game.players.push(joining);
       changed = true;
@@ -428,6 +512,57 @@ export async function applyAction(
       game.settings.tasksLoaded = true;
       game.status = 'live';
       game.currentPhase = 'play';
+      game.startedAt = now.toISOString();
+      game.claimsOpenAt = new Date(
+        now.getTime() + (game.settings.briefingMinutes ?? 0) * 60 * 1000,
+      ).toISOString();
+      changed = true;
+      break;
+    }
+
+    case 'UPDATE_SETTINGS': {
+      host(game, identityId);
+      requireStatus(game, 'draft');
+      const briefing = Number(body.briefingMinutes);
+      if (!BRIEFING_OPTIONS.includes(briefing)) throw new GameRuleError('Choose a listed settling-in time');
+      if (game.settings.briefingMinutes === briefing) break;
+      game.settings.briefingMinutes = briefing;
+      changed = true;
+      break;
+    }
+
+    case 'OPEN_CLAIMS': {
+      host(game, identityId);
+      requireStatus(game, 'live');
+      if (!game.claimsOpenAt || new Date(game.claimsOpenAt) <= now) break;
+      game.claimsOpenAt = now.toISOString();
+      changed = true;
+      break;
+    }
+
+    case 'PAUSE': {
+      host(game, identityId);
+      requireStatus(game, 'live');
+      if (game.pausedAt) break;
+      game.pausedAt = now.toISOString();
+      changed = true;
+      break;
+    }
+
+    case 'RESUME': {
+      host(game, identityId);
+      requireStatus(game, 'live');
+      if (!game.pausedAt) break;
+      // Push every running clock forward by however long play was paused.
+      const pausedFor = Math.max(0, now.getTime() - new Date(game.pausedAt).getTime());
+      const shift = (iso: string) => new Date(new Date(iso).getTime() + pausedFor).toISOString();
+      for (const dispute of game.disputes) {
+        if (dispute.result === 'pending') dispute.closesAt = shift(dispute.closesAt);
+      }
+      if (game.claimsOpenAt && new Date(game.claimsOpenAt) > new Date(game.pausedAt)) {
+        game.claimsOpenAt = shift(game.claimsOpenAt);
+      }
+      delete game.pausedAt;
       changed = true;
       break;
     }
@@ -444,29 +579,29 @@ export async function applyAction(
     case 'LEAVE': {
       const leaving = member(game, identityId);
       if (game.status === 'ended') break;
-      game.players = game.players.filter((player) => player.id !== leaving.id);
-      for (const dispute of game.disputes) {
-        if (dispute.result !== 'pending') continue;
-        if (dispute.accuserId === leaving.id || dispute.targetId === leaving.id) {
-          const claimant = game.players.find((player) => player.id === dispute.accuserId);
-          const task = claimant?.tasks.find((candidate) => candidate.id === dispute.taskInstanceId);
-          if (task?.status === 'disputed') {
-            task.status = 'pending';
-            delete task.targetId;
-            delete task.disputeId;
-            delete task.gotAt;
-          }
-          dispute.result = 'overturned';
-        }
-      }
-      if (game.players.length === 0) {
-        deleteGame = true;
-      } else if (leaving.isHost) {
-        game.players.forEach((player, index) => {
-          player.isHost = index === 0;
-        });
-        game.hostId = game.players[0].id;
-      }
+      removePlayer(game, leaving);
+      if (game.players.length === 0) deleteGame = true;
+      changed = true;
+      break;
+    }
+
+    case 'KICK': {
+      const hostPlayer = host(game, identityId);
+      if (game.status === 'ended') throw new GameRuleError('That game has already ended');
+      const playerId = text(body.playerId, 'Player', 64);
+      if (playerId === hostPlayer.id) throw new GameRuleError('Use Leave to remove yourself');
+      const kicked = game.players.find((player) => player.id === playerId);
+      if (!kicked) throw new GameRuleError('Player not found');
+      removePlayer(game, kicked);
+      changed = true;
+      break;
+    }
+
+    case 'LINK_REMATCH': {
+      member(game, identityId);
+      requireStatus(game, 'ended');
+      if (game.rematchGameId) break;
+      game.rematchGameId = text(body.rematchGameId, 'Rematch', 6);
       changed = true;
       break;
     }
@@ -525,6 +660,7 @@ export async function applyAction(
       requireStatus(game, 'live');
       if (game.gameType === 'holiday-challenge') throw new GameRuleError('Use challenges in this game');
       const player = member(game, identityId);
+      requirePlayable(game, now);
       const task = findTask(game, player, body.taskId);
       if (task.status !== 'pending') throw new GameRuleError('That task is already resolved');
       const outcome = body.outcome === 'caught' || body.outcome === 'failed' ? body.outcome : 'success';
@@ -589,6 +725,10 @@ export async function applyAction(
           candidate.result === 'pending',
       );
       if (!dispute) throw new GameRuleError('Pending claim not found');
+      requireNotPaused(game, 'Disputes are on hold while the game is paused — you can still accept');
+      if (eligibleVoterCount(game, dispute) === 0) {
+        throw new GameRuleError('There is nobody else to vote — settle this one out loud');
+      }
       dispute.phase = 'voting';
       dispute.description = optionalText(body.reason, 100);
       dispute.closesAt = new Date(
@@ -601,6 +741,7 @@ export async function applyAction(
     case 'VOTE_DISPUTE': {
       requireStatus(game, 'live');
       const voter = member(game, identityId);
+      requireNotPaused(game, 'Voting is on hold while the game is paused');
       const disputeId = text(body.disputeId, 'Dispute', 64);
       const dispute = game.disputes.find(
         (candidate) => candidate.id === disputeId && candidate.result === 'pending',
@@ -622,10 +763,7 @@ export async function applyAction(
         vote: body.vote,
         votedAt: now.toISOString(),
       });
-      const eligibleVoters = game.players.filter(
-        (player) => player.id !== dispute.accuserId && player.id !== dispute.targetId,
-      ).length;
-      if (dispute.votes.length >= eligibleVoters) resolveVote(game, dispute);
+      if (dispute.votes.length >= eligibleVoterCount(game, dispute)) resolveVote(game, dispute);
       changed = true;
       break;
     }
@@ -636,6 +774,7 @@ export async function applyAction(
         throw new GameRuleError('This is not a Holiday Challenge game');
       }
       const player = member(game, identityId);
+      requirePlayable(game, now);
       const challengeId = text(body.challengeId, 'Challenge', 32);
       const challenge = game.selectedChallenges.find((item) => item.id === challengeId);
       if (!challenge) throw new GameRuleError('That challenge is not part of this game');
@@ -697,6 +836,8 @@ export async function applyAction(
       throw new GameRuleError('Unknown game action');
   }
 
+  if (game.status === 'ended' && source.status !== 'ended') game.endedAt = now.toISOString();
+
   if (changed) {
     game.revision = source.revision + 1;
     game.requestIds = [...source.requestIds, requestId].slice(-50);
@@ -709,24 +850,44 @@ export async function applyAction(
 export async function projectGameView(
   game: StoredGame,
   identityId: string,
-  avatarUrl: (key: string) => Promise<string>,
+  mediaUrl: (key: string) => Promise<string>,
+  now = new Date(),
 ): Promise<{ gameId: string; revision: number; payload: unknown }> {
   const current = member(game, identityId);
+  // Once the game is over every dossier is declassified for the reveal.
+  const revealAll = game.status === 'ended';
   const publicPlayers = await Promise.all(
     game.players.map(async (player) => {
       const visibleTasks =
-        player.id === current.id
+        player.id === current.id || revealAll
           ? player.tasks
           : player.tasks.filter(
               (task) => task.status === 'completed' || task.status === 'failed',
             );
       const avatar =
         player.avatarType === 'photo' && player.avatar
-          ? await avatarUrl(player.avatar)
+          ? await mediaUrl(player.avatar)
           : player.avatar;
       const { identityId: _identityId, ...safePlayer } = player;
-      return { ...safePlayer, avatar, token: '', tasks: visibleTasks };
+      return {
+        ...safePlayer,
+        avatar,
+        // Only your own avatar key is needed (to carry a photo into a rematch).
+        avatarKey: player.id === current.id && player.avatarType === 'photo' ? player.avatar : undefined,
+        token: '',
+        tasks: visibleTasks,
+      };
     }),
+  );
+  const claimedTaskText = (dispute: StoredDispute) =>
+    game.players
+      .find((player) => player.id === dispute.accuserId)
+      ?.tasks.find((task) => task.id === dispute.taskInstanceId)?.text;
+  const challengeCompletions = await Promise.all(
+    game.challengeCompletions.map(async ({ proofImageKey, ...completion }) => ({
+      ...completion,
+      proofUrl: proofImageKey ? await mediaUrl(proofImageKey) : undefined,
+    })),
   );
   const gameView = {
     id: game.gameId,
@@ -740,19 +901,44 @@ export async function projectGameView(
     players: publicPlayers,
     settings: game.settings,
     currentPhase: game.currentPhase,
-    challengeCompletions: game.challengeCompletions.map(
-      ({ proofImageKey: _proofImageKey, ...completion }) => completion,
-    ),
+    challengeCompletions,
     selectedChallenges: game.selectedChallenges,
+    startedAt: game.startedAt,
+    endedAt: game.endedAt,
+    rematchGameId: game.rematchGameId,
+    claimsOpenAt: game.claimsOpenAt,
+    pausedAt: game.pausedAt,
   };
   return {
     gameId: game.gameId,
     revision: game.revision,
     payload: {
+      // Lets every phone count down against the same clock.
+      serverTime: now.toISOString(),
       game: gameView,
       currentPlayer: publicPlayers.find((player) => player.id === current.id),
-      activeDisputes: game.disputes.filter((dispute) => dispute.result === 'pending'),
+      // A claimed mission is no longer secret: the target and jury need to see it.
+      activeDisputes: game.disputes
+        .filter((dispute) => dispute.result === 'pending')
+        .map((dispute) => ({ ...dispute, taskText: claimedTaskText(dispute) })),
     },
+  };
+}
+
+/** Name and avatar to carry from a finished game into its rematch. */
+export function rematchPlayerPayload(game: StoredGame, identityId: string): {
+  name: string;
+  avatar?: string;
+  avatarType?: 'emoji' | 'photo';
+  packId?: string;
+} {
+  const player = member(game, identityId);
+  requireStatus(game, 'ended');
+  return {
+    name: player.name,
+    avatar: player.avatar,
+    avatarType: player.avatarType,
+    packId: game.settings.selectedPack || undefined,
   };
 }
 

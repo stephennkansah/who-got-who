@@ -733,6 +733,425 @@ button:not(:disabled):active {
   animation: taskReveal 0.35s ease-out both;
 }
 
+.task-list-item.is-open {
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45), 0 0 0 3px var(--amber);
+}
+
+.mission-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0 0.75rem;
+  padding: 0 0.15rem;
+}
+
+.mission-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.chip-btn.active {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #3a2b0c;
+}
+
+/* The tappable dossier body */
+.mission-body {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  color: var(--paper-ink);
+}
+.mission-body:disabled { cursor: default; color: var(--paper-ink); }
+
+.mission-number {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+}
+
+.mission-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--paper-ink);
+}
+
+.mission-tip {
+  margin-top: 0.45rem;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--paper-dim);
+}
+
+.mission-redacted {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.2rem 0 0.15rem;
+}
+.mission-redacted .redacted { height: 1rem; }
+
+.mission-status {
+  border-top: 1px dashed var(--paper-line);
+  margin-top: 0.7rem;
+  padding-top: 0.55rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+}
+.mission-status.warning { color: var(--warning-ink); }
+
+.mission-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+.mission-actions .btn {
+  padding: 0.65rem 0.4rem;
+  font-size: 1.05rem;
+}
+
+.filing-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(35, 32, 20, 0.82);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  z-index: 10;
+  animation: feedbackPulse 0.5s ease-out;
+}
+.filing-overlay .stamp { background: var(--paper); animation: feedbackScale 0.45s ease-out; }
+
+/* Finished missions fold away under the active ones */
+.filed-missions {
+  margin-bottom: 0.9rem;
+}
+
+.filed-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.filed-row {
+  margin-top: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border-left: 5px solid var(--success);
+  background: var(--success-soft);
+  color: var(--success-ink);
+}
+.filed-row.failed {
+  border-left-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger-ink);
+}
+.filed-text { font-size: 0.88rem; font-weight: 600; line-height: 1.4; }
+.filed-outcome { font-size: 0.78rem; margin-top: 0.2rem; }
+
+/* Progress toward the winning score */
+.progress-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(241, 237, 224, 0.12);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--amber);
+  transition: width 0.4s ease;
+}
+
+.leaderboard-card .progress-track { margin-top: 0.3rem; width: 80%; }
+
+/* First-time target bonus, in the "who did you get?" list */
+.bonus-tag {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--success-soft);
+  border: 1px solid var(--success-border);
+  color: var(--success-ink);
+}
+
+/* Inline text buttons (Edit, Remove, Change) */
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0.5rem 0.25rem;
+  min-height: 44px;
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  flex-shrink: 0;
+}
+.link-btn.danger { color: var(--text-muted); }
+
+.pack-line {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.pack-line strong { color: var(--text-main); }
+
+/* ---------- Recap: the reveal, awards, album ---------- */
+
+.award-chip {
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-border);
+  color: var(--warning-ink);
+  border-radius: var(--radius-pill);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+}
+
+.reveal-dossier {
+  border-radius: var(--radius-sm);
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.reveal-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  background: none;
+  border: none;
+  color: var(--text-main);
+  text-align: left;
+  min-height: 48px;
+}
+.reveal-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reveal-count { font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; }
+
+.reveal-list {
+  list-style: none;
+  padding: 0 0.6rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.reveal-item {
+  padding: 0.55rem 0.75rem;
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  border-left: 5px solid var(--paper-line);
+}
+.reveal-item.completed { border-left-color: var(--success); }
+.reveal-item.failed { border-left-color: var(--danger); }
+.reveal-item.disputed { border-left-color: var(--warning); }
+.reveal-text { font-size: 0.88rem; font-weight: 600; line-height: 1.4; }
+.reveal-outcome { font-size: 0.76rem; color: var(--paper-dim); margin-top: 0.15rem; }
+.reveal-item.pending .reveal-outcome { font-style: italic; }
+
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.album-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  padding: 0;
+}
+.album-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.album-who {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.2rem 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Briefing countdown and pause ---------- */
+
+.phase-banner {
+  text-align: center;
+  padding: 1.1rem 1.1rem 1.2rem;
+  margin-bottom: 0.9rem;
+  border-radius: 6px;
+  background:
+    linear-gradient(100deg, rgba(35, 32, 20, 0.045) 0%, transparent 30%),
+    var(--paper);
+  color: var(--paper-ink);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+  border-top: 5px solid var(--amber);
+}
+.phase-banner.paused { border-top-color: var(--danger); }
+
+.phase-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+}
+
+.phase-clock,
+.phase-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  line-height: 1;
+  margin: 0.35rem 0 0.5rem;
+  color: var(--paper-ink);
+}
+.phase-clock { font-size: 3.4rem; font-variant-numeric: tabular-nums; }
+.phase-title { font-size: 2.2rem; color: var(--danger-ink); }
+
+.phase-text {
+  color: #4c4636;
+  font-size: 0.88rem;
+  margin: 0 0 0.8rem;
+}
+.phase-banner .btn-secondary {
+  width: auto;
+  color: var(--paper-ink);
+  border-color: rgba(35, 32, 20, 0.4);
+}
+
+.mission-locked {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background: rgba(35, 32, 20, 0.07);
+  color: var(--paper-dim);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Segmented picker (settling-in time) */
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.35rem;
+}
+.segmented button {
+  min-height: 44px;
+  padding: 0.4rem 0.2rem;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--line-strong);
+  background: transparent;
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.segmented button.is-selected {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #3a2b0c;
+}
+
+/* Status banner for claims you are part of */
+.claim-banner {
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-border);
+  color: var(--warning-ink);
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Loading spinner */
+.spinner {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 1.1rem;
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  border-top-color: var(--amber);
+  animation: spin 0.9s linear infinite;
+}
+
+/* Live-connection notice */
+.connection-pill {
+  position: fixed;
+  bottom: calc(16px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+  color: var(--paper-ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+}
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--amber);
+  animation: pulse 1s ease-in-out infinite;
+}
+
 /* ---------- Home feature grid ---------- */
 
 .feature-item {
@@ -840,28 +1259,24 @@ button:not(:disabled):active {
 .toast.error { border-left-color: var(--danger); }
 .toast.info { border-left-color: var(--amber); }
 
-/* Gotcha feed (in-game) */
-.notification-stack {
+/* New-version notice */
+.update-notice {
   position: fixed;
   top: calc(14px + var(--safe-top));
-  right: 14px;
-  z-index: 1500;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2700;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  max-width: min(78vw, 300px);
-}
-
-.notification-toast {
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.45rem 0.5rem 0.45rem 1rem;
+  border-radius: var(--radius-sm);
   background: var(--paper);
   color: var(--paper-ink);
-  padding: 0.7rem 0.9rem;
-  border-radius: 6px;
-  border-left: 6px solid var(--primary);
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  animation: slideInRight 0.3s ease-out;
+  white-space: nowrap;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
 }
 
 /* ---------- Animations ---------- */
@@ -933,7 +1348,6 @@ button:not(:disabled):active {
 .container > *:nth-child(n+7) { animation-delay: 0.38s; }
 
 /* Fixed-position children must not inherit the cascade transform */
-.container > .notification-stack,
 .container > .no-rise {
   animation: none;
 }

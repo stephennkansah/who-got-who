@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../hooks/useGame';
+import { formatSeconds, useSecondsLeft } from '../hooks/useCountdown';
 import { Dispute } from '../types';
 
 interface VotingBannerProps {
@@ -8,36 +9,21 @@ interface VotingBannerProps {
 
 export default function VotingBanner({ dispute }: VotingBannerProps) {
   const { voteOnDispute, state } = useGame();
-  const [timeLeft, setTimeLeft] = useState(0);
+  const pausedAt = state.currentGame?.pausedAt;
+  const timeLeft = useSecondsLeft(dispute.closesAt, pausedAt);
   const [hasVoted, setHasVoted] = useState(false);
 
   const currentPlayer = state.currentPlayer;
   const players = state.currentGame?.players || [];
   const accuserName = players.find((p) => p.id === dispute.accuserId)?.name || 'A player';
   const targetName = players.find((p) => p.id === dispute.targetId)?.name || 'another player';
-  const taskText = players
-    .flatMap((p) => p.tasks || [])
-    .find((task) => task.id === dispute.taskInstanceId)?.text;
+  const taskText = dispute.taskText;
 
   useEffect(() => {
     // Check if current player has already voted
     const existingVote = dispute.votes.find(v => v.voterId === currentPlayer?.id);
     setHasVoted(!!existingVote);
   }, [dispute.votes, currentPlayer?.id]);
-
-  useEffect(() => {
-    const updateTimer = () => {
-      const remaining = Math.max(
-        0,
-        Math.ceil((new Date(dispute.closesAt).getTime() - Date.now()) / 1000),
-      );
-      setTimeLeft(remaining);
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [dispute.closesAt]);
 
   const handleVote = async (vote: boolean) => {
     try {
@@ -48,13 +34,7 @@ export default function VotingBanner({ dispute }: VotingBannerProps) {
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  if (timeLeft === 0) {
+  if (timeLeft === 0 && !pausedAt) {
     return null; // Hide banner when voting is over
   }
 
@@ -76,7 +56,9 @@ export default function VotingBanner({ dispute }: VotingBannerProps) {
         }}>
           Group Vote
         </h3>
-        <span className={`timer ${timeLeft <= 15 ? 'urgent' : ''}`}>{formatTime(timeLeft)}</span>
+        <span className={`timer ${timeLeft <= 15 && !pausedAt ? 'urgent' : ''}`}>
+          {pausedAt ? `Paused · ${formatSeconds(timeLeft)}` : formatSeconds(timeLeft)}
+        </span>
       </div>
 
       <p style={{ marginBottom: '0.5rem', color: 'var(--warning-ink)', fontWeight: 700 }}>
@@ -88,11 +70,12 @@ export default function VotingBanner({ dispute }: VotingBannerProps) {
           margin: '0.5rem 0',
           padding: '0.6rem 0.75rem',
           background: 'rgba(255,255,255,0.8)',
+          color: 'var(--paper-ink)',
           borderRadius: '8px',
           fontSize: '0.9rem',
           fontStyle: 'italic',
         }}>
-          "{taskText}"
+          <span style={{ fontStyle: 'normal', fontWeight: 700 }}>The mission:</span> "{taskText}"
         </div>
       )}
 
@@ -101,6 +84,7 @@ export default function VotingBanner({ dispute }: VotingBannerProps) {
           margin: '0.5rem 0',
           padding: '0.6rem 0.75rem',
           background: 'rgba(255,255,255,0.8)',
+          color: 'var(--paper-ink)',
           borderRadius: '8px',
           fontSize: '0.85rem',
         }}>
@@ -108,7 +92,11 @@ export default function VotingBanner({ dispute }: VotingBannerProps) {
         </div>
       )}
 
-      {!hasVoted ? (
+      {pausedAt && !hasVoted ? (
+        <p className="text-small" style={{ margin: '0.6rem 0 0', color: 'var(--warning-ink)', fontWeight: 700 }}>
+          Voting is on hold while the game is paused.
+        </p>
+      ) : !hasVoted ? (
         <>
           <div className="flex gap-1" style={{ margin: '0.75rem 0 0.5rem' }}>
             <button

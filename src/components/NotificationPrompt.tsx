@@ -33,9 +33,9 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
       onPermissionGranted?.();
       // Test notification
       NotificationService.showNotification(
-        'Notifications enabled!',
+        'Notifications on',
         {
-          body: "You'll now get updates when players complete tasks",
+          body: "We'll buzz you when someone claims a gotcha on you.",
           tag: 'welcome'
         }
       );
@@ -85,47 +85,26 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
         fontSize: '0.88em',
         lineHeight: 1.45
       }}>
-        Get a ping when someone claims a gotcha or gets caught — perfect for background play.
+        Get a buzz when someone claims a gotcha on you, so you never miss the 2-minute
+        window to dispute — works while the game is open in the background.
       </p>
       <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
         <button
           onClick={handleEnableNotifications}
-          style={{
-            background: 'linear-gradient(135deg, #10b981, #059669)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '12px',
-            padding: '10px 20px',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            const target = e.target as HTMLButtonElement;
-            target.style.transform = 'translateY(-1px)';
-          }}
-          onMouseLeave={(e) => {
-            const target = e.target as HTMLButtonElement;
-            target.style.transform = 'translateY(0)';
-          }}
+          className="btn btn-success btn-small"
         >
-          Enable
+          Turn On
         </button>
         <button
           onClick={handleDismiss}
+          className="btn btn-small"
           style={{
             background: 'transparent',
             color: 'var(--warning-ink)',
             border: '2px solid var(--warning-border)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '10px 20px',
-            fontSize: '14px',
-            fontWeight: 700,
-            cursor: 'pointer'
           }}
         >
-          Maybe later
+          Not now
         </button>
       </div>
     </div>

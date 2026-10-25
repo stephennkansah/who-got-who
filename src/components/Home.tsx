@@ -1,61 +1,90 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
 import { validateGameInput } from '../utils/validation';
+import { Game, Player } from '../types';
 import AvatarPicker from './AvatarPicker';
 import Modal from './common/Modal';
 import { showToast } from './common/Toast';
+import LoadingScreen from './common/LoadingScreen';
+
+const PROFILE_KEY = 'wgw-profile';
+
+type Profile = { name: string; avatar: string; avatarType: 'emoji' | 'photo' };
+
+function loadProfile(): Profile | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+    return saved && typeof saved.name === 'string' ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveProfile(profile: Profile) {
+  try {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  } catch {
+    // A large photo may not fit; the name alone is still worth keeping.
+    try {
+      localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...profile, avatar: '😎', avatarType: 'emoji' }));
+    } catch {
+      // Storage unavailable (private mode).
+    }
+  }
+}
+
+/** Accepts a bare code or a pasted invite link (…/?join=ABC123). */
+function extractCode(value: string): string {
+  const fromLink = value.match(/join=([A-Za-z0-9]{6})/);
+  return (fromLink ? fromLink[1] : value).replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
+}
+
+function gamePath(game: Game, player: Player | null): string {
+  if (game.status === 'live') return `/game/${game.id}`;
+  if (game.status === 'ended') return `/recap/${game.id}`;
+  return game.settings?.selectedPack || !player?.isHost ? `/lobby/${game.id}` : `/select-pack/${game.id}`;
+}
 
 function Home() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { state, createGame, joinGame, leaveGame } = useGame();
-  const [playerName, setPlayerName] = useState('');
-  const [gameId, setGameId] = useState('');
-  const [hasInitialized, setHasInitialized] = useState(false);
-  const [selectedAvatar, setSelectedAvatar] = useState('😎');
-  const [avatarType, setAvatarType] = useState<'emoji' | 'photo'>('emoji');
-  const [mode, setMode] = useState<'join' | 'welcome'>('welcome');
+  const [profile] = useState(loadProfile);
+  const [playerName, setPlayerName] = useState(profile?.name || '');
+  const requestedCode = extractCode(searchParams.get('join') || '');
+  const [gameId, setGameId] = useState(requestedCode);
+  const [selectedAvatar, setSelectedAvatar] = useState(profile?.avatar || '😎');
+  const [avatarType, setAvatarType] = useState<'emoji' | 'photo'>(profile?.avatarType || 'emoji');
+  const [mode, setMode] = useState<'join' | 'welcome'>(requestedCode ? 'join' : 'welcome');
   const [showBriefing, setShowBriefing] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
 
-  // Initialization effects...
+  // A game that was already open when Home appeared is offered back, never left silently.
+  const gameOnArrival = useRef(state.isLoading ? null : state.currentGame?.id ?? null);
+  const activeGame = state.currentGame && state.currentGame.status !== 'ended' ? state.currentGame : null;
+  const showRejoin = !!activeGame && activeGame.id === gameOnArrival.current;
+
+  // Finished games need no goodbye: clear them so the forms show.
   useEffect(() => {
-    if (!hasInitialized) {
-      setHasInitialized(true);
-      const joinGameId = searchParams.get('join')?.trim().toUpperCase();
-      if (!joinGameId && state.currentGame) {
-        void leaveGame().catch(() => undefined);
-      }
-      if (joinGameId) {
-        setMode('join');
-        setGameId(joinGameId);
-        if (state.currentGame && state.currentGame.id !== joinGameId) {
-          void leaveGame().catch(() => undefined);
-        }
-      }
+    if (state.currentGame?.status === 'ended' && state.currentGame.id === gameOnArrival.current) {
+      void leaveGame().catch(() => undefined);
     }
-  }, [hasInitialized, searchParams, state.currentGame, leaveGame]);
+  }, [state.currentGame, leaveGame]);
 
+  // Follow a game into its screen when it was just created, joined, or restored.
   useEffect(() => {
-    if (state.currentGame) {
-      const requestedGameId = searchParams.get('join')?.trim().toUpperCase();
-      if (requestedGameId && requestedGameId !== state.currentGame.id) return;
-      if (state.currentGame.status === 'draft') {
-        const packSelected = state.currentGame.settings?.selectedPack;
-        const isHost = state.currentPlayer?.isHost;
+    const game = state.currentGame;
+    if (!game || game.id === gameOnArrival.current) return;
+    navigate(gamePath(game, state.currentPlayer));
+  }, [state.currentGame, state.currentPlayer, navigate]);
 
-        if (packSelected || !isHost) {
-          navigate(`/lobby/${state.currentGame.id}`);
-        } else {
-          navigate(`/select-pack/${state.currentGame.id}`);
-        }
-      } else if (state.currentGame.status === 'live') {
-        navigate(`/game/${state.currentGame.id}`);
-      } else if (state.currentGame.status === 'ended') {
-        navigate(`/recap/${state.currentGame.id}`);
-      }
-    }
-  }, [state.currentGame, state.currentPlayer, navigate, searchParams]);
+  // An invite link for the game you're already in just takes you back to it.
+  useEffect(() => {
+    if (activeGame && requestedCode === activeGame.id) navigate(gamePath(activeGame, state.currentPlayer));
+  }, [activeGame, requestedCode, state.currentPlayer, navigate]);
+
+  const remember = (name: string) => saveProfile({ name, avatar: selectedAvatar, avatarType });
 
   const handleStartGame = async () => {
     const validation = validateGameInput(playerName, undefined, selectedAvatar);
@@ -63,6 +92,7 @@ function Home() {
       showToast(validation.errors.join(' '), 'error');
       return;
     }
+    remember(validation.sanitizedValues.playerName!);
     try {
       await createGame(
         validation.sanitizedValues.playerName!,
@@ -80,6 +110,7 @@ function Home() {
       showToast(validation.errors.join(' '), 'error');
       return;
     }
+    remember(validation.sanitizedValues.playerName!);
     try {
       await joinGame(
         validation.sanitizedValues.gameId!,
@@ -92,26 +123,20 @@ function Home() {
     }
   };
 
-  if (state.isLoading) {
-    return (
-      <div className="container flex-center">
-        <div className="text-center">
-          <div
-            aria-hidden="true"
-            style={{
-              width: '44px',
-              height: '44px',
-              margin: '0 auto 1.1rem',
-              borderRadius: '50%',
-              border: '3px solid var(--line)',
-              borderTopColor: 'var(--amber)',
-              animation: 'spin 0.9s linear infinite',
-            }}
-          />
-          <p className="type" style={{ fontSize: '0.85rem' }}>establishing secure channel…</p>
-        </div>
-      </div>
-    );
+  const handleLeaveActive = async () => {
+    setIsLeaving(true);
+    try {
+      await leaveGame();
+    } catch {
+      // Best-effort; the forms show either way.
+    } finally {
+      setIsLeaving(false);
+      gameOnArrival.current = null;
+    }
+  };
+
+  if (state.isLoading && !state.currentGame) {
+    return <LoadingScreen message="establishing secure channel…" />;
   }
 
   return (
@@ -151,69 +176,112 @@ function Home() {
           </div>
         )}
 
-        {/* Agent identity: one row */}
-        <div className="flex gap-1" style={{ alignItems: 'center', marginBottom: '1rem' }}>
-          <AvatarPicker
-            selectedAvatar={selectedAvatar}
-            onAvatarChange={(avatar, isPhoto) => {
-              setSelectedAvatar(avatar);
-              setAvatarType(isPhoto ? 'photo' : 'emoji');
-            }}
-            style={{ width: '58px', height: '58px', flexShrink: 0 }}
-          />
-          <input
-            aria-label="Player name"
-            type="text"
-            placeholder="Your agent name"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            style={{ textAlign: 'left', paddingLeft: '1.1rem' }}
-          />
-        </div>
-
-        {mode === 'welcome' ? (
-          <div className="flex-column gap-1">
-            <button
-              className="btn btn-primary"
-              onClick={handleStartGame}
-              disabled={!playerName.trim() || state.isLoading}
-              style={{ fontSize: '1.4rem', padding: '1.05rem' }}
-            >
-              Start a New Game
-            </button>
-            <button className="btn btn-secondary" onClick={() => setMode('join')}>
-              I Have a Code
-            </button>
+        {showRejoin && activeGame ? (
+          <div className="paper-card" style={{ padding: '1.25rem', textAlign: 'center' }}>
+            <div className="mission-number type" style={{ marginBottom: '0.5rem' }}>
+              Operation in progress
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', letterSpacing: '0.14em', lineHeight: 1 }}>
+              {activeGame.id}
+            </div>
+            <p style={{ color: 'var(--paper-dim)', fontSize: '0.88rem', margin: '0.5rem 0 1rem' }}>
+              {activeGame.status === 'live'
+                ? `You're still in this game as ${state.currentPlayer?.name}.`
+                : `You're in this lobby as ${state.currentPlayer?.name}.`}
+              {requestedCode && requestedCode !== activeGame.id && ` Leave it to join ${requestedCode}.`}
+            </p>
+            <div className="flex-column gap-1">
+              <button
+                className="btn btn-primary"
+                onClick={() => navigate(gamePath(activeGame, state.currentPlayer))}
+              >
+                Rejoin Game
+              </button>
+              <button className="btn btn-secondary" onClick={handleLeaveActive} disabled={isLeaving}>
+                {isLeaving ? 'Leaving…' : 'Leave It'}
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="flex-column gap-1">
-            <input
-              aria-label="Game code"
-              type="text"
-              className="type"
-              placeholder="GAME CODE"
-              value={gameId}
-              onChange={(e) => setGameId(e.target.value.toUpperCase())}
-              maxLength={6}
-              style={{ textTransform: 'uppercase', letterSpacing: '6px', fontSize: '1.15rem' }}
-            />
-            <button
-              className="btn btn-primary"
-              onClick={handleJoinGame}
-              disabled={gameId.length !== 6 || !playerName.trim() || state.isLoading}
-              style={{ fontSize: '1.4rem', padding: '1.05rem' }}
-            >
-              Join the Party
-            </button>
-            <button className="btn btn-ghost" onClick={() => setMode('welcome')}>
-              ← Back
-            </button>
-          </div>
+          <>
+            {/* Agent identity: one row */}
+            <div className="flex gap-1" style={{ alignItems: 'center', marginBottom: '1rem' }}>
+              <AvatarPicker
+                selectedAvatar={selectedAvatar}
+                onAvatarChange={(avatar, isPhoto) => {
+                  setSelectedAvatar(avatar);
+                  setAvatarType(isPhoto ? 'photo' : 'emoji');
+                }}
+                style={{ width: '58px', height: '58px', flexShrink: 0 }}
+              />
+              <input
+                aria-label="Player name"
+                type="text"
+                placeholder="Your agent name"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                maxLength={24}
+                autoComplete="nickname"
+                enterKeyHint={mode === 'join' ? 'next' : 'go'}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && mode === 'welcome' && playerName.trim()) void handleStartGame();
+                }}
+                style={{ textAlign: 'left', paddingLeft: '1.1rem' }}
+              />
+            </div>
+
+            {mode === 'welcome' ? (
+              <div className="flex-column gap-1">
+                <button
+                  className="btn btn-primary"
+                  onClick={handleStartGame}
+                  disabled={!playerName.trim() || state.isLoading}
+                  style={{ fontSize: '1.4rem', padding: '1.05rem' }}
+                >
+                  {state.isLoading ? 'Opening a case file…' : 'Start a New Game'}
+                </button>
+                <button className="btn btn-secondary" onClick={() => setMode('join')}>
+                  I Have a Code
+                </button>
+              </div>
+            ) : (
+              <div className="flex-column gap-1">
+                <input
+                  aria-label="Game code"
+                  type="text"
+                  className="type"
+                  placeholder="GAME CODE"
+                  value={gameId}
+                  onChange={(e) => setGameId(extractCode(e.target.value))}
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="go"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && gameId.length === 6 && playerName.trim()) void handleJoinGame();
+                  }}
+                  style={{ textTransform: 'uppercase', letterSpacing: '6px', fontSize: '1.15rem' }}
+                />
+                <button
+                  className="btn btn-primary"
+                  onClick={handleJoinGame}
+                  disabled={gameId.length !== 6 || !playerName.trim() || state.isLoading}
+                  style={{ fontSize: '1.4rem', padding: '1.05rem' }}
+                >
+                  {state.isLoading ? 'Joining…' : 'Join the Party'}
+                </button>
+                <button className="btn btn-ghost" onClick={() => setMode('welcome')}>
+                  ← Back
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Foot */}
-      <footer style={{ paddingBottom: '0.5rem' }}>
+      {/* Foot — clear of the floating Feedback / Install buttons */}
+      <footer style={{ paddingBottom: '3.5rem' }}>
         <button
           className="btn btn-ghost"
           onClick={() => setShowBriefing(true)}
@@ -251,7 +319,7 @@ function Home() {
           <Step number="1" text="Every agent receives secret tasks to pull off on the others." />
           <Step number="2" text="Complete yours without being noticed. Suspicion is failure." />
           <Step number="3" text={'Say "Gotcha!" out loud, then claim it in the app. Your target can accept — or dispute it to a group vote.'} />
-          <Step number="4" text="First to the target score takes the game." />
+          <Step number="4" text="First to the target score takes the game. Then everyone's missions are revealed." />
         </div>
         <div className="type" style={{ fontSize: '0.78rem', color: 'var(--paper-dim)', marginBottom: '1.25rem' }}>
           field-tested at house parties, dinners, pre-drinks &amp; game nights

@@ -7,7 +7,10 @@ import ShareButton from './ShareButton';
 import PlayerAvatar from './PlayerAvatar';
 import QRCodeJoin from './QRCodeJoin';
 import { ConfirmationModal } from './common/ConfirmationModal';
+import Modal from './common/Modal';
+import LoadingScreen from './common/LoadingScreen';
 import { showToast } from './common/Toast';
+import { getAllPackOptions } from '../data/packCatalog';
 
 const RULES_SEEN_KEY = 'wgw-rules-seen';
 
@@ -64,12 +67,14 @@ const ExampleBox: React.FC<{ title: string; hint: string }> = ({ title, hint }) 
 export default function Lobby() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const { state, startGame, leaveGame } = useGame();
+  const { state, startGame, leaveGame, kickPlayer, updatePlayerName, setBriefingMinutes } = useGame();
   const [showRules, setShowRules] = useState(
     () => localStorage.getItem(RULES_SEEN_KEY) !== 'true',
   );
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [kickTarget, setKickTarget] = useState<Player | null>(null);
+  const [editingName, setEditingName] = useState<string | null>(null);
 
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
@@ -79,16 +84,62 @@ export default function Lobby() {
   const canStart = playerCount >= 2;
   const isHoliday = currentGame?.gameType === 'holiday-challenge';
   const hostName = players.find((p) => p.isHost)?.name || 'the host';
+  const packName = getAllPackOptions().find((pack) => pack.id === currentGame?.settings?.selectedPack)?.name;
+  const briefingMinutes = currentGame?.settings?.briefingMinutes ?? 0;
+  const briefingLabel = briefingMinutes === 0
+    ? `${isHoliday ? 'Challenges' : 'Gotchas'} open the moment the game starts.`
+    : `Missions arrive at the start — ${isHoliday ? 'challenges' : 'gotchas'} open ${briefingMinutes} minutes later, once everyone's settled in.`;
+
+  const chooseBriefing = async (minutes: number) => {
+    if (minutes === briefingMinutes) return;
+    try {
+      await setBriefingMinutes(minutes);
+    } catch {
+      // Errors surface via the global toast bridge.
+    }
+  };
 
   useEffect(() => {
-    if (!gameId) navigate('/');
-  }, [gameId, navigate]);
+    if (!gameId || (!currentGame && !state.isLoading)) navigate('/', { replace: true });
+  }, [gameId, currentGame, state.isLoading, navigate]);
 
   useEffect(() => {
     if (currentGame?.status === 'live') {
-      navigate(`/game/${gameId}`);
+      navigate(`/game/${currentGame.id}`, { replace: true });
     }
-  }, [currentGame?.status, gameId, navigate]);
+  }, [currentGame?.status, currentGame?.id, navigate]);
+
+  const handleKick = async () => {
+    const player = kickTarget;
+    setKickTarget(null);
+    if (!player) return;
+    try {
+      await kickPlayer(player.id);
+      showToast(`${player.name} was removed`, 'info');
+    } catch {
+      // Errors surface via the global toast bridge.
+    }
+  };
+
+  const handleRename = async () => {
+    const name = editingName?.trim();
+    if (!name || name === currentPlayer?.name) {
+      setEditingName(null);
+      return;
+    }
+    try {
+      await updatePlayerName(name);
+      setEditingName(null);
+      try {
+        const saved = JSON.parse(localStorage.getItem('wgw-profile') || '{}');
+        localStorage.setItem('wgw-profile', JSON.stringify({ ...saved, name }));
+      } catch {
+        // Remembering the name is a convenience only.
+      }
+    } catch {
+      // Errors (e.g. name taken) surface via the global toast bridge.
+    }
+  };
 
   const handleStartGame = async () => {
     if (!isHost || !canStart || isStarting) return;
@@ -109,7 +160,7 @@ export default function Lobby() {
     } catch {
       // Leaving is best-effort; still return home.
     }
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   const dismissRules = () => {
@@ -133,28 +184,7 @@ export default function Lobby() {
   };
 
   if (!currentGame || !currentPlayer) {
-    return (
-      <div className="container flex-center">
-        <div className="text-center">
-          <div
-            aria-hidden="true"
-            style={{
-              width: '44px',
-              height: '44px',
-              margin: '0 auto 1.1rem',
-              borderRadius: '50%',
-              border: '3px solid var(--line)',
-              borderTopColor: 'var(--amber)',
-              animation: 'spin 0.9s linear infinite',
-            }}
-          />
-          <p className="type" style={{ fontSize: '0.85rem', marginBottom: '1.25rem' }}>finding your game…</p>
-          <button className="btn btn-ghost" onClick={() => navigate('/')}>
-            Back to home
-          </button>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="finding your game…" showBack />;
   }
 
   // ---------- Rules interstitial (first visit only) ----------
@@ -173,21 +203,19 @@ export default function Lobby() {
         <div className="card">
           {isHoliday ? (
             <div className="flex-column gap-2">
-              <RuleCard title="Everyone gets the same 10 challenges" tone="danger">
-                Unlike classic Who Got Who, <strong>everyone sees the same challenges</strong>.
-                Race to complete them first!
+              <RuleCard title="1 · Same 10 challenges for everyone" tone="danger">
+                No secrets this time — <strong>race the others</strong> to complete social
+                challenges: chat to holiday-goers, snap photos, make friends.
               </RuleCard>
 
-              <RuleCard title="Scoring" tone="info">
-                <strong>First to finish a challenge:</strong> 3 gold points<br />
-                <strong>Next 2 players:</strong> 1 silver point each<br />
-                <strong>First to {currentGame.settings?.holidayChallengeWinCondition || 18} points wins.</strong><br />
-                Some challenges need photo proof.<br />
-                <em>The target scales with group size — more players, lower target.</em>
+              <RuleCard title="2 · Gold for first, silver for speed" tone="info">
+                <strong>First to finish a challenge:</strong> 3 gold points.{' '}
+                <strong>Next 2 players:</strong> 1 silver point each.
+                Some challenges need photo proof — everyone sees it in the trip album.
               </RuleCard>
 
-              <RuleCard title="Social holiday challenges" tone="warning">
-                Chat to other holiday-goers, snap photos, make friends. Perfect for vacation socialising.
+              <RuleCard title={`3 · First to ${currentGame.settings?.holidayChallengeWinCondition || 18} points wins`} tone="success">
+                The target scales with group size — more players, lower target.
               </RuleCard>
 
               <RuleCard title="Example challenges" tone="warning">
@@ -198,33 +226,22 @@ export default function Lobby() {
             </div>
           ) : (
             <div className="flex-column gap-2">
-              <RuleCard title="Stay stealthy" tone="danger">
-                Complete tasks <strong>without getting caught</strong>. If someone spots you
-                attempting a task, it's an automatic fail!
+              <RuleCard title="1 · Pull it off quietly" tone="danger">
+                You get <strong>{playerCount >= 7 ? 8 : 7} secret missions</strong>
+                {briefingMinutes > 0 && <> and {briefingMinutes} minutes to settle in before gotchas open</>}.
+                Complete them on other players <strong>without getting caught</strong> — if someone spots you
+                trying, it's busted. Hate one? <strong>Swap</strong> it ({currentGame.settings?.swapsAllowed ?? 2} per game).
+                The host can pause the game for breaks.
               </RuleCard>
 
-              <RuleCard title="Complete tasks &amp; score" tone="info">
-                Mark a task <strong>Got it</strong> when you pull it off.<br />
-                Mark it <strong>Caught</strong> if you get busted.<br />
-                <strong>First to {currentGame.settings?.targetScore || 4} points wins</strong> —
-                with a <strong>+0.5 bonus</strong> for targeting someone new.
+              <RuleCard title={'2 · Say "Gotcha!" — then claim it'} tone="warning">
+                Say <strong>"Gotcha [name]!"</strong> out loud, tap the mission and pick who you got.
+                They can accept — or dispute it and put it to a group vote.
               </RuleCard>
 
-              <RuleCard title={'Say "Gotcha!"'} tone="warning">
-                When you pull off a task, say <strong>"Gotcha [name]!"</strong> out loud, then
-                claim it in the app. Your target can accept — or dispute it and put it to a group vote.
-              </RuleCard>
-
-              <RuleCard title={`Task swaps — ${currentGame.settings?.swapsAllowed ?? 2} per player`} tone="success">
-                Don't like a task? <strong>Swap</strong> it for a random new one. Use them wisely!
-              </RuleCard>
-
-              <RuleCard title="The game scales with players" tone="success">
-                {playerCount >= 7 ? (
-                  <><strong>Big group:</strong> {playerCount} players get <strong>8 tasks</strong> each and play to <strong>5 points</strong>.</>
-                ) : (
-                  <><strong>Small group:</strong> everyone gets <strong>7 tasks</strong> and plays to <strong>4 points</strong>.</>
-                )}
+              <RuleCard title={`3 · First to ${playerCount >= 7 ? 5 : 4} points wins`} tone="info">
+                <strong>1 point</strong> per gotcha, <strong>+0.5</strong> the first time you get
+                each player. When it's over, everyone's missions are revealed.
               </RuleCard>
 
               <RuleCard title="Example tasks" tone="warning">
@@ -282,6 +299,14 @@ export default function Lobby() {
           <ShareButton gameId={currentGame.id} gameType={currentGame.gameType} size="small" />
           <QRCodeJoin gameId={currentGame.id} gameType={currentGame.gameType} />
         </div>
+        <div className="pack-line">
+          <span>Pack: <strong>{packName || 'not chosen yet'}</strong></span>
+          {isHost && (
+            <button className="link-btn" onClick={() => navigate(`/select-pack/${currentGame.id}`)}>
+              Change
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Players */}
@@ -303,10 +328,10 @@ export default function Lobby() {
                   border: isYou ? '1.5px solid var(--me-border)' : '1.5px solid transparent',
                 }}
               >
-                <div className="flex gap-1" style={{ alignItems: 'center' }}>
+                <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0 }}>
                   <PlayerAvatar player={player} size="medium" />
-                  <div>
-                    <div style={{ fontWeight: 700 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {player.name} {isYou && <span style={{ color: 'var(--amber)' }}>(You)</span>}
                     </div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -314,6 +339,19 @@ export default function Lobby() {
                     </div>
                   </div>
                 </div>
+                {isYou ? (
+                  <button className="link-btn" onClick={() => setEditingName(player.name)}>
+                    Edit
+                  </button>
+                ) : isHost ? (
+                  <button
+                    className="link-btn danger"
+                    onClick={() => setKickTarget(player)}
+                    aria-label={`Remove ${player.name}`}
+                  >
+                    Remove
+                  </button>
+                ) : null}
               </div>
             );
           })}
@@ -322,6 +360,31 @@ export default function Lobby() {
 
       {/* Start / waiting */}
       <div className="card">
+        <div style={{ marginBottom: '1rem' }}>
+          <div className="overline" style={{ textAlign: 'center', marginBottom: '0.6rem' }}>
+            Settling-in time
+          </div>
+          {isHost && (
+            <div className="segmented" role="radiogroup" aria-label="Settling-in time before gotchas open">
+              {[0, 5, 10, 15, 30].map((minutes) => (
+                <button
+                  key={minutes}
+                  role="radio"
+                  aria-checked={briefingMinutes === minutes}
+                  className={briefingMinutes === minutes ? 'is-selected' : ''}
+                  onClick={() => chooseBriefing(minutes)}
+                  disabled={state.isLoading}
+                >
+                  {minutes === 0 ? 'None' : `${minutes} min`}
+                </button>
+              ))}
+            </div>
+          )}
+          <p style={{ fontSize: '0.82rem', textAlign: 'center', margin: isHost ? '0.5rem 0 0' : 0 }}>
+            {briefingLabel}
+          </p>
+        </div>
+
         {isHost ? (
           canStart ? (
             <div style={{ textAlign: 'center' }}>
@@ -402,6 +465,40 @@ export default function Lobby() {
         onConfirm={handleLeaveGame}
         onCancel={() => setConfirmLeave(false)}
       />
+
+      <ConfirmationModal
+        isOpen={!!kickTarget}
+        title={`Remove ${kickTarget?.name ?? 'player'}?`}
+        message="They'll drop out of this lobby. They can rejoin with the code if you change your mind."
+        confirmLabel="Remove"
+        isDangerous
+        onConfirm={handleKick}
+        onCancel={() => setKickTarget(null)}
+      />
+
+      <Modal
+        isOpen={editingName !== null}
+        onClose={() => setEditingName(null)}
+        labelledBy="rename-title"
+        showClose
+      >
+        <h3 id="rename-title" style={{ fontSize: '1.3rem' }}>Your agent name</h3>
+        <input
+          type="text"
+          aria-label="New name"
+          value={editingName ?? ''}
+          maxLength={24}
+          autoFocus
+          onChange={(e) => setEditingName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void handleRename();
+          }}
+          style={{ marginBottom: '1rem' }}
+        />
+        <button className="btn btn-primary" onClick={handleRename} disabled={!editingName?.trim()}>
+          Save
+        </button>
+      </Modal>
     </div>
   );
 }

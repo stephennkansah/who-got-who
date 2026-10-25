@@ -6,6 +6,7 @@ import React, {
   useMemo,
   useReducer,
   useRef,
+  useState,
 } from 'react';
 import imageCompression from 'browser-image-compression';
 import { Game, GameContextType, GameState, Player } from '../types';
@@ -15,17 +16,20 @@ import {
   getIdentityId,
   uploadPrivateImage,
 } from '../services/aws';
+import { serverNow, syncServerClock } from '../utils/serverClock';
 
 type GameViewPayload = {
   game: Game;
   currentPlayer: Player;
   activeDisputes?: GameState['activeDisputes'];
+  serverTime?: string;
 };
 
 type AwsGameAction =
   | { type: 'LOADING'; value: boolean }
   | { type: 'ERROR'; value: string | null }
   | { type: 'CONNECTED'; value: boolean }
+  | { type: 'LINK'; value: GameState['connection'] }
   | { type: 'VIEW'; value: GameViewPayload }
   | { type: 'RESET' };
 
@@ -33,11 +37,15 @@ const initialState: GameState = {
   currentGame: null,
   currentPlayer: null,
   isConnected: false,
+  connection: 'live',
   isLoading: true,
   error: null,
   activeDisputes: [],
   leaderboard: [],
 };
+
+/** The server no longer recognises this device as part of the game. */
+const GONE_PATTERN = /not a member of this game|not found or expired/i;
 
 function reducer(state: GameState, action: AwsGameAction): GameState {
   switch (action.type) {
@@ -47,6 +55,8 @@ function reducer(state: GameState, action: AwsGameAction): GameState {
       return { ...state, error: action.value };
     case 'CONNECTED':
       return { ...state, isConnected: action.value };
+    case 'LINK':
+      return state.connection === action.value ? state : { ...state, connection: action.value };
     case 'VIEW': {
       const players = action.value.game.players || [];
       const usesChallengeScore = action.value.game.gameType === 'holiday-challenge';
@@ -64,7 +74,7 @@ function reducer(state: GameState, action: AwsGameAction): GameState {
       };
     }
     case 'RESET':
-      return { ...initialState, isLoading: false, isConnected: state.isConnected };
+      return { ...initialState, isLoading: false, isConnected: state.isConnected, error: state.error };
     default:
       return state;
   }
@@ -83,6 +93,13 @@ function errorMessage(error: unknown): string {
     if (/unexpected token|not valid json|failed to fetch|network ?error|load failed/i.test(raw)) {
       return "Can't reach the game service — check your connection and try again.";
     }
+    // Setup problems are for developers; players just need to know to retry.
+    if (process.env.NODE_ENV === 'production' && /configuration could not be loaded|backend is not deployed/i.test(raw)) {
+      return "Can't reach the game service right now — try again in a moment.";
+    }
+    if (/access ?denied|not authorized to perform: s3/i.test(raw)) {
+      return "Your photo couldn't be uploaded — pick an emoji avatar or try again.";
+    }
     return raw;
   }
   return 'The game service is temporarily unavailable';
@@ -98,6 +115,7 @@ function reviveView(value: unknown): GameViewPayload {
   const payload = typeof value === 'string' ? JSON.parse(value) : value;
   if (!payload || typeof payload !== 'object') throw new Error('Invalid game response');
   const view = payload as GameViewPayload;
+  syncServerClock(view.serverTime);
   view.game.createdAt = new Date(view.game.createdAt);
   view.game.challengeCompletions = (view.game.challengeCompletions || []).map((completion) => ({
     ...completion,
@@ -191,6 +209,10 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
 
   const prepareAvatar = useCallback(
     async (avatar?: string, avatarType?: 'emoji' | 'photo') => {
+      // A photo already in storage (e.g. carried into a rematch) is reused as-is.
+      if (avatarType === 'photo' && avatar?.startsWith('avatars/')) {
+        return { avatar, avatarType: 'photo' as const };
+      }
       if (avatarType !== 'photo' || !avatar?.startsWith('data:image/')) {
         return { avatar: avatar || '🎮', avatarType: 'emoji' as const };
       }
@@ -257,6 +279,55 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('currentGameId');
         dispatch({ type: 'RESET' });
       }),
+    [run, sendAction],
+  );
+  const kickPlayer = useCallback(
+    (playerId: string) => run(() => sendAction('KICK', { playerId }).then(() => undefined)),
+    [run, sendAction],
+  );
+  const rematch = useCallback(
+    () =>
+      run(async () => {
+        const finished = stateRef.current.currentGame;
+        const me = stateRef.current.currentPlayer;
+        if (!finished || !me) throw new Error('No finished game to rematch');
+        let rematchId = finished.rematchGameId;
+        if (!rematchId) {
+          await sendAction('REMATCH', {}, finished.id, false);
+          rematchId = (await refreshGame(finished.id)).game.rematchGameId;
+        }
+        if (!rematchId) throw new Error('The rematch could not be opened — try again');
+        // Joining is a no-op for whoever opened the rematch (they are already its host).
+        await sendAction(
+          'JOIN',
+          {
+            name: me.name,
+            avatar: me.avatarType === 'photo' ? me.avatarKey : me.avatar,
+            avatarType: me.avatarType === 'photo' && me.avatarKey ? 'photo' : 'emoji',
+          },
+          rematchId,
+          false,
+        );
+        localStorage.setItem('currentGameId', rematchId);
+        await refreshGame(rematchId);
+      }),
+    [refreshGame, run, sendAction],
+  );
+  const setBriefingMinutes = useCallback(
+    (minutes: number) =>
+      run(() => sendAction('UPDATE_SETTINGS', { briefingMinutes: minutes }).then(() => undefined)),
+    [run, sendAction],
+  );
+  const openClaims = useCallback(
+    () => run(() => sendAction('OPEN_CLAIMS').then(() => undefined)),
+    [run, sendAction],
+  );
+  const pauseGame = useCallback(
+    () => run(() => sendAction('PAUSE').then(() => undefined)),
+    [run, sendAction],
+  );
+  const resumeGame = useCallback(
+    () => run(() => sendAction('RESUME').then(() => undefined)),
     [run, sendAction],
   );
   const updatePlayerName = useCallback(
@@ -345,11 +416,42 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
     };
   }, [refreshGame]);
 
+  // Background refreshes: if this device was removed (kicked, or the game expired),
+  // drop back to a clean state with an explanation instead of a dead screen.
+  const syncGame = useCallback(
+    async (gameId: string) => {
+      try {
+        await refreshGame(gameId);
+        dispatch({ type: 'LINK', value: 'live' });
+      } catch (error) {
+        const message = errorMessage(error);
+        if (GONE_PATTERN.test(message) && stateRef.current.currentGame?.id === gameId) {
+          localStorage.removeItem('currentGameId');
+          dispatch({ type: 'RESET' });
+          dispatch({ type: 'ERROR', value: "You're no longer in that game." });
+        } else {
+          dispatch({ type: 'LINK', value: 'reconnecting' });
+        }
+      }
+    },
+    [refreshGame],
+  );
+
+  const [subscriptionAttempt, setSubscriptionAttempt] = useState(0);
+  const retryDelay = useRef(1000);
+
   useEffect(() => {
     const gameId = state.currentGame?.id;
     if (!gameId || !state.isConnected) return undefined;
     let cancelled = false;
     let unsubscribe: (() => void) | undefined;
+    let retryTimer: number | undefined;
+    const retry = () => {
+      if (cancelled) return;
+      dispatch({ type: 'LINK', value: 'reconnecting' });
+      retryTimer = window.setTimeout(() => setSubscriptionAttempt((n) => n + 1), retryDelay.current);
+      retryDelay.current = Math.min(retryDelay.current * 2, 15000);
+    };
     void getAwsGameClient()
       .then((client) => {
         if (cancelled) return;
@@ -357,32 +459,56 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
           .onGameUpdated({ gameId }, { authMode: 'apiKey' })
           .subscribe({
             next: (event: { revision?: number }) => {
-              if ((event.revision || 0) >= revisionRef.current) {
-                void refreshGame(gameId).catch((error) =>
-                  dispatch({ type: 'ERROR', value: errorMessage(error) }),
-                );
-              }
+              retryDelay.current = 1000;
+              if ((event.revision || 0) >= revisionRef.current) void syncGame(gameId);
             },
-            error: () => dispatch({ type: 'CONNECTED', value: false }),
+            error: retry,
           });
         unsubscribe = () => subscription.unsubscribe();
+        // Catch up on anything missed while the subscription was down.
+        if (subscriptionAttempt > 0) void syncGame(gameId);
       })
-      .catch((error) => dispatch({ type: 'ERROR', value: errorMessage(error) }));
+      .catch(retry);
     return () => {
       cancelled = true;
+      window.clearTimeout(retryTimer);
       unsubscribe?.();
     };
-  }, [refreshGame, state.currentGame?.id, state.isConnected]);
+  }, [state.currentGame?.id, state.isConnected, subscriptionAttempt, syncGame]);
+
+  // Phones sleep mid-party: resync the moment the app is visible or back online.
+  useEffect(() => {
+    const gameId = state.currentGame?.id;
+    if (!gameId) return undefined;
+    const resume = () => {
+      if (document.visibilityState !== 'visible') return;
+      void syncGame(gameId);
+      if (stateRef.current.connection === 'reconnecting') {
+        retryDelay.current = 1000;
+        setSubscriptionAttempt((n) => n + 1);
+      }
+    };
+    const offline = () => dispatch({ type: 'LINK', value: 'reconnecting' });
+    document.addEventListener('visibilitychange', resume);
+    window.addEventListener('online', resume);
+    window.addEventListener('offline', offline);
+    return () => {
+      document.removeEventListener('visibilitychange', resume);
+      window.removeEventListener('online', resume);
+      window.removeEventListener('offline', offline);
+    };
+  }, [state.currentGame?.id, syncGame]);
 
   useEffect(() => {
     const pending = state.activeDisputes.filter((dispute) => dispute.result === 'pending');
-    if (!pending.length || !state.currentGame) return undefined;
+    // Timers are frozen while the host has the game paused.
+    if (!pending.length || !state.currentGame || state.currentGame.pausedAt) return undefined;
     const nextClose = Math.min(...pending.map((dispute) => new Date(dispute.closesAt).getTime()));
     const timeout = window.setTimeout(() => {
       void sendAction('RESOLVE_EXPIRED').catch((error) =>
         dispatch({ type: 'ERROR', value: errorMessage(error) }),
       );
-    }, Math.max(100, nextClose - Date.now() + 250));
+    }, Math.max(100, nextClose - serverNow() + 250));
     return () => window.clearTimeout(timeout);
   }, [sendAction, state.activeDisputes, state.currentGame]);
 
@@ -395,16 +521,19 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
       startGame,
       endGame,
       leaveGame,
+      kickPlayer,
       updatePlayerName,
       swapTask,
       claimGotcha,
       disputeGotcha,
       voteOnDispute,
       acceptGotcha,
-      updatePlayerTasks: () => undefined,
-      socket: null,
+      rematch,
+      setBriefingMinutes,
+      openClaims,
+      pauseGame,
+      resumeGame,
       completeChallenge,
-      uploadProofImage,
     }),
     [
       acceptGotcha,
@@ -414,13 +543,18 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
       disputeGotcha,
       endGame,
       joinGame,
+      kickPlayer,
       leaveGame,
+      openClaims,
+      pauseGame,
+      rematch,
+      resumeGame,
+      setBriefingMinutes,
       selectPack,
       startGame,
       state,
       swapTask,
       updatePlayerName,
-      uploadProofImage,
       voteOnDispute,
     ],
   );

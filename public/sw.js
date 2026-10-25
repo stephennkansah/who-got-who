@@ -1,4 +1,4 @@
-const CACHE_NAME = 'who-got-who-shell-v4';
+const CACHE_NAME = 'who-got-who-shell-v5';
 const SHELL_URLS = ['/', '/manifest.json', '/logo512.png'];
 
 self.addEventListener('install', (event) => {
@@ -17,6 +17,17 @@ self.addEventListener('activate', (event) => {
     ),
   );
   self.clients.claim();
+});
+
+// Tapping a game notification brings the open game back to the front.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const open = clients.find((client) => 'focus' in client);
+      return open ? open.focus() : self.clients.openWindow('/');
+    }),
+  );
 });
 
 self.addEventListener('fetch', (event) => {

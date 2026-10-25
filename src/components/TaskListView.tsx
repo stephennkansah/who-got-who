@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { TaskInstance, Player, Dispute } from '../types';
 
 interface TaskListViewProps {
@@ -10,6 +10,29 @@ interface TaskListViewProps {
   swapsTotal: number;
   activeDisputes: Dispute[];
   currentPlayerId: string;
+  /** The mission whose claim is being sent right now, if any. */
+  filing: { taskId: string; result: 'passed' | 'failed' } | null;
+  /** Set while claims are blocked (briefing or pause); swaps still work. */
+  lockReason?: string | null;
+}
+
+const COVER_KEY = 'wgw-cover';
+const PEEK_MS = 8000;
+
+function readCover(): boolean {
+  try {
+    return sessionStorage.getItem(COVER_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeCover(covered: boolean) {
+  try {
+    sessionStorage.setItem(COVER_KEY, covered ? '1' : '0');
+  } catch {
+    // Private mode: cover still works for this visit.
+  }
 }
 
 export default function TaskListView({
@@ -21,89 +44,127 @@ export default function TaskListView({
   swapsTotal,
   activeDisputes,
   currentPlayerId,
+  filing,
+  lockReason = null,
 }: TaskListViewProps) {
-  const [taskFeedback, setTaskFeedback] = useState<{[taskId: string]: 'passed' | 'failed' | null}>({});
+  const [covered, setCovered] = useState(readCover);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [peekId, setPeekId] = useState<string | null>(null);
+  const [showFiled, setShowFiled] = useState(false);
+  const peekTimer = useRef<number>();
+
+  // Pocket the phone and the dossier closes itself.
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') {
+        setCovered(true);
+        writeCover(true);
+        setPeekId(null);
+        setOpenId(null);
+      }
+    };
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      document.removeEventListener('visibilitychange', onHide);
+      window.clearTimeout(peekTimer.current);
+    };
+  }, []);
+
+  const toggleCover = () => {
+    const next = !covered;
+    setCovered(next);
+    writeCover(next);
+    setPeekId(null);
+    setOpenId(null);
+  };
 
   const disputeForTask = (taskId: string) =>
     activeDisputes.find(
       (dispute) => dispute.taskInstanceId === taskId && dispute.accuserId === currentPlayerId,
     );
 
-  // Clear the optimistic overlay once the claim is reflected in game state
-  useEffect(() => {
-    setTaskFeedback((prev) => {
-      let changed = false;
-      const next = { ...prev };
-      Object.keys(prev).forEach((taskId) => {
-        if (!prev[taskId]) return;
-        const task = tasks.find((t) => t.id === taskId);
-        const claimTracked = task && task.status !== 'pending';
-        const disputeTracked = !!disputeForTask(taskId);
-        if (claimTracked || disputeTracked) {
-          next[taskId] = null;
-          changed = true;
-        }
-      });
-      return changed ? next : prev;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tasks, activeDisputes]);
+  const playerName = (id?: string) => players.find((p) => p.id === id)?.name || 'Unknown';
 
-  const handleTaskAction = (task: TaskInstance, result: 'passed' | 'failed') => {
-    setTaskFeedback(prev => ({ ...prev, [task.id]: result }));
+  const handleCardTap = (task: TaskInstance) => {
+    window.clearTimeout(peekTimer.current);
+    if (covered) {
+      const peeking = peekId === task.id;
+      setPeekId(peeking ? null : task.id);
+      setOpenId(peeking ? null : task.id);
+      if (!peeking) {
+        peekTimer.current = window.setTimeout(() => {
+          setPeekId(null);
+          setOpenId(null);
+        }, PEEK_MS);
+      }
+      return;
+    }
+    setOpenId((current) => (current === task.id ? null : task.id));
+  };
+
+  const act = (task: TaskInstance, result: 'passed' | 'failed') => {
+    window.clearTimeout(peekTimer.current);
+    setOpenId(null);
     onTaskResult(task, result);
   };
 
-  const playerName = (id?: string) => players.find(p => p.id === id)?.name || 'Unknown';
+  const missionNumber = (task: TaskInstance) =>
+    `${String(tasks.indexOf(task) + 1).padStart(2, '0')} / ${String(tasks.length).padStart(2, '0')}`;
 
-  const stampFor = (status: TaskInstance['status']) => {
-    switch (status) {
-      case 'completed': return { cls: 'stamp success', label: "Got 'em" };
-      case 'failed': return { cls: 'stamp danger', label: 'Busted' };
-      case 'disputed': return { cls: 'stamp warning', label: 'Disputed' };
-      default: return null;
-    }
-  };
+  const inFlight = tasks.filter((task) => task.status === 'disputed');
+  const open = tasks.filter((task) => task.status === 'pending');
+  const filed = tasks.filter((task) => task.status === 'completed' || task.status === 'failed');
+  const active = [...inFlight, ...open];
+
+  if (tasks.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+        <div className="type" style={{ fontSize: '0.95rem', fontWeight: 700 }}>No missions on file.</div>
+        <div style={{ fontSize: '0.85rem', marginTop: '0.4rem' }}>
+          Your dossier arrives when the game starts.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
-      {tasks.map((task, index) => {
-        const stamp = stampFor(task.status);
+      <div className="mission-toolbar">
+        <div>
+          <div className="overline">Your missions · {open.length} open</div>
+          <div className="mission-hint">
+            {covered
+              ? 'Hidden from prying eyes — tap one to peek'
+              : lockReason
+                ? 'Read up and plan — tap one to swap it'
+                : 'Tap a mission when you pull it off'}
+          </div>
+        </div>
+        <button
+          className={`chip-btn ${covered ? 'active' : ''}`}
+          onClick={toggleCover}
+          aria-pressed={covered}
+        >
+          {covered ? 'Show' : 'Hide'}
+        </button>
+      </div>
+
+      {active.map((task, index) => {
         const dispute = disputeForTask(task.id);
-        const feedback = taskFeedback[task.id];
-        const isPending = task.status === 'pending';
-        const missionNo = String(index + 1).padStart(2, '0');
+        const isOpen = openId === task.id && task.status === 'pending' && !dispute;
+        const hidden = covered && peekId !== task.id && task.status === 'pending';
+        const isFiling = filing?.taskId === task.id;
 
         return (
           <div
             key={task.id}
-            className="task-list-item paper-card"
-            style={{
-              opacity: isPending || task.status === 'disputed' ? 1 : 0.82,
-              animationDelay: `${Math.min(index * 60, 420)}ms`,
-              transform: `rotate(${index % 2 === 0 ? '-0.35' : '0.35'}deg)`,
-            }}
+            className={`task-list-item paper-card ${isOpen ? 'is-open' : ''}`}
+            style={{ animationDelay: `${Math.min(index * 60, 420)}ms` }}
           >
-            {/* Optimistic "sending" overlay — a stamp slamming down */}
-            {feedback && (
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'rgba(35, 32, 20, 0.82)',
-                borderRadius: '6px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.4rem',
-                zIndex: 10,
-                animation: 'feedbackPulse 0.5s ease-out'
-              }}>
-                <div
-                  className={`stamp big ${feedback === 'passed' ? 'success' : 'danger'}`}
-                  style={{ animation: 'feedbackScale 0.45s ease-out', background: 'var(--paper)' }}
-                >
-                  {feedback === 'passed' ? "Got 'em" : 'Busted'}
+            {isFiling && (
+              <div className="filing-overlay">
+                <div className={`stamp big ${filing?.result === 'passed' ? 'success' : 'danger'}`}>
+                  {filing?.result === 'passed' ? "Got 'em" : 'Busted'}
                 </div>
                 <div className="type" style={{ color: 'var(--paper)', fontSize: '0.75rem' }}>
                   filing report…
@@ -111,116 +172,102 @@ export default function TaskListView({
               </div>
             )}
 
-            {/* Dossier header */}
-            <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
-              <div className="type" style={{
-                fontSize: '0.68rem',
-                letterSpacing: '0.16em',
-                textTransform: 'uppercase',
-                color: 'var(--paper-dim)',
-              }}>
-                Mission № {missionNo} / {String(tasks.length).padStart(2, '0')}
-              </div>
-              {stamp && <span className={stamp.cls}>{stamp.label}</span>}
-            </div>
-
-            {/* Mission text — the payload, kept maximally readable */}
-            <div style={{
-              fontSize: '1.05rem',
-              fontWeight: 600,
-              lineHeight: 1.5,
-              color: 'var(--paper-ink)',
-              marginBottom: '0.75rem',
-            }}>
-              {task.text}
-            </div>
-
-            {/* Claim awaiting response / vote */}
-            {dispute && (
-              <div style={{
-                borderTop: '1px dashed var(--paper-line)',
-                paddingTop: '0.55rem',
-                marginBottom: '0.25rem',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                color: 'var(--warning-ink)',
-                textAlign: 'center',
-              }}>
-                {dispute.phase === 'voting'
-                  ? 'Disputed — the group is voting…'
-                  : `Awaiting ${playerName(dispute.targetId)}'s response…`}
-              </div>
-            )}
-
-            {/* Outcome line */}
-            {task.status === 'completed' && task.targetId && (
-              <div style={{
-                borderTop: '1px dashed var(--paper-line)',
-                paddingTop: '0.55rem',
-                fontSize: '0.88rem',
-                fontWeight: 600,
-                color: 'var(--success-ink)',
-                textAlign: 'center',
-              }}>
-                Target: <strong>{playerName(task.targetId)}</strong> — mission accomplished
-              </div>
-            )}
-
-            {task.status === 'failed' && task.targetId && (
-              <div style={{
-                borderTop: '1px dashed var(--paper-line)',
-                paddingTop: '0.55rem',
-                fontSize: '0.88rem',
-                fontWeight: 600,
-                color: 'var(--danger-ink)',
-                textAlign: 'center',
-              }}>
-                Compromised by <strong>{playerName(task.targetId)}</strong>
-              </div>
-            )}
-
-            {/* Actions for pending tasks */}
-            {isPending && !dispute && (
-              <div className="flex gap-1" style={{ flexWrap: 'wrap', marginTop: '0.25rem' }}>
-                <button
-                  onClick={() => handleTaskAction(task, 'passed')}
-                  className="btn btn-success"
-                  style={{ flex: 2, minWidth: '110px', padding: '0.6rem', fontSize: '1.05rem' }}
-                >
-                  Got it!
-                </button>
-                <button
-                  onClick={() => handleTaskAction(task, 'failed')}
-                  className="btn btn-secondary"
-                  style={{ flex: 1, minWidth: '86px', padding: '0.6rem', fontSize: '1.05rem' }}
-                >
-                  Caught
-                </button>
-                {swapsLeft > 0 && (
-                  <button
-                    onClick={() => onSwapTask(task.id)}
-                    className="btn btn-secondary"
-                    style={{ flex: 1, minWidth: '96px', padding: '0.6rem', fontSize: '1.05rem' }}
-                  >
-                    Swap · {swapsLeft}/{swapsTotal}
-                  </button>
+            <button
+              className="mission-body"
+              onClick={() => handleCardTap(task)}
+              disabled={task.status !== 'pending' || !!dispute}
+              aria-expanded={task.status === 'pending' ? isOpen : undefined}
+              aria-label={hidden ? `Mission ${missionNumber(task)}, hidden. Tap to peek.` : undefined}
+            >
+              <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
+                <div className="mission-number type">Mission № {missionNumber(task)}</div>
+                {dispute && (
+                  <span className="stamp warning">
+                    {dispute.phase === 'voting' ? 'Jury out' : 'Pending'}
+                  </span>
                 )}
+              </div>
+
+              {hidden ? (
+                <div className="mission-redacted" aria-hidden="true">
+                  <span className="redacted" style={{ width: '88%' }}>&nbsp;</span>
+                  <span className="redacted" style={{ width: '58%' }}>&nbsp;</span>
+                </div>
+              ) : (
+                <>
+                  <div className="mission-text">{task.text}</div>
+                  {task.tips && isOpen && <div className="mission-tip">Tip: {task.tips}</div>}
+                </>
+              )}
+            </button>
+
+            {dispute && (
+              <div className="mission-status warning">
+                {dispute.phase === 'voting'
+                  ? `${playerName(dispute.targetId)} disputed it — the group is voting…`
+                  : `Waiting for ${playerName(dispute.targetId)} to accept…`}
+              </div>
+            )}
+
+            {isOpen && lockReason && (
+              <div className="mission-locked">{lockReason} — no claims yet</div>
+            )}
+
+            {isOpen && (
+              <div className="mission-actions">
+                {!lockReason && (
+                  <>
+                    <button onClick={() => act(task, 'passed')} className="btn btn-success" style={{ flex: 2 }}>
+                      Got it!
+                    </button>
+                    <button onClick={() => act(task, 'failed')} className="btn btn-secondary" style={{ flex: 1 }}>
+                      Caught
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => {
+                    setOpenId(null);
+                    onSwapTask(task.id);
+                  }}
+                  className="btn btn-secondary"
+                  disabled={swapsLeft <= 0}
+                  style={{ flex: 1 }}
+                  aria-label={`Swap this mission, ${swapsLeft} of ${swapsTotal} swaps left`}
+                >
+                  Swap {swapsLeft}/{swapsTotal}
+                </button>
               </div>
             )}
           </div>
         );
       })}
 
-      {tasks.length === 0 && (
-        <div style={{
-          textAlign: 'center',
-          padding: '2rem',
-          color: 'var(--text-muted)',
-        }}>
-          <div className="type" style={{ fontSize: '0.95rem', fontWeight: 700 }}>No missions on file.</div>
-          <div style={{ fontSize: '0.85rem', marginTop: '0.4rem' }}>
-            Your dossier arrives when the game starts.
+      {active.length === 0 && (
+        <div className="paper-card" style={{ padding: '1.25rem', textAlign: 'center', marginBottom: '0.8rem' }}>
+          <div className="type" style={{ fontWeight: 700 }}>Every mission filed.</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--paper-dim)', marginTop: '0.3rem' }}>
+            Lie low and watch the board.
           </div>
+        </div>
+      )}
+
+      {filed.length > 0 && (
+        <div className="filed-missions">
+          <button className="filed-toggle" onClick={() => setShowFiled((value) => !value)} aria-expanded={showFiled}>
+            <span>Filed missions · {filed.length}</span>
+            <span aria-hidden="true">{showFiled ? '▴' : '▾'}</span>
+          </button>
+          {showFiled && filed.map((task) => (
+            <div key={task.id} className={`filed-row ${task.status}`}>
+              <div className="filed-text">{task.text}</div>
+              <div className="filed-outcome">
+                {task.status === 'completed'
+                  ? <>Got <strong>{playerName(task.targetId)}</strong></>
+                  : <>Busted by <strong>{playerName(task.targetId)}</strong></>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

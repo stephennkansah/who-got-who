@@ -13,13 +13,16 @@ Who Got Who is a mobile-first party game for completing secret social tasks with
 - Uninvolved players vote on disputes; the host default resolves a tie
 - A valid Gotcha scores 1 point, plus 0.5 for a first-time target
 - The target score is 4, or 5 in games with 7 or more players
+- Disputes need at least one uninvolved player to vote; in 2-player games claims are settled out loud
+- Late arrivals can join a live game with a full hand of tasks; the host can remove players
+- When the game ends every player's tasks are revealed, and anyone can open a one-tap rematch for the group
 
 ### Holiday Challenge
 
 - The server selects exactly 10 challenges for the game
 - First completion earns 3 gold points
 - The next two completions can earn 1 silver point each
-- Challenges marked for proof require an image upload
+- Challenges marked for proof require an image upload, shown to the group in a live feed and trip album
 - The win condition scales with the player count
 
 ## Architecture

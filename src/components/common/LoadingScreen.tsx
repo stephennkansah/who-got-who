@@ -1,0 +1,28 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+
+interface LoadingScreenProps {
+  message: string;
+  /** Offer a way out when loading may never finish. */
+  showBack?: boolean;
+}
+
+/** Full-screen typewriter spinner used while a game is loading. */
+export default function LoadingScreen({ message, showBack = false }: LoadingScreenProps) {
+  const navigate = useNavigate();
+  return (
+    <div className="container flex-center">
+      <div className="text-center">
+        <div className="spinner" aria-hidden="true" />
+        <p className="type" style={{ fontSize: '0.85rem', marginBottom: showBack ? '1.25rem' : 0 }}>
+          {message}
+        </p>
+        {showBack && (
+          <button className="btn btn-ghost" onClick={() => navigate('/')}>
+            Back to home
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
