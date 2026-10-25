@@ -17,7 +17,7 @@ export interface Game {
   settings: GameSettings;
   currentPhase: 'draft' | 'play' | 'ended';
   challengeCompletions?: ChallengeCompletion[]; // for holiday challenge games
-  selectedChallenges?: Challenge[]; // for holiday challenge games - random selection of 10 challenges
+  selectedChallenges?: Challenge[]; // for holiday challenge games - random selection of 10-15 challenges
   startedAt?: string;
   endedAt?: string;
   rematchGameId?: string; // set once someone opens a rematch lobby for this group
@@ -35,13 +35,13 @@ export interface GameSettings {
   selectedPack?: 'core' | 'remote' | 'holiday-challenge' | null;
   tasksLoaded?: boolean;
   // Holiday Challenge Pack specific settings
+  holidayChallengeCount?: number; // challenges in the game (more for bigger groups)
   holidayChallengeWinCondition?: number; // points needed to win
   holidayGoldPoints?: number; // points for first completion
   holidaySilverPoints?: number; // points for subsequent completions
   holidayMaxSilverPerChallenge?: number; // max silver points per challenge
   briefingMinutes?: number; // settling-in time between dealing missions and opening gotchas
   gameLength?: GameLength; // sets the winning score at the start
-  holidayChallengeCount?: number; // challenges dealt in a holiday game
 }
 
 export type GameLength = 'quick' | 'standard' | 'long' | 'weekend';

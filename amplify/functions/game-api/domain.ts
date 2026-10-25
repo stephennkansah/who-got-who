@@ -1,11 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import {
+  dealTasks,
   getAllHolidayChallenges,
+  getHolidayChallengeCount,
   getHolidayChallengeWinCondition,
+  getMaxPlayers,
   getRandomHolidayChallenges,
-  getRandomTasks,
   getReplacementTask,
+  getSwapsAllowed,
   isBonusTask,
+  MAX_PLAYERS,
 } from './packs';
 import { parsePushSubscription, type PushSubscriptionKeys } from './webpush';
 
@@ -134,6 +138,7 @@ export type StoredGame = {
     targetScore: number;
     selectedPack?: 'core' | 'remote' | 'holiday-challenge' | null;
     tasksLoaded?: boolean;
+    holidayChallengeCount?: number;
     holidayChallengeWinCondition?: number;
     holidayGoldPoints?: number;
     holidaySilverPoints?: number;
@@ -292,7 +297,7 @@ export function createGame(
       disputeTimeoutSeconds: 120,
       hostDefaultOnTie: true,
       enableNegativeScoring: false,
-      maxPlayers: 10,
+      maxPlayers: MAX_PLAYERS,
       targetScore: 4,
       selectedPack: null,
       tasksLoaded: false,
@@ -412,6 +417,7 @@ function resolveExpired(game: StoredGame, now: Date): boolean {
 /** Drops a player and settles any claims that can no longer be decided without them. */
 function removePlayer(game: StoredGame, leaving: StoredPlayer): void {
   game.players = game.players.filter((player) => player.id !== leaving.id);
+  if (game.status === 'draft') updateGroupRules(game);
   for (const dispute of game.disputes) {
     if (dispute.result !== 'pending') continue;
     if (dispute.accuserId === leaving.id || dispute.targetId === leaving.id) {
@@ -438,8 +444,31 @@ function removePlayer(game: StoredGame, leaving: StoredPlayer): void {
   }
 }
 
-function makeTasks(game: StoredGame, player: StoredPlayer, count: number): StoredTask[] {
-  return getRandomTasks(game.packId, count).map((task) => ({
+function handSize(playerCount: number): number {
+  return playerCount >= 7 ? 8 : 7;
+}
+
+// Rules that depend on group size. Kept current while the lobby fills up so
+// the rules screen shows the real numbers before the game starts.
+function updateGroupRules(game: StoredGame): void {
+  if (!game.packId) return;
+  const playerCount = game.players.length;
+  if (game.gameType === 'holiday-challenge') {
+    // Bigger groups get more challenges and a lower target.
+    game.settings.holidayChallengeCount = getHolidayChallengeCount(playerCount);
+    game.settings.holidayChallengeWinCondition = getHolidayChallengeWinCondition(playerCount);
+    return;
+  }
+  // Bigger groups get fewer swaps, so a swap never repeats another player's task.
+  game.settings.swapsAllowed = getSwapsAllowed(game.packId, playerCount, handSize(playerCount));
+}
+
+function makeTasks(
+  game: StoredGame,
+  player: StoredPlayer,
+  hand: Array<{ id: string; text: string; tips?: string }>,
+): StoredTask[] {
+  return hand.map((task) => ({
     id: randomUUID(),
     templateId: task.id,
     gameId: game.gameId,
@@ -448,6 +477,18 @@ function makeTasks(game: StoredGame, player: StoredPlayer, count: number): Store
     tips: task.tips,
     status: 'pending',
   }));
+}
+
+/** A hand for someone joining mid-game: never a task another player already holds. */
+function lateArrivalHand(game: StoredGame, count: number): Array<{ id: string; text: string; tips?: string }> {
+  const taken = game.players.flatMap((player) => player.tasks.map((task) => task.templateId));
+  const hand: Array<{ id: string; text: string; tips?: string }> = [];
+  while (hand.length < count) {
+    const next = getReplacementTask(game.packId, hand, false, taken);
+    if (!next) break;
+    hand.push(next);
+  }
+  return hand;
 }
 
 export async function applyAction(
@@ -485,10 +526,14 @@ export async function applyAction(
           joining.challengeScore = 0;
           joining.challengeCompletions = [];
         } else {
-          joining.tasks = makeTasks(game, joining, game.settings.targetScore >= 5 ? 8 : 7);
+          const size = game.players[0]?.tasks.length || handSize(game.players.length + 1);
+          joining.tasks = makeTasks(game, joining, lateArrivalHand(game, size));
+          joining.swapsLeft = game.settings.swapsAllowed;
         }
       }
       game.players.push(joining);
+      // Group-size rules settle at the start; a late arrival doesn't change them mid-game.
+      if (game.status === 'draft') updateGroupRules(game);
       changed = true;
       break;
     }
@@ -498,9 +543,15 @@ export async function applyAction(
       requireStatus(game, 'draft');
       const packId = text(body.packId, 'Pack', 32);
       if (!allowedPacks.has(packId)) throw new GameRuleError('Unknown game pack');
+      const maxPlayers = getMaxPlayers(packId);
+      if (game.players.length > maxPlayers) {
+        throw new GameRuleError(`This pack fits up to ${maxPlayers} players`);
+      }
+      game.settings.maxPlayers = maxPlayers;
       game.packId = packId;
       game.gameType = packId === 'holiday-challenge' ? 'holiday-challenge' : 'traditional';
       game.settings.selectedPack = packId as StoredGame['settings']['selectedPack'];
+      updateGroupRules(game);
       game.settings.tasksLoaded = false;
       game.challengeCompletions = [];
       game.selectedChallenges = [];
@@ -515,12 +566,11 @@ export async function applyAction(
       if (!game.settings.selectedPack || !allowedPacks.has(game.settings.selectedPack)) {
         throw new GameRuleError('Choose a pack before starting');
       }
-      const largeGame = game.players.length >= 7;
       game.settings.targetScore = targetScoreFor(game.settings.gameLength, game.players.length);
+      updateGroupRules(game);
       if (game.gameType === 'holiday-challenge') {
-        game.selectedChallenges = getRandomHolidayChallenges(10);
-        game.settings.holidayChallengeWinCondition = getHolidayChallengeWinCondition(
-          game.players.length,
+        game.selectedChallenges = getRandomHolidayChallenges(
+          game.settings.holidayChallengeCount ?? 10,
         );
         game.settings.holidayGoldPoints = 3;
         game.settings.holidaySilverPoints = 1;
@@ -531,8 +581,11 @@ export async function applyAction(
           player.challengeCompletions = [];
         }
       } else {
-        const count = largeGame ? 8 : 7;
-        for (const player of game.players) player.tasks = makeTasks(game, player, count);
+        const hands = dealTasks(game.packId, game.players.length, handSize(game.players.length));
+        game.players.forEach((player, index) => {
+          player.tasks = makeTasks(game, player, hands[index]);
+          player.swapsLeft = game.settings.swapsAllowed;
+        });
       }
       game.settings.tasksLoaded = true;
       game.status = 'live';
@@ -708,6 +761,10 @@ export async function applyAction(
         text: candidate.text,
         tips: candidate.tips,
       }));
+      // Never hand out a task another player already holds.
+      const takenIds = game.players.flatMap((other) =>
+        other.tasks.map((candidate) => candidate.templateId),
+      );
       const replacement = getReplacementTask(
         game.packId,
         templates,
@@ -716,6 +773,7 @@ export async function applyAction(
           text: task.text,
           tips: task.tips,
         }),
+        takenIds,
       );
       if (!replacement) throw new GameRuleError('No replacement task is available');
       task.templateId = replacement.id;

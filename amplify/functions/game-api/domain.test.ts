@@ -6,6 +6,7 @@ import {
   projectGameView,
   type StoredGame,
 } from './domain';
+import { isBonusTask } from './packs';
 
 let sequence = 0;
 const nextRequest = () => `request-${++sequence}`;
@@ -168,6 +169,31 @@ async function run() {
     );
   }
 
+  // Bigger holiday groups get more challenges and a lower target, and the
+  // lobby already shows both before the game starts.
+  for (const [playerCount, challenges, target] of [
+    [4, 10, 18],
+    [9, 12, 12],
+    [15, 15, 12],
+  ] as const) {
+    const label = `holiday with ${playerCount} players`;
+    const identities = Array.from({ length: playerCount }, (_, index) => `${label}-${index}`);
+    let game = createGame('HOL567', identities[0], playerPayload('Host'), nextRequest());
+    game = await action(game, 'SELECT_PACK', identities[0], { packId: 'holiday-challenge' });
+    for (let index = 1; index < identities.length; index += 1) {
+      game = await action(game, 'JOIN', identities[index], playerPayload(`Player ${index + 1}`));
+    }
+    assert.equal(game.settings.holidayChallengeCount, challenges, label);
+    assert.equal(game.settings.holidayChallengeWinCondition, target, label);
+    game = await action(game, 'START', identities[0]);
+    assert.equal(game.selectedChallenges.length, challenges, label);
+    assert.equal(
+      new Set(game.selectedChallenges.map((challenge) => challenge.id)).size,
+      challenges,
+      `${label}: a challenge repeated`,
+    );
+  }
+
   {
     let game = createGame('HOST23', 'leaving-host', playerPayload('Host'), nextRequest());
     game = await action(game, 'JOIN', 'new-host', playerPayload('Next Host'));
@@ -233,6 +259,9 @@ async function run() {
     assert.ok(game.startedAt, 'start time is recorded');
     game = await action(game, 'JOIN', 'late-three', playerPayload('Latecomer'));
     assert.equal(game.players[2].tasks.length, 7);
+    const dealt = game.players.flatMap((player) => player.tasks.map((task) => task.templateId));
+    assert.equal(new Set(dealt).size, dealt.length, 'a late arrival never repeats a held mission');
+    assert.equal(game.players[2].swapsLeft, game.settings.swapsAllowed);
     await assert.rejects(
       () => action(game, 'KICK', 'late-two', { playerId: game.players[2].id }),
       (error: unknown) => error instanceof GameRuleError && /Only the host/.test(error.message),
@@ -352,6 +381,79 @@ async function run() {
     game = await action(game, 'SELECT_PACK', 'lobby-guest', { packId: 'core' });
     game = await action(game, 'START', 'lobby-guest');
     assert.equal(game.settings.targetScore, 12, 'a weekend game plays to 12 points');
+  }
+
+  // No task may repeat across players, even after everyone uses every swap.
+  // Swaps shrink as the group grows so they can never run out.
+  for (const [packId, playerCount, swaps, isFull] of [
+    ['core', 6, 2, false],
+    ['core', 15, 2, false],
+    ['core', 16, 1, false],
+    ['core', 18, 0, true],
+    ['remote', 10, 2, false],
+    ['remote', 12, 1, false],
+    ['remote', 13, 0, true],
+  ] as const) {
+    const label = `${packId} with ${playerCount} players`;
+    const identities = Array.from({ length: playerCount }, (_, index) => `${label}-${index}`);
+    let game = createGame('BIG234', identities[0], playerPayload('Host'), nextRequest());
+    game = await action(game, 'SELECT_PACK', identities[0], { packId });
+    for (let index = 1; index < identities.length; index += 1) {
+      game = await action(game, 'JOIN', identities[index], playerPayload(`Player ${index + 1}`));
+    }
+    if (isFull) {
+      await assert.rejects(
+        () => action(game, 'JOIN', `${label}-overflow`, playerPayload('Overflow')),
+        (error: unknown) => error instanceof GameRuleError && /full/.test(error.message),
+      );
+    }
+    assert.equal(game.settings.swapsAllowed, swaps, label);
+    game = await action(game, 'START', identities[0]);
+
+    const bonusCounts = game.players.map(
+      (player) =>
+        player.tasks.filter((task) =>
+          isBonusTask(packId, { id: task.templateId, text: task.text }),
+        ).length,
+    );
+    assert.ok(bonusCounts.every((count) => count <= 1), label);
+    assert.equal(
+      bonusCounts.reduce((sum, count) => sum + count, 0),
+      packId === 'core' ? Math.min(playerCount, 15) : 0,
+      label,
+    );
+
+    for (const [index, identity] of identities.entries()) {
+      assert.equal(game.players[index].swapsLeft, swaps, label);
+      for (let swap = 0; swap < swaps; swap += 1) {
+        game = await action(game, 'SWAP_TASK', identity, {
+          taskId: game.players[index].tasks[swap].id,
+        });
+      }
+    }
+    if (swaps === 0) {
+      await assert.rejects(
+        () => action(game, 'SWAP_TASK', identities[0], { taskId: game.players[0].tasks[0].id }),
+        (error: unknown) => error instanceof GameRuleError && /No swaps/.test(error.message),
+      );
+    }
+    const templateIds = game.players.flatMap((player) =>
+      player.tasks.map((task) => task.templateId),
+    );
+    assert.equal(templateIds.length, playerCount * (playerCount >= 7 ? 8 : 7), label);
+    assert.equal(new Set(templateIds).size, templateIds.length, `${label}: a task repeated`);
+  }
+
+  {
+    // A group that is too big for a pack cannot pick it.
+    let game = createGame('REM234', 'remote-0', playerPayload('Host'), nextRequest());
+    for (let index = 1; index < 14; index += 1) {
+      game = await action(game, 'JOIN', `remote-${index}`, playerPayload(`Remote ${index}`));
+    }
+    await assert.rejects(
+      () => action(game, 'SELECT_PACK', 'remote-0', { packId: 'remote' }),
+      (error: unknown) => error instanceof GameRuleError && /up to 13 players/.test(error.message),
+    );
   }
 
   console.log('AWS game domain checks passed');
