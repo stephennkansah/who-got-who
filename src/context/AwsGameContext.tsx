@@ -145,10 +145,16 @@ function reviveView(value: unknown): GameViewPayload {
   return view;
 }
 
-async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
-  const response = await fetch(dataUrl);
-  if (!response.ok) throw new Error('Avatar image could not be prepared');
-  return response.blob();
+// Decoded by hand: the site's Content-Security-Policy blocks fetch() of data: URLs,
+// which made every photo avatar fail as "Can't reach the game service".
+function dataUrlToBlob(dataUrl: string): Blob {
+  const match = dataUrl.match(/^data:([^;,]*)(;base64)?,([\s\S]*)$/);
+  if (!match) throw new Error('Avatar image could not be prepared');
+  const [, type, isBase64, data] = match;
+  const binary = isBase64 ? atob(data) : decodeURIComponent(data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: type || 'application/octet-stream' });
 }
 
 export const AwsGameContext = createContext<GameContextType | null>(null);
@@ -222,7 +228,7 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
         return { avatar: avatar || '🎮', avatarType: 'emoji' as const };
       }
       const identityId = await getIdentityId();
-      const blob = await dataUrlToBlob(avatar);
+      const blob = dataUrlToBlob(avatar);
       if (!blob.type.startsWith('image/') || blob.size > 200 * 1024) {
         throw new Error('Avatar must be an image smaller than 200 KB');
       }

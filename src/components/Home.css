@@ -14,6 +14,7 @@
 .home-welcome {
   text-align: center;
   justify-content: space-between;
+  padding-bottom: calc(0.5rem + var(--safe-bottom));
 }
 
 .home-welcome-body {
@@ -67,7 +68,7 @@
 
 /* Clear of the floating Feedback / Install buttons. */
 .home-welcome-actions {
-  padding: 1rem 0 2.5rem;
+  padding: 1rem 0 3.4rem;
   flex-shrink: 0;
 }
 
@@ -162,3 +163,23 @@ input.home-code {
   font-size: 0.9rem;
 }
 .home-foot a { color: var(--text-muted); }
+
+/* Short phones (browser bars can leave ~460px): drop the logo and tighten so the buttons stay on screen. */
+@media (max-height: 640px) {
+  .home-welcome .brand-mark,
+  .home-setup-head .brand-mark { display: none; }
+  .home-welcome-body { padding-top: 0; }
+  .home-title { font-size: 2.3rem; margin-bottom: 0.3rem; }
+  .home-title.small { font-size: 1.8rem; }
+  .home-line { font-size: 0.97rem; line-height: 1.32; margin-bottom: 0.7rem; }
+  .home-example { padding: 0.7rem 0.95rem 0.75rem; }
+  .home-example-mission { font-size: 0.97rem; margin: 0.2rem 0 0.45rem; }
+  .home-example-steps { font-size: 0.93rem; line-height: 1.3; }
+  .home-example-steps li + li { margin-top: 0.1rem; }
+  .home-note { display: none; }
+  .home-welcome-actions { padding: 0.7rem 0 3.2rem; }
+  .home-cta { padding: 0.85rem; }
+  .home-back { margin-top: -0.9rem; }
+  .home-setup-body { padding: 0.6rem 0; }
+  .home-foot { padding-bottom: 2.6rem; }
+}

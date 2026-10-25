@@ -62,7 +62,8 @@ const FloatingWidgets: React.FC = () => {
   const { pathname } = useLocation();
   // After a game is the best moment to keep it on the home screen for next time.
   const showInstall = pathname === '/' || pathname.startsWith('/lobby') || pathname.startsWith('/recap');
-  const showFeedback = pathname === '/' || pathname.startsWith('/recap');
+  // Not on Home: it covered the join box on short phones, and feedback comes best after a game.
+  const showFeedback = pathname.startsWith('/recap');
   const showUpdate = !pathname.startsWith('/game');
 
   return (
