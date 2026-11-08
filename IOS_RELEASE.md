@@ -91,6 +91,37 @@ come through Apple once the APNs setup above is complete. Verify on a device:
 allow notifications in the lobby, lock the phone, and have another player claim
 a gotcha or bust you.
 
+## iOS 1.0.2: prepared 8 November 2026
+
+Prepared only: not yet built, uploaded or submitted. `MARKETING_VERSION` is
+`1.0.2`; the workflow sets the build number from its run number.
+
+New for iPhone players since 1.0.1 (source commit `0726d180`):
+
+- Hosts choose a pack straight after Start a New Game, before the lobby opens,
+  so every pack (including new releases) is seen. The lobby's Change link still
+  works. 1.0 and 1.0.1 still auto-pick Core Pack and go straight to the lobby.
+- A one-minute "Watch how it works" video (about 5 MB, bundled with the app)
+  in How to Play and in the rules.
+
+Draft "What's New" text for App Store Connect:
+
+> • Pick your game first: when you host, you now choose a pack before the lobby
+> opens, so you'll always see every pack, including new ones as they arrive.
+> • Watch how it works: a one-minute video in How to Play shows the whole game,
+> start to finish.
+
+Remaining steps:
+
+1. Push `main`, then run the shared workflow with the full 40-character commit
+   that contains this version bump: `check` first, then `release`.
+2. App Store Connect only accepts the 1.0.2 version for review once 1.0.1 is
+   approved or removed from review. TestFlight uploads of 1.0.2 work meanwhile.
+3. Update the saved review notes: hosts now pick a pack before the lobby
+   (see Reviewer access below).
+4. On a real iPhone, check the pack picker, the video (with and without sound),
+   and the 1.0.1 items still unverified (lock-screen alerts, invitation links).
+
 ## Push setup and iOS 1.0.1: 8 November 2026
 
 - Push Notifications is enabled and saved for `club.whogotwho.app`.
@@ -150,7 +181,8 @@ a gotcha or bust you.
 Who Got Who is a multiplayer party game with private invitation codes.
 No account, email or password is required. Enter a nickname and select an emoji
 or optional player photo. Tap Let's Play, enter a nickname, then Start a New Game
-to host. Continue through the rules to the lobby. On another device or browser,
+to host. Choose a pack (Core Pack is fine), then continue through the rules to the
+lobby (from 1.0.2; earlier builds go straight to the lobby). On another device or browser,
 open https://whogotwho.club and join using the displayed game code. Both browser
 players and app players can play together. Use two players to start a game, and
 set Settling-in time to None for immediate testing. The full tested steps are
