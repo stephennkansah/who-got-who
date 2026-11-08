@@ -91,7 +91,7 @@ come through Apple once the APNs setup above is complete. Verify on a device:
 allow notifications in the lobby, lock the phone, and have another player claim
 a gotcha or bust you.
 
-## iOS 1.0.2: prepared 8 November 2026
+## iOS 1.0.2: submitted 8 November 2026
 
 `MARKETING_VERSION` is `1.0.2`; the workflow sets the build number from its
 run number. Source commit `b9280416c62a1f07f39811c527475e9787c133c2`.
@@ -99,7 +99,10 @@ run number. Source commit `b9280416c62a1f07f39811c527475e9787c133c2`.
 - Check passed on 8 November 2026: tests, typecheck, simulator compile and
   launch (welcome screen shown). The bundle reports 1.0.2 and includes the
   how-to-play video: https://github.com/dentistrydashboard/myformatic-frontend/actions/runs/42514599689
-- Not yet uploaded to TestFlight or submitted.
+- Signed upload succeeded as **1.0.2 (build 5)**: https://github.com/dentistrydashboard/myformatic-frontend/actions/runs/42515087630
+- Replaced the pending 1.0.1 submission. Apple confirmed **1 Item Submitted** and **1.0.2 Waiting for Review** at approximately 19:34 UTC on 8 November 2026. Automatic release after approval remains selected.
+- Submission: https://appstoreconnect.apple.com/apps/6826935487/distribution/reviewsubmissions/details/4555fc0e-715a-437a-8f5e-a4aab311cd1a
+- Reviewer instructions now include choosing a pack before the lobby and the bundled how-to-play video.
 
 New for iPhone players since 1.0.1 (source commit `0726d180`):
 
@@ -116,15 +119,7 @@ Draft "What's New" text for App Store Connect:
 > • Watch how it works: a one-minute video in How to Play shows the whole game,
 > start to finish.
 
-Remaining steps:
-
-1. Run the shared workflow in `release` mode with the source commit above.
-2. App Store Connect only accepts the 1.0.2 version for review once 1.0.1 is
-   approved or removed from review. TestFlight uploads of 1.0.2 work meanwhile.
-3. Update the saved review notes: hosts now pick a pack before the lobby
-   (see Reviewer access below).
-4. On a real iPhone, check the pack picker, the video (with and without sound),
-   and the 1.0.1 items still unverified (lock-screen alerts, invitation links).
+Real-device checks remain unverified: pack picker, video with and without sound, lock-screen alerts and invitation links. Stephen authorised submitting without waiting for these checks.
 
 ## Push setup and iOS 1.0.1: 8 November 2026
 
