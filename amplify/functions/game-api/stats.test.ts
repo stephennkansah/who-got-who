@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { applyAction, createGame, type StoredGame } from './domain';
-import { statsForChange, type StatIncrement } from './stats';
+import { groupSize, statsForChange, type StatIncrement } from './stats';
+import { buildStatsReport } from './statsReport';
 
 let sequence = 0;
 const request = () => `stats-${++sequence}`;
@@ -53,12 +54,59 @@ async function run() {
   // Ending and the rematch link
   ({ after: game, stats } = await step(game, 'END', 'a'));
   assert.equal(count(stats, day, 'gamesEndedByHost'), 1);
+  // Finished games are also counted by group size, so big-group lengths can be checked.
+  assert.equal(count(stats, day, 'ended_2to6'), 1);
+  assert.equal(count(stats, day, 'minutes_2to6'), 0);
   ({ stats } = await step(game, 'LINK_REMATCH', 'b', { rematchGameId: 'NEW234' }));
   assert.equal(count(stats, day, 'rematches'), 1);
 
   // Nothing personal is ever recorded
   const keys = stats.map((item) => item.key).join(' ');
   assert.ok(!/A|B|C/.test(keys.replace(/day#|mission#|challenge#/g, '')), 'no names in stat keys');
+
+  {
+    // Busts and end-of-game mission ratings are counted, with no names.
+    let played = createGame('BUS234', 'a', player('A'), request());
+    ({ after: played } = await step(played, 'JOIN', 'b', player('B')));
+    ({ after: played } = await step(played, 'SELECT_PACK', 'a', { packId: 'core' }));
+    ({ after: played } = await step(played, 'UPDATE_SETTINGS', 'a', { briefingMinutes: 0 }));
+    ({ after: played } = await step(played, 'START', 'a'));
+    const suspect = played.players[1];
+    let counted: StatIncrement[];
+    ({ after: played, stats: counted } = await step(played, 'CALL_BUST', 'a', { playerId: suspect.id }));
+    assert.equal(count(counted, day, 'bustsCalled'), 1);
+    const mission = suspect.tasks[0];
+    ({ after: played, stats: counted } = await step(played, 'ANSWER_BUST', 'b', { bustId: played.busts![0].id, taskId: mission.id }));
+    assert.equal(count(counted, day, 'bustsConfirmed'), 1);
+    assert.equal(count(counted, `mission#${mission.templateId}`, 'caught'), 1);
+
+    ({ after: played } = await step(played, 'END', 'a'));
+    const rated = played.players[0].tasks[0];
+    ({ after: played, stats: counted } = await step(played, 'RATE_MISSION', 'a', { taskId: rated.id, rating: 'up' }));
+    assert.equal(count(counted, `mission#${rated.templateId}`, 'ratedUp'), 1);
+    ({ after: played, stats: counted } = await step(played, 'RATE_MISSION', 'a', { taskId: rated.id, rating: 'down' }));
+    assert.equal(count(counted, `mission#${rated.templateId}`, 'ratedUp'), -1, 'a changed mind moves the vote');
+    assert.equal(count(counted, `mission#${rated.templateId}`, 'ratedDown'), 1);
+
+    const report = buildStatsReport([
+      { key: 'mission#core-1', dealt: 10, ratedUp: 4, ratedDown: 0 },
+      { key: 'mission#core-2', dealt: 10, ratedUp: 0, ratedDown: 3 },
+      { key: 'mission#core-3', dealt: 10, ratedUp: 1, ratedDown: 0 },
+    ], 7, now);
+    assert.deepEqual(report.missions.mostLiked.map((row) => [row.id, row.rate]), [['core-1', 1]]);
+    assert.deepEqual(report.missions.mostDisliked.map((row) => [row.id, row.rate]), [['core-2', 0]]);
+  }
+
+  {
+    assert.equal(groupSize(7), '7to11');
+    assert.equal(groupSize(12), '12plus');
+    const report = buildStatsReport([{ key: day, ended_7to11: 2, minutes_7to11: 90 }], 7, now);
+    assert.deepEqual(report.bySize, [
+      { size: '2–6', games: 0, avgMinutes: null },
+      { size: '7–11', games: 2, avgMinutes: 45 },
+      { size: '12+', games: 0, avgMinutes: null },
+    ]);
+  }
 
   console.log('Game stats checks passed');
 }

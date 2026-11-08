@@ -45,6 +45,35 @@ release mode is an alternative if separate signing secrets are added here.
    must never contain the private key, certificates, passwords or profiles.
 4. Deploy the public `.well-known/apple-app-site-association` file with JSON
    content type for invitation links. The entitlement only covers whogotwho.club.
+   Amplify Hosting redirects extensionless paths to a trailing slash (`/x` →
+   `/x/`), which Apple will not follow, so the file is also published as
+   `apple-app-site-association.json`. In the Amplify console → Hosting →
+   Rewrites and redirects, add as the **first** rule: source
+   `/.well-known/apple-app-site-association`, target
+   `/.well-known/apple-app-site-association.json`, type **200 (Rewrite)**.
+   Check with `curl -I https://whogotwho.club/.well-known/apple-app-site-association`
+   (must be 200, JSON, no redirect). Apple's CDN can take a day to refresh.
+
+## Lock-screen alerts (Apple Push Notification service)
+
+The app asks for notification permission in the lobby, registers with Apple
+and sends its device token to the game (`SAVE_PUSH` with `apnsToken`). The
+server sends alerts with an APNs auth key (`amplify/functions/game-api/apns.ts`).
+Alerts stay off until all of this is done:
+
+1. developer.apple.com → Identifiers → `club.whogotwho.app`: tick
+   **Push Notifications** and save (automatic signing then includes it).
+2. developer.apple.com → Keys → **+**: enable *Apple Push Notifications
+   service (APNs)*, download the `.p8` file once, and note its 10-character Key ID.
+3. Amplify console → Hosting → **Secrets**: `APNS_PRIVATE_KEY` = the `.p8`
+   file's contents (pasting it on one line is fine).
+4. Hosting → **Environment variables**: `APNS_KEY_ID` = the Key ID, and
+   `APNS_ENABLED` = `true`. Redeploy.
+5. Ship an iOS build made from this commit or later (it adds the
+   `aps-environment` entitlement and the token hand-off in `AppDelegate.swift`).
+
+Never commit the `.p8` key or paste it into chat. Without step 4 the backend
+deploys as before and iPhone alerts are simply skipped.
 
 ## Device verification checklist
 
@@ -57,8 +86,10 @@ release mode is an alternative if separate signing secrets are added here.
 - Open an invitation from Messages and confirm it opens the correct lobby.
 - Check layouts on iPhone and iPad, including safe areas and large text.
 
-Native iOS background push is not implemented. Browser Web Push is suppressed
-inside the native app; in-app events and haptics remain available.
+Browser Web Push is suppressed inside the native app; lock-screen alerts there
+come through Apple once the APNs setup above is complete. Verify on a device:
+allow notifications in the lobby, lock the phone, and have another player claim
+a gotcha or bust you.
 
 ## Verified release state: 25 October 2026
 

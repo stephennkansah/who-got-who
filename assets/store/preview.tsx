@@ -45,5 +45,5 @@ createRoot(document.getElementById('root')!).render(
 );
 // Drive the same public controls as a player for the example screenshot.
 if (page === 'mission') {
-  setTimeout(() => document.querySelector<HTMLButtonElement>('[aria-label="Mission 01 / 07, hidden. Tap to reveal."]')?.click(), 100);
+  setTimeout(() => document.querySelector<HTMLButtonElement>('.task-list-item .mission-body')?.click(), 100);
 }

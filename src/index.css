@@ -936,6 +936,46 @@ button:not(:disabled):active {
   font-size: 1.3rem;
   padding: 0.8rem;
 }
+/* Busts: the catcher's button, and the busted player's mission picker */
+.bust-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 0 0 0.75rem;
+}
+.bust-bar .btn { width: auto; flex-shrink: 0; }
+.bust-bar-hint { font-size: 0.86rem; color: var(--text-muted); line-height: 1.35; }
+.bust-mission {
+  text-align: left;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  border: 2px solid rgba(35, 32, 20, 0.18);
+  background: rgba(35, 32, 20, 0.04);
+  color: var(--paper-ink);
+  cursor: pointer;
+}
+.bust-mission.is-picked { border-color: var(--danger); background: var(--danger-soft); }
+.bust-actions {
+  /* Reaches through the sheet's 1.4rem bottom padding so nothing peeks out underneath. */
+  position: sticky;
+  bottom: -1.4rem;
+  margin-bottom: -1.4rem;
+  padding: 0.6rem 0 1.4rem;
+  background: var(--paper);
+  box-shadow: 0 -10px 12px -8px rgba(35, 32, 20, 0.25);
+}
+
+.mission-caught-hint {
+  grid-column: 1 / -1;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: var(--paper-dim);
+  text-align: center;
+}
 
 /* "← Back" at the top of full-screen sub-pages */
 .back-link {
@@ -1215,6 +1255,19 @@ button:not(:disabled):active {
 .reveal-text { font-size: 0.93rem; font-weight: 600; line-height: 1.4; }
 .reveal-outcome { font-size: 0.82rem; color: var(--paper-dim); margin-top: 0.15rem; }
 .reveal-item.pending .reveal-outcome { font-style: italic; }
+.reveal-rate-hint { font-size: 0.86rem; color: var(--text-muted); margin: 0 0.8rem 0.5rem; }
+.reveal-rate { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
+.rate-btn {
+  min-width: 44px;
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(35, 32, 20, 0.2);
+  background: rgba(35, 32, 20, 0.04);
+  font-size: 1.05rem;
+  cursor: pointer;
+  filter: grayscale(0.6);
+}
+.rate-btn.is-picked { border-color: var(--amber); background: rgba(232, 181, 84, 0.25); filter: none; }
 
 .album-grid {
   display: grid;
@@ -1263,6 +1316,12 @@ button:not(:disabled):active {
   border-top: 5px solid var(--amber);
 }
 .phase-banner.paused { border-top-color: var(--danger); }
+.phase-banner.finished { border-top-color: var(--success); }
+.phase-banner.finished .phase-title { color: var(--success-ink); }
+
+/* A guest's Ready card leads the lobby; amber until they're in, then green. */
+.ready-card { border-top: 4px solid var(--amber); }
+.ready-card.is-ready { border-top-color: var(--success); }
 
 .phase-label {
   font-size: 0.76rem;

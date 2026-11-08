@@ -27,6 +27,15 @@ class Tally {
   }
 }
 
+/** Group-size buckets, matching the podium tiers (winner only, top 2, top 3). */
+export const GROUP_SIZES = ['2to6', '7to11', '12plus'] as const;
+
+export function groupSize(players: number): (typeof GROUP_SIZES)[number] {
+  if (players >= 12) return '12plus';
+  if (players >= 7) return '7to11';
+  return '2to6';
+}
+
 function minutesBetween(start?: string, end?: string): number {
   if (!start || !end) return 0;
   return Math.max(0, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000));
@@ -65,7 +74,14 @@ export function statsForChange(before: StoredGame | null, after: StoredGame, now
     const target = holiday ? after.settings.holidayChallengeWinCondition ?? 18 : after.settings.targetScore;
     const best = Math.max(0, ...after.players.map((player) => (holiday ? player.challengeScore ?? 0 : player.score)));
     tally.add(day, best >= target ? 'gamesWon' : 'gamesEndedByHost');
-    tally.add(day, 'minutesPlayed', minutesBetween(after.startedAt, after.endedAt));
+    const minutes = minutesBetween(after.startedAt, after.endedAt);
+    tally.add(day, 'minutesPlayed', minutes);
+    // How long secret-missions games last for each group size, to tune the podium.
+    if (!holiday) {
+      const size = groupSize(after.players.length);
+      tally.add(day, `ended_${size}`);
+      tally.add(day, `minutes_${size}`, minutes);
+    }
   }
 
   // People arriving and leaving
@@ -92,6 +108,11 @@ export function statsForChange(before: StoredGame | null, after: StoredGame, now
         tally.add(day, 'swaps');
         continue;
       }
+      // End-of-game verdicts: a changed rating moves its vote.
+      if (was.rating !== task.rating) {
+        if (was.rating) tally.add(mission, was.rating === 'up' ? 'ratedUp' : 'ratedDown', -1);
+        if (task.rating) tally.add(mission, task.rating === 'up' ? 'ratedUp' : 'ratedDown');
+      }
       if (was.status === task.status) continue;
       if (was.status === 'pending' && task.status === 'disputed') tally.add(day, 'gotchasClaimed');
       if (was.status === 'pending' && task.status === 'failed') {
@@ -107,6 +128,14 @@ export function statsForChange(before: StoredGame | null, after: StoredGame, now
         tally.add(mission, 'overturned');
       }
     }
+  }
+
+  const bustWas = new Map((before.busts ?? []).map((bust) => [bust.id, bust.result]));
+  for (const bust of after.busts ?? []) {
+    const was = bustWas.get(bust.id);
+    if (!was) tally.add(day, 'bustsCalled');
+    if (was === 'pending' && bust.result === 'confirmed') tally.add(day, 'bustsConfirmed');
+    if (was === 'pending' && bust.result === 'denied') tally.add(day, 'bustsDenied');
   }
 
   const previousPhase = new Map(before.disputes.map((dispute) => [dispute.id, dispute.phase]));

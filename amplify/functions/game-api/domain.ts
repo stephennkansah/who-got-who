@@ -12,6 +12,7 @@ import {
   MAX_PLAYERS,
 } from './packs';
 import { parsePushSubscription, type PushSubscriptionKeys } from './webpush';
+import { parseApnsToken } from './apns';
 
 export type GameActionName =
   | 'JOIN'
@@ -35,7 +36,10 @@ export type GameActionName =
   | 'RESUME'
   | 'SET_READY'
   | 'TRANSFER_HOST'
-  | 'SAVE_PUSH';
+  | 'SAVE_PUSH'
+  | 'CALL_BUST'
+  | 'ANSWER_BUST'
+  | 'RATE_MISSION';
 
 /** Minutes between dealing missions and opening gotchas that a host may choose. */
 export const BRIEFING_OPTIONS = [0, 5, 10, 15, 30];
@@ -44,8 +48,45 @@ export const DEFAULT_BRIEFING_MINUTES = 10;
 /** Fixed winning score for secret missions, regardless of group size. */
 export const WINNING_SCORE = 5;
 
+/**
+ * In bigger groups, one player reaching the winning score doesn't end it for
+ * everyone: play carries on until this many players have reached it.
+ * Largest groups first; smaller groups stop at the first finisher.
+ */
+export const PODIUM_TIERS: ReadonlyArray<{ minPlayers: number; places: number }> = [
+  { minPlayers: 12, places: 3 },
+  { minPlayers: 7, places: 2 },
+];
+
+/** How many players must reach the winning score before a secret-missions game ends. */
+export function podiumSize(playerCount: number): number {
+  return PODIUM_TIERS.find((tier) => playerCount >= tier.minPlayers)?.places ?? 1;
+}
+
+export function ordinal(place: number): string {
+  const tens = place % 100;
+  if (tens >= 11 && tens <= 13) return `${place}th`;
+  return `${place}${({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[place % 10] ?? 'th'}`;
+}
+
+/** Finishers in the order they finished, then everyone else by score. */
+export function rankPlayers<T extends { place?: number; score: number }>(players: T[]): T[] {
+  return [...players].sort((left, right) => {
+    if (left.place && right.place) return left.place - right.place;
+    if (left.place) return -1;
+    if (right.place) return 1;
+    return right.score - left.score;
+  });
+}
+
 /** Fixed response and voting window; hosts cannot change it. */
 export const CLAIM_RESPONSE_SECONDS = 5 * 60;
+
+/** How long a busted player has to say which mission they were caught trying. */
+export const BUST_RESPONSE_SECONDS = 5 * 60;
+
+/** From this score a player's next gotcha (on someone new) can finish them. */
+export const ONE_AWAY_SCORE = WINNING_SCORE - 1.5;
 
 /** Actions only the Lambda itself may apply; clients cannot send them directly. */
 export const INTERNAL_ACTIONS: ReadonlySet<string> = new Set(['LINK_REMATCH']);
@@ -61,6 +102,20 @@ export type StoredTask = {
   targetId?: string;
   gotAt?: string;
   disputeId?: string;
+  /** The holder's verdict on this mission once the game is over. */
+  rating?: 'up' | 'down';
+};
+
+/** Someone says they caught a player trying a mission; that player says which one. */
+export type StoredBust = {
+  id: string;
+  catcherId: string;
+  playerId: string;
+  openedAt: string;
+  closesAt: string;
+  result: 'pending' | 'confirmed' | 'denied' | 'expired';
+  settledAt?: string;
+  taskInstanceId?: string;
 };
 
 export type StoredPlayer = {
@@ -84,8 +139,12 @@ export type StoredPlayer = {
   avatarType?: 'emoji' | 'photo';
   challengeScore?: number;
   challengeCompletions?: string[];
+  /** Set when this player reaches the winning score: 1 for the winner, then 2 and 3 in big groups. */
+  place?: number;
   /** This player's phone, for buzzes while it is locked. Never sent to other players. */
   push?: PushSubscriptionKeys;
+  /** Apple's device token when playing in the iPhone app. Never sent to other players. */
+  apns?: string;
 };
 
 export type StoredDispute = {
@@ -133,6 +192,8 @@ export type StoredGame = {
     holidaySilverPoints?: number;
     holidayMaxSilverPerChallenge?: number;
     briefingMinutes?: number;
+    /** Players who must reach the winning score before the game ends; missing means 1. */
+    podiumSize?: number;
     // Legacy metadata only; no longer configurable or used to choose a target.
     gameLength?: 'quick' | 'standard' | 'long' | 'weekend';
   };
@@ -153,6 +214,8 @@ export type StoredGame = {
     requiresProof: boolean;
   }>;
   disputes: StoredDispute[];
+  /** Bust calls, newest last; only the latest few settled ones are kept. */
+  busts?: StoredBust[];
   requestIds: string[];
   expiresAt: number;
   startedAt?: string;
@@ -357,7 +420,22 @@ function awardGotcha(game: StoredGame, dispute: StoredDispute): void {
   }
   task.status = 'completed';
   dispute.result = 'upheld';
-  if (claimant.score >= WINNING_SCORE) {
+  recordFinish(game, claimant);
+}
+
+/** Reaching the winning score earns the next podium place. */
+function recordFinish(game: StoredGame, player: StoredPlayer): void {
+  if (game.status !== 'live' || player.place || player.score < WINNING_SCORE) return;
+  player.place = game.players.filter((other) => other.place).length + 1;
+  settlePodium(game);
+}
+
+/** The game ends once the podium is full, or nobody is left still playing for a place. */
+function settlePodium(game: StoredGame): void {
+  if (game.status !== 'live') return;
+  const finished = game.players.filter((player) => player.place).length;
+  if (!finished) return;
+  if (finished >= (game.settings.podiumSize ?? 1) || game.players.every((player) => player.place)) {
     game.status = 'ended';
     game.currentPhase = 'ended';
   }
@@ -400,13 +478,55 @@ function resolveExpired(game: StoredGame, now: Date): boolean {
     else resolveVote(game, dispute);
     changed = true;
   }
+  // An unanswered bust simply lapses: the honour system can't settle it without the player.
+  for (const bust of game.busts ?? []) {
+    if (bust.result !== 'pending' || new Date(bust.closesAt) > now) continue;
+    bust.result = 'expired';
+    bust.settledAt = now.toISOString();
+    changed = true;
+  }
   return changed;
+}
+
+/** Settles a bust: the named mission is filed as caught, credited to the catcher. */
+function confirmBust(bust: StoredBust, player: StoredPlayer, task: StoredTask, now: Date): void {
+  task.status = 'failed';
+  task.targetId = bust.catcherId;
+  task.gotAt = now.toISOString();
+  player.stats.failed += 1;
+  bust.result = 'confirmed';
+  bust.taskInstanceId = task.id;
+  bust.settledAt = now.toISOString();
+}
+
+/** Keeps every open bust and only the latest settled ones, so the stored game stays small. */
+function trimBusts(game: StoredGame): void {
+  const busts = game.busts ?? [];
+  const settled = busts.filter((bust) => bust.result !== 'pending');
+  if (settled.length <= 20) return;
+  const keep = new Set(settled.slice(-20));
+  game.busts = busts.filter((bust) => bust.result === 'pending' || keep.has(bust));
 }
 
 /** Drops a player and settles any claims that can no longer be decided without them. */
 function removePlayer(game: StoredGame, leaving: StoredPlayer): void {
   game.players = game.players.filter((player) => player.id !== leaving.id);
   if (game.status === 'draft') updateGroupRules(game);
+  // Busts can't be answered without both players.
+  for (const bust of game.busts ?? []) {
+    if (bust.result === 'pending' && (bust.catcherId === leaving.id || bust.playerId === leaving.id)) {
+      bust.result = 'expired';
+    }
+  }
+  // A finisher who leaves gives up their place; everyone behind moves up.
+  if (leaving.place) {
+    game.players
+      .filter((player) => player.place)
+      .sort((left, right) => (left.place ?? 0) - (right.place ?? 0))
+      .forEach((player, index) => {
+        player.place = index + 1;
+      });
+  }
   for (const dispute of game.disputes) {
     if (dispute.result !== 'pending') continue;
     if (dispute.accuserId === leaving.id || dispute.targetId === leaving.id) {
@@ -431,6 +551,7 @@ function removePlayer(game: StoredGame, leaving: StoredPlayer): void {
     });
     game.hostId = game.players[0].id;
   }
+  settlePodium(game);
 }
 
 function handSize(playerCount: number): number {
@@ -446,10 +567,13 @@ function updateGroupRules(game: StoredGame): void {
     // Bigger groups get more challenges and a lower target.
     game.settings.holidayChallengeCount = getHolidayChallengeCount(playerCount);
     game.settings.holidayChallengeWinCondition = getHolidayChallengeWinCondition(playerCount);
+    delete game.settings.podiumSize;
     return;
   }
   // Bigger groups get fewer swaps, so a swap never repeats another player's task.
   game.settings.swapsAllowed = getSwapsAllowed(game.packId, playerCount, handSize(playerCount));
+  // Bigger groups play on for 2nd and 3rd instead of stopping at the first finisher.
+  game.settings.podiumSize = podiumSize(playerCount);
 }
 
 function makeTasks(
@@ -635,6 +759,9 @@ export async function applyAction(
       for (const dispute of game.disputes) {
         if (dispute.result === 'pending') dispute.closesAt = shift(dispute.closesAt);
       }
+      for (const bust of game.busts ?? []) {
+        if (bust.result === 'pending') bust.closesAt = shift(bust.closesAt);
+      }
       if (game.claimsOpenAt && new Date(game.claimsOpenAt) > new Date(game.pausedAt)) {
         game.claimsOpenAt = shift(game.claimsOpenAt);
       }
@@ -771,6 +898,11 @@ export async function applyAction(
       requireStatus(game, 'live');
       if (game.gameType === 'holiday-challenge') throw new GameRuleError('Use challenges in this game');
       const player = member(game, identityId);
+      if (player.place) {
+        throw new GameRuleError(
+          `You've already finished ${ordinal(player.place)} — no more claims. You can still vote on disputes.`,
+        );
+      }
       requirePlayable(game, now);
       const task = findTask(game, player, body.taskId);
       if (task.status !== 'pending') throw new GameRuleError('That task is already resolved');
@@ -782,7 +914,13 @@ export async function applyAction(
       }
       task.targetId = targetId;
       task.gotAt = now.toISOString();
-      if (outcome !== 'success') {
+      const openBust = game.busts?.find(
+        (bust) => bust.result === 'pending' && bust.playerId === player.id && bust.catcherId === targetId,
+      );
+      if (outcome !== 'success' && openBust) {
+        // Reported by hand while that player's bust was waiting: it's the same catch.
+        confirmBust(openBust, player, task, now);
+      } else if (outcome !== 'success') {
         task.status = 'failed';
         player.stats.failed += 1;
       } else {
@@ -948,6 +1086,20 @@ export async function applyAction(
 
     case 'SAVE_PUSH': {
       const player = member(game, identityId);
+      // The iPhone app registers with Apple instead of a browser push service.
+      if ('apnsToken' in body) {
+        if (body.apnsToken == null) {
+          if (!player.apns) break;
+          delete player.apns;
+        } else {
+          const token = parseApnsToken(body.apnsToken);
+          if (!token) throw new GameRuleError('Notifications from this phone are not supported');
+          if (player.apns === token) break;
+          player.apns = token;
+        }
+        changed = true;
+        break;
+      }
       if (body.subscription == null) {
         if (!player.push) break;
         delete player.push;
@@ -963,6 +1115,77 @@ export async function applyAction(
         }
         player.push = subscription;
       }
+      changed = true;
+      break;
+    }
+
+    case 'CALL_BUST': {
+      requireStatus(game, 'live');
+      if (game.gameType === 'holiday-challenge') {
+        throw new GameRuleError('There are no secret missions to bust in this game');
+      }
+      const catcher = member(game, identityId);
+      requirePlayable(game, now);
+      const playerId = text(body.playerId, 'Player', 64);
+      if (playerId === catcher.id) {
+        throw new GameRuleError('Caught yourself? Tap the mission and I Got Caught instead');
+      }
+      const suspect = game.players.find((player) => player.id === playerId);
+      if (!suspect) throw new GameRuleError('Player not found');
+      if (suspect.place) throw new GameRuleError(`${suspect.name} has already finished — no missions left to bust`);
+      if (!suspect.tasks.some((task) => task.status === 'pending')) {
+        throw new GameRuleError(`${suspect.name} has no open missions left to bust`);
+      }
+      const busts = game.busts ?? [];
+      if (busts.some((bust) => bust.result === 'pending' && bust.catcherId === catcher.id)) {
+        throw new GameRuleError('Wait for your last bust to be answered first');
+      }
+      if (busts.some((bust) => bust.result === 'pending' && bust.playerId === suspect.id)) {
+        throw new GameRuleError(`Someone's already busting ${suspect.name} — wait for their answer`);
+      }
+      busts.push({
+        id: randomUUID(),
+        catcherId: catcher.id,
+        playerId: suspect.id,
+        openedAt: now.toISOString(),
+        closesAt: new Date(now.getTime() + BUST_RESPONSE_SECONDS * 1000).toISOString(),
+        result: 'pending',
+      });
+      game.busts = busts;
+      trimBusts(game);
+      changed = true;
+      break;
+    }
+
+    case 'ANSWER_BUST': {
+      requireStatus(game, 'live');
+      const suspect = member(game, identityId);
+      const bustId = text(body.bustId, 'Bust', 64);
+      const bust = game.busts?.find((candidate) => candidate.id === bustId && candidate.playerId === suspect.id);
+      if (!bust || bust.result !== 'pending') throw new GameRuleError('That bust has already been settled');
+      if (body.taskId == null) {
+        bust.result = 'denied';
+        bust.settledAt = now.toISOString();
+      } else {
+        const task = findTask(game, suspect, body.taskId);
+        if (task.status !== 'pending') throw new GameRuleError('Pick one of your open missions');
+        confirmBust(bust, suspect, task, now);
+      }
+      changed = true;
+      break;
+    }
+
+    case 'RATE_MISSION': {
+      requireStatus(game, 'ended');
+      const player = member(game, identityId);
+      const task = findTask(game, player, body.taskId);
+      if (body.rating != null && body.rating !== 'up' && body.rating !== 'down') {
+        throw new GameRuleError('Rate a mission up or down');
+      }
+      const rating = body.rating as 'up' | 'down' | null | undefined;
+      if ((task.rating ?? null) === (rating ?? null)) break;
+      if (rating) task.rating = rating;
+      else delete task.rating;
       changed = true;
       break;
     }
@@ -1007,7 +1230,7 @@ export async function projectGameView(
         player.avatarType === 'photo' && player.avatar
           ? await mediaUrl(player.avatar)
           : player.avatar;
-      const { identityId: _identityId, push: _push, ...safePlayer } = player;
+      const { identityId: _identityId, push: _push, apns: _apns, ...safePlayer } = player;
       return {
         ...safePlayer,
         avatar,
@@ -1064,6 +1287,24 @@ export async function projectGameView(
       activeDisputes: game.disputes
         .filter((dispute) => dispute.result === 'pending')
         .map((dispute) => ({ ...dispute, taskText: claimedTaskText(dispute) })),
+      // Only the two players involved see a bust: open ones, and ones settled in the
+      // last few minutes so the catcher hears how it went.
+      activeBusts: (game.busts ?? [])
+        .filter((bust) => bust.catcherId === current.id || bust.playerId === current.id)
+        .filter((bust) =>
+          bust.result === 'pending'
+            ? new Date(bust.closesAt) > now
+            : !!bust.settledAt && now.getTime() - new Date(bust.settledAt).getTime() < 5 * 60 * 1000,
+        )
+        .map(({ id, catcherId, playerId, openedAt, closesAt, result, taskInstanceId }) => ({
+          id,
+          catcherId,
+          playerId,
+          openedAt,
+          closesAt,
+          result,
+          taskInstanceId,
+        })),
     },
   };
 }

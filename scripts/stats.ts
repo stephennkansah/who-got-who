@@ -62,8 +62,10 @@ async function main() {
   console.log(`Spreading  guests who became hosts ${spreading.guestsWhoBecameHosts} · repeat hosts ${spreading.repeatHosts} · brand-new hosts ${spreading.brandNewHosts} · rematches ${spreading.rematches} (${pct(spreading.rematchRate)} of finished games)`);
   console.log(`Games      created ${games.created} · started ${games.started} · won ${games.won} · ended by host ${games.endedByHost} · never finished ${games.unfinished}`);
   console.log(`Players    avg ${players.avgPerGame ?? '—'} per game · ${players.bigGames} games of 7+ · ${players.lateJoins} late joins · ${players.leftMidGame} left mid-game`);
+  console.log(`By size    ${report.bySize.map((row) => `${row.size}: ${row.games} games${row.avgMinutes === null ? '' : `, avg ${row.avgMinutes} min`}`).join(' · ')}`);
   console.log(`Play       avg ${play.avgMinutes ?? '—'} min · gotchas claimed ${play.claimed}, confirmed ${play.confirmed} · disputes ${play.disputes} (${pct(play.disputeRate)}) · overturned ${play.overturned} · swaps ${play.swaps} · pauses ${play.pauses}`);
   console.log(`Setup      packs ${list(report.packs)} | lengths ${list(report.lengths)} | with settling-in time ${report.withBriefing}`);
+  console.log(`Busts      called ${play.bustsCalled} · confirmed ${play.bustsConfirmed} · denied ${play.bustsDenied}`);
   if (play.challengeClaims) console.log(`Holiday    challenge claims ${play.challengeClaims} · photo proofs ${play.proofPhotos}`);
   console.log('\nMissions (all time, dealt 5+ times)');
   console.log(' Most swapped away — rewrite or retire:');
@@ -72,6 +74,10 @@ async function main() {
   console.log(missions(report.missions.mostCompleted));
   console.log(' Dealt 8+ times, never pulled off — maybe too hard:');
   console.log(missions(report.missions.neverCompleted, false));
+  console.log(' Players loved (share of thumbs up):');
+  console.log(missions(report.missions.mostLiked));
+  console.log(' Players disliked (share of thumbs up):');
+  console.log(missions(report.missions.mostDisliked));
   console.log('');
 }
 

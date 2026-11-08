@@ -108,13 +108,27 @@ export default function RulesContent({ game }: { game: Game }) {
 
       <RuleCard title="3 · Catch them first" tone="danger">
         Think someone's working you? <strong>Call it out</strong> — "You're trying to get me to say something!"
-        If you're right before they say Gotcha, they're <strong>busted</strong> and tap
-        <strong> I Got Caught</strong>. It runs on honesty, so play fair.
+        If you're right before they say Gotcha, tap <strong>Bust Them</strong> and pick them. Their phone asks
+        which mission it was, and that mission is <strong>gone for good</strong> — no second try.
+        <br />
+        <strong>Busted yourself?</strong> Pick the mission when asked, or tap it → <strong>I Got Caught</strong>.
+        You keep the rest. It runs on honesty, so play fair.
       </RuleCard>
 
-      <RuleCard title={`4 · First to ${summary.target} points wins`} tone="warning">
+      <RuleCard
+        title={summary.places > 1 ? `4 · Race to ${summary.target} points` : `4 · First to ${summary.target} points wins`}
+        tone="warning"
+      >
         <strong>1 point</strong> per gotcha, <strong>+0.5</strong> the first time you get each player — so spread
-        the love. When it's over, everyone's missions are revealed.
+        the love.
+        {summary.places > 1 && (
+          <>
+            {' '}<strong>First to {summary.target} wins</strong>, but with this many players the game keeps going
+            until <strong>{summary.places} players</strong> have reached {summary.target}
+            {summary.places === 2 ? ' — 1st and 2nd' : ' — 1st, 2nd and 3rd'}. Finished? Stay in to vote.
+          </>
+        )}
+        {' '}When it's over, everyone's missions are revealed.
       </RuleCard>
 
       {/* Invented examples (EXAMPLE_ONLY_KEYWORDS in packs.ts) — never real missions,
@@ -125,7 +139,7 @@ export default function RulesContent({ game }: { game: Game }) {
           <li>Chatting to Jordan, you “accidentally” knock your keys off the table by their feet.</li>
           <li>You keep talking. Jordan bends down, picks it up and hands it over: “Here you go.”</li>
           <li><strong>“GOTCHA, Jordan!”</strong> Tap the mission → Got it! → Jordan. You score.</li>
-          <li>But if Jordan had clocked it first — “You dropped that on purpose!” — you'd be busted.</li>
+          <li>But if Jordan had clocked it first — “You dropped that on purpose!” — Jordan taps Bust Them, you confirm the mission, and it's gone.</li>
         </ol>
       </RuleCard>
 

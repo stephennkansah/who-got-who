@@ -1,5 +1,6 @@
 import { Game, Player } from '../types';
 import { BRAND_ICON_LARGE } from '../branding';
+import { rankPlayers } from './gameSettings';
 
 const W = 1080;
 const H = 1350;
@@ -39,7 +40,7 @@ export async function renderResultsImage(game: Game): Promise<Blob> {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Image sharing is not supported on this device');
 
-  const ranked = [...game.players].sort((a, b) => scoreOf(game, b) - scoreOf(game, a));
+  const ranked = rankPlayers(game.players, (player) => scoreOf(game, player));
   const winner = ranked[0];
   const isHoliday = game.gameType === 'holiday-challenge';
 

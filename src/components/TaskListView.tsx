@@ -14,6 +14,29 @@ interface TaskListViewProps {
   filing: { taskId: string; result: 'passed' | 'failed' } | null;
   /** Set while claims are blocked (briefing or pause); swaps still work. */
   lockReason?: string | null;
+  /** You've reached the winning score: missions stay readable but can't be claimed. */
+  finished?: boolean;
+}
+
+// Missions show by default. A player who prefers them covered taps "Hide all",
+// and this phone remembers that choice for every game.
+const HIDE_KEY = 'wgw-missions-hidden';
+
+function readHidden(): boolean {
+  try {
+    return localStorage.getItem(HIDE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function saveHidden(hidden: boolean): void {
+  try {
+    if (hidden) localStorage.setItem(HIDE_KEY, '1');
+    else localStorage.removeItem(HIDE_KEY);
+  } catch {
+    // Storage can be blocked (private mode); the choice just lasts this visit.
+  }
 }
 
 export default function TaskListView({
@@ -27,17 +50,17 @@ export default function TaskListView({
   currentPlayerId,
   filing,
   lockReason = null,
+  finished = false,
 }: TaskListViewProps) {
-  const [covered, setCovered] = useState(true);
+  const [covered, setCovered] = useState(readHidden);
   const [openId, setOpenId] = useState<string | null>(null);
   const [showTip, setShowTip] = useState(false);
   const [showFiled, setShowFiled] = useState(false);
 
-  // Pocket the phone and the dossier closes itself.
+  // Pocket the phone and any open mission folds away (a hidden list stays hidden).
   useEffect(() => {
     const onHide = () => {
       if (document.visibilityState === 'hidden') {
-        setCovered(true);
         setOpenId(null);
         setShowTip(false);
         setShowFiled(false);
@@ -52,6 +75,7 @@ export default function TaskListView({
   const toggleCover = () => {
     const next = !covered;
     setCovered(next);
+    saveHidden(next);
     setOpenId(null);
     setShowTip(false);
     setShowFiled(false);
@@ -109,11 +133,13 @@ export default function TaskListView({
           {covered ? 'Reveal all' : 'Hide all'}
         </button>
         <div className="mission-hint">
-          {covered
-            ? 'Tap a mission to reveal it. Tap again to hide it.'
-            : lockReason
-              ? 'Read up and plan — tap one to swap it'
-              : 'Tap a mission when you pull it off'}
+          {finished
+            ? "You've finished — no more claims for you"
+            : covered
+              ? 'Tap a mission to reveal it. Tap again to hide it.'
+              : lockReason
+                ? 'Read up and plan — tap one to swap it'
+                : 'Tap a mission when you pull it off'}
         </div>
       </div>
 
@@ -188,11 +214,15 @@ export default function TaskListView({
               </div>
             )}
 
-            {isOpen && lockReason && (
+            {isOpen && finished && (
+              <div className="mission-locked">You've finished — no more claims</div>
+            )}
+
+            {isOpen && !finished && lockReason && (
               <div className="mission-locked">{lockReason} — no claims yet</div>
             )}
 
-            {isOpen && (
+            {isOpen && !finished && (
               <div className="mission-actions">
                 {!lockReason && (
                   <>
@@ -221,6 +251,11 @@ export default function TaskListView({
                 >
                   Swap {swapsLeft}/{swapsTotal}
                 </button>
+                {!lockReason && (
+                  <div className="mission-caught-hint">
+                    Caught before you said Gotcha? Tap <strong>I Got Caught</strong> — that mission's then gone.
+                  </div>
+                )}
               </div>
             )}
           </div>

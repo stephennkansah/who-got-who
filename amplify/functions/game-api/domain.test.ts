@@ -46,6 +46,20 @@ async function liveGame(
 
 const minutesLater = (minutes: number) => new Date(Date.now() + minutes * 60 * 1000);
 
+const byIdentity = (game: StoredGame, identity: string) =>
+  game.players.find((player) => player.identityId === identity)!;
+
+/** Four accepted gotchas on four different players: 6 points, past the winning score. */
+async function reachFive(game: StoredGame, identity: string) {
+  const targets = game.players.filter((player) => player.identityId !== identity).slice(0, 4);
+  for (const target of targets) {
+    const taskId = byIdentity(game, identity).tasks.find((task) => task.status === 'pending')!.id;
+    game = await action(game, 'CLAIM_GOTCHA', identity, { taskId, targetId: target.id, outcome: 'success' });
+    game = await action(game, 'ACCEPT_GOTCHA', target.identityId, { taskId });
+  }
+  return game;
+}
+
 async function run() {
   {
     const game = createGame('NEW234', 'new-host', playerPayload('Host'), nextRequest());
@@ -528,6 +542,186 @@ async function run() {
       () => action(game, 'SELECT_PACK', 'remote-0', { packId: 'remote' }),
       (error: unknown) => error instanceof GameRuleError && /up to 13 players/.test(error.message),
     );
+  }
+
+  {
+    // Bigger groups play on for more places: winner only, then top 2, then top 3.
+    for (const [players, places] of [[2, 1], [6, 1], [7, 2], [11, 2], [12, 3], [18, 3]] as const) {
+      const identities = Array.from({ length: players }, (_, index) => `tier-${players}-${index}`);
+      const game = await liveGame(identities);
+      assert.equal(game.settings.podiumSize, places, `${players} players play for ${places} place(s)`);
+    }
+  }
+
+  {
+    // Top 2: the winner takes 1st, play goes on, and the game ends when 2nd is taken.
+    const identities = Array.from({ length: 7 }, (_, index) => `podium-${index}`);
+    let game = await liveGame(identities);
+    game = await reachFive(game, identities[0]);
+    assert.equal(byIdentity(game, identities[0]).place, 1);
+    assert.equal(game.status, 'live', 'a top-2 game goes on after the winner');
+
+    // A finisher can't claim any more, but can still vote.
+    const leftover = byIdentity(game, identities[0]).tasks.find((task) => task.status === 'pending')!;
+    await assert.rejects(
+      () => action(game, 'CLAIM_GOTCHA', identities[0], {
+        taskId: leftover.id,
+        targetId: byIdentity(game, identities[6]).id,
+        outcome: 'success',
+      }),
+      (error: unknown) => error instanceof GameRuleError && /already finished 1st/.test(error.message),
+    );
+    const disputed = byIdentity(game, identities[5]).tasks[0].id;
+    game = await action(game, 'CLAIM_GOTCHA', identities[5], {
+      taskId: disputed,
+      targetId: byIdentity(game, identities[6]).id,
+      outcome: 'success',
+    });
+    game = await action(game, 'DISPUTE_GOTCHA', identities[6], { taskId: disputed });
+    const dispute = game.disputes.find((candidate) => candidate.taskInstanceId === disputed)!;
+    game = await action(game, 'VOTE_DISPUTE', identities[0], { disputeId: dispute.id, vote: true });
+    assert.equal(game.disputes.find((candidate) => candidate.id === dispute.id)!.votes.length, 1);
+
+    game = await reachFive(game, identities[1]);
+    assert.equal(byIdentity(game, identities[1]).place, 2);
+    assert.equal(game.status, 'ended', 'the game ends when the podium is full');
+    assert.ok(game.endedAt);
+
+    const view = await projectGameView(game, identities[3], async (key) => key);
+    const shown = (view.payload as { game: StoredGame }).game;
+    assert.equal(shown.settings.podiumSize, 2);
+    assert.deepEqual(
+      shown.players.filter((player) => player.place).map((player) => [player.name, player.place]),
+      [['Host', 1], ['Player 2', 2]],
+    );
+  }
+
+  {
+    // A finisher who leaves gives up the place, and the next finisher takes it.
+    const identities = Array.from({ length: 7 }, (_, index) => `leaver-${index}`);
+    let game = await liveGame(identities);
+    game = await reachFive(game, identities[1]);
+    game = await action(game, 'LEAVE', identities[1]);
+    assert.ok(game.players.every((player) => !player.place));
+    game = await reachFive(game, identities[2]);
+    assert.equal(byIdentity(game, identities[2]).place, 1);
+    assert.equal(game.status, 'live');
+
+    // Nobody left playing for a place: the game is over.
+    for (const identity of identities.slice(3)) game = await action(game, 'LEAVE', identity);
+    assert.equal(game.status, 'live', 'the host is still playing for 2nd');
+    game = await action(game, 'LEAVE', identities[0]);
+    assert.equal(game.status, 'ended', 'only finishers remain');
+  }
+
+  {
+    // Games already running before the podium rule still end at the first finisher.
+    const identities = Array.from({ length: 7 }, (_, index) => `legacy-${index}`);
+    let game = await liveGame(identities);
+    delete game.settings.podiumSize;
+    game = await reachFive(game, identities[0]);
+    assert.equal(game.status, 'ended');
+    assert.equal(byIdentity(game, identities[0]).place, 1);
+  }
+
+  {
+    // Holiday games keep their own target and never play for places.
+    let game = createGame('HOL234', 'holiday-0', playerPayload('Host'), nextRequest());
+    for (let index = 1; index < 12; index += 1) {
+      game = await action(game, 'JOIN', `holiday-${index}`, playerPayload(`Traveller ${index}`));
+    }
+    game = await action(game, 'SELECT_PACK', 'holiday-0', { packId: 'core' });
+    assert.equal(game.settings.podiumSize, 3);
+    game = await action(game, 'SELECT_PACK', 'holiday-0', { packId: 'holiday-challenge' });
+    assert.equal(game.settings.podiumSize, undefined);
+  }
+
+  {
+    // Busts: the catcher names a player, who says which mission (or that it wasn't one).
+    const ids = ['bust-0', 'bust-1', 'bust-2', 'bust-3'];
+    let game = await liveGame(ids);
+    const catcher = byIdentity(game, ids[0]);
+    const suspect = byIdentity(game, ids[1]);
+    game = await action(game, 'CALL_BUST', ids[0], { playerId: suspect.id });
+    const bust = game.busts![0];
+    assert.equal(bust.result, 'pending');
+    const busted = (view: Awaited<ReturnType<typeof projectGameView>>) =>
+      (view.payload as { activeBusts: unknown[] }).activeBusts.length;
+    assert.equal(busted(await projectGameView(game, ids[1], async (key) => key)), 1, 'the busted player sees it');
+    assert.equal(busted(await projectGameView(game, ids[0], async (key) => key)), 1, 'the catcher sees it');
+    assert.equal(busted(await projectGameView(game, ids[2], async (key) => key)), 0, 'nobody else does');
+
+    await assert.rejects(
+      () => action(game, 'CALL_BUST', ids[0], { playerId: byIdentity(game, ids[2]).id }),
+      (error: unknown) => error instanceof GameRuleError && /last bust/.test(error.message),
+    );
+    await assert.rejects(
+      () => action(game, 'CALL_BUST', ids[2], { playerId: suspect.id }),
+      (error: unknown) => error instanceof GameRuleError && /already busting/.test(error.message),
+    );
+    await assert.rejects(
+      () => action(game, 'ANSWER_BUST', ids[2], { bustId: bust.id }),
+      (error: unknown) => error instanceof GameRuleError && /already been settled/.test(error.message),
+    );
+    await assert.rejects(
+      () => action(game, 'CALL_BUST', ids[0], { playerId: catcher.id }),
+      (error: unknown) => error instanceof GameRuleError && /I Got Caught/.test(error.message),
+    );
+
+    const missionId = suspect.tasks[0].id;
+    game = await action(game, 'ANSWER_BUST', ids[1], { bustId: bust.id, taskId: missionId });
+    const caught = byIdentity(game, ids[1]).tasks.find((task) => task.id === missionId)!;
+    assert.equal(caught.status, 'failed');
+    assert.equal(caught.targetId, catcher.id, 'the catch is credited to the catcher (Detective award)');
+    assert.equal(byIdentity(game, ids[1]).stats.failed, 1);
+    assert.equal(game.busts![0].result, 'confirmed');
+    await assert.rejects(
+      () => action(game, 'CLAIM_GOTCHA', ids[1], { taskId: missionId, targetId: catcher.id, outcome: 'success' }),
+      (error: unknown) => error instanceof GameRuleError && /already resolved/.test(error.message),
+      'a caught mission cannot be tried again',
+    );
+
+    game = await action(game, 'CALL_BUST', ids[0], { playerId: suspect.id });
+    const denied = game.busts!.find((candidate) => candidate.result === 'pending')!;
+    game = await action(game, 'ANSWER_BUST', ids[1], { bustId: denied.id });
+    assert.equal(game.busts!.find((candidate) => candidate.id === denied.id)!.result, 'denied');
+    assert.equal(byIdentity(game, ids[1]).stats.failed, 1, 'a denied bust costs nothing');
+
+    // An unanswered bust lapses after five minutes and frees the catcher.
+    game = await action(game, 'CALL_BUST', ids[0], { playerId: byIdentity(game, ids[2]).id });
+    game = await actionAt(minutesLater(6), game, 'RESOLVE_EXPIRED', ids[3]);
+    assert.equal(game.busts![game.busts!.length - 1].result, 'expired');
+
+    // Reporting "I Got Caught" by hand while a bust waits settles that bust.
+    game = await actionAt(minutesLater(6), game, 'CALL_BUST', ids[0], { playerId: byIdentity(game, ids[3]).id });
+    const waiting = game.busts!.find((candidate) => candidate.result === 'pending')!;
+    const own = byIdentity(game, ids[3]).tasks[0].id;
+    game = await actionAt(minutesLater(6), game, 'CLAIM_GOTCHA', ids[3], { taskId: own, targetId: catcher.id, outcome: 'caught' });
+    assert.equal(game.busts!.find((candidate) => candidate.id === waiting.id)!.result, 'confirmed');
+    assert.equal(byIdentity(game, ids[3]).stats.failed, 1);
+
+    // A player who leaves mid-bust cancels it.
+    game = await actionAt(minutesLater(6), game, 'CALL_BUST', ids[2], { playerId: byIdentity(game, ids[3]).id });
+    game = await actionAt(minutesLater(6), game, 'LEAVE', ids[3]);
+    assert.ok(game.busts!.every((candidate) => candidate.result !== 'pending'));
+  }
+
+  {
+    // Players rate their own missions once the game is over; they can change or clear it.
+    let game = await liveGame(['rate-0', 'rate-1', 'rate-2']);
+    const taskId = byIdentity(game, 'rate-0').tasks[0].id;
+    await assert.rejects(() => action(game, 'RATE_MISSION', 'rate-0', { taskId, rating: 'up' }));
+    game = await action(game, 'END', 'rate-0');
+    game = await action(game, 'RATE_MISSION', 'rate-0', { taskId, rating: 'up' });
+    assert.equal(byIdentity(game, 'rate-0').tasks[0].rating, 'up');
+    await assert.rejects(
+      () => action(game, 'RATE_MISSION', 'rate-1', { taskId, rating: 'down' }),
+      (error: unknown) => error instanceof GameRuleError && /Task not found/.test(error.message),
+      "nobody rates someone else's mission",
+    );
+    await assert.rejects(() => action(game, 'RATE_MISSION', 'rate-0', { taskId, rating: 'meh' }));
+    game = await action(game, 'RATE_MISSION', 'rate-0', { taskId, rating: null });
+    assert.equal(byIdentity(game, 'rate-0').tasks[0].rating, undefined);
   }
 
   console.log('AWS game domain checks passed');

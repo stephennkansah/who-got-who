@@ -12,12 +12,17 @@ type StatsReport = {
   play: {
     avgMinutes: number | null; claimed: number; confirmed: number; disputes: number; disputeRate: number | null;
     overturned: number; caughtReports: number; swaps: number; pauses: number; challengeClaims: number; proofPhotos: number;
+    bustsCalled?: number; bustsConfirmed?: number; bustsDenied?: number;
   };
   packs: Record<string, number>;
   lengths: Record<string, number>;
   withBriefing: number;
+  bySize?: Array<{ size: string; games: number; avgMinutes: number | null }>;
   daily: Array<{ date: string; started: number }>;
-  missions: { mostSwapped: MissionRow[]; mostCompleted: MissionRow[]; neverCompleted: MissionRow[] };
+  missions: {
+    mostSwapped: MissionRow[]; mostCompleted: MissionRow[]; neverCompleted: MissionRow[];
+    mostLiked?: MissionRow[]; mostDisliked?: MissionRow[];
+  };
 };
 
 const KEY_STORAGE = 'wgw-stats-key';
@@ -210,6 +215,13 @@ export function StatsReportView({ report, days, busy, onDays, onLock }: {
         <Row label="Average length" value={play.avgMinutes === null ? '—' : `${play.avgMinutes} min`} />
         <Row label="Games of 7+ players" value={players.bigGames} />
         <Row label="Late joins · left mid-game" value={`${players.lateJoins} · ${players.leftMidGame}`} />
+        {(report.bySize || []).map((row) => (
+          <Row
+            key={row.size}
+            label={`Secret missions, ${row.size} players`}
+            value={row.games ? `${row.games} · avg ${row.avgMinutes} min` : '—'}
+          />
+        ))}
       </details>
 
       <details className="card stat-section">
@@ -218,6 +230,10 @@ export function StatsReportView({ report, days, busy, onDays, onLock }: {
         <Row label="Disputed" value={`${play.disputes} (${pct(play.disputeRate)})`} />
         <Row label="Overturned by the group" value={play.overturned} />
         <Row label="Players who reported being caught" value={play.caughtReports} />
+        <Row
+          label="Busts called · confirmed · denied"
+          value={`${play.bustsCalled ?? 0} · ${play.bustsConfirmed ?? 0} · ${play.bustsDenied ?? 0}`}
+        />
         <Row label="Swaps · pauses" value={`${play.swaps} · ${play.pauses}`} />
         {play.challengeClaims > 0 && <Row label="Holiday claims · photos" value={`${play.challengeClaims} · ${play.proofPhotos}`} />}
       </details>
@@ -237,6 +253,10 @@ export function StatsReportView({ report, days, busy, onDays, onLock }: {
         <Missions rows={report.missions.mostCompleted} />
         <div className="overline" style={{ margin: '0.8rem 0 0.3rem' }}>Dealt 8+ times, never pulled off</div>
         <Missions rows={report.missions.neverCompleted} showRate={false} />
+        <div className="overline" style={{ margin: '0.8rem 0 0.3rem' }}>Players loved (share of 👍)</div>
+        <Missions rows={report.missions.mostLiked || []} />
+        <div className="overline" style={{ margin: '0.8rem 0 0.3rem' }}>Players disliked (share of 👍)</div>
+        <Missions rows={report.missions.mostDisliked || []} />
       </details>
 
       <p className="stat-hint" style={{ textAlign: 'center' }}>

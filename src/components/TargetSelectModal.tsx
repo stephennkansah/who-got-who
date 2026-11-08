@@ -11,6 +11,8 @@ interface TargetSelectModalProps {
   availableTargets: Player[];
   taskText: string;
   isReverse?: boolean; // true if "who got you", false if "who you got"
+  /** Picking who you caught trying a mission (no mission of yours involved). */
+  isBust?: boolean;
   /** Players you've already scored on — everyone else is worth the +0.5 bonus. */
   previousTargets?: string[];
 }
@@ -22,12 +24,15 @@ export default function TargetSelectModal({
   availableTargets,
   taskText,
   isReverse = false,
+  isBust = false,
   previousTargets = [],
 }: TargetSelectModalProps) {
-  const title = isReverse ? 'Who Caught You?' : 'Who Did You Get?';
-  const instruction = isReverse
-    ? 'Pick the player who caught you trying this mission:'
-    : 'Pick the player you pulled this mission off on:';
+  const title = isBust ? 'Who Did You Catch?' : isReverse ? 'Who Caught You?' : 'Who Did You Get?';
+  const instruction = isBust
+    ? "Pick who you caught trying a mission. They'll be asked which one it was — and it's then gone for them."
+    : isReverse
+      ? 'Pick the player who caught you. This mission is then over — you can\'t try it again:'
+      : 'Pick the player you pulled this mission off on:';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} labelledBy="target-select-title">
@@ -36,16 +41,18 @@ export default function TargetSelectModal({
           <Mascot pose={isReverse ? 'caught' : 'sneaky'} size={56} />
           <h2 id="target-select-title">{title}</h2>
         </div>
-        <div style={{
-          background: 'rgba(0, 0, 0, 0.05)',
-          padding: '0.85rem 1rem',
-          borderRadius: 'var(--radius-sm)',
-          marginBottom: '0.8rem'
-        }}>
-          <p style={{ fontSize: '0.9rem', fontStyle: 'italic', margin: 0 }}>
-            "{taskText}"
-          </p>
-        </div>
+        {taskText && (
+          <div style={{
+            background: 'rgba(0, 0, 0, 0.05)',
+            padding: '0.85rem 1rem',
+            borderRadius: 'var(--radius-sm)',
+            marginBottom: '0.8rem'
+          }}>
+            <p style={{ fontSize: '0.9rem', fontStyle: 'italic', margin: 0 }}>
+              "{taskText}"
+            </p>
+          </div>
+        )}
         <p className="text-small" style={{ margin: 0 }}>
           {instruction}
         </p>
@@ -53,7 +60,7 @@ export default function TargetSelectModal({
 
       <div style={{ marginBottom: '1rem' }}>
         {availableTargets.map((player) => {
-          const isNew = !isReverse && !previousTargets.includes(player.id);
+          const isNew = !isReverse && !isBust && !previousTargets.includes(player.id);
           return (
             <button
               key={player.id}

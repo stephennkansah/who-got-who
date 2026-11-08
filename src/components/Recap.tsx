@@ -8,6 +8,7 @@ import LoadingScreen from './common/LoadingScreen';
 import BrandMark from './common/BrandMark';
 import Mascot from './common/Mascot';
 import PhotoAlbum from './PhotoAlbum';
+import { ordinal, rankPlayers } from '../utils/gameSettings';
 
 const CONFETTI_COLORS = ['#e5484d', '#e8b554', '#3f9b5b', '#efe5c6', '#d13c41', '#c9ac68'];
 
@@ -83,7 +84,9 @@ const RevealDossier: React.FC<{
   isYou: boolean;
   nameOf: (id?: string) => string;
   defaultOpen: boolean;
-}> = ({ player, isYou, nameOf, defaultOpen }) => {
+  /** Your own dossier only: thumbs up/down on each mission (tap again to clear). */
+  onRate?: (taskId: string, rating: 'up' | 'down' | null) => void;
+}> = ({ player, isYou, nameOf, defaultOpen, onRate }) => {
   const [open, setOpen] = useState(defaultOpen);
   const done = player.tasks.filter((task) => task.status === 'completed').length;
 
@@ -106,6 +109,9 @@ const RevealDossier: React.FC<{
         <span className="reveal-count">{done}/{player.tasks.length} pulled off</span>
         <span aria-hidden="true">{open ? '▴' : '▾'}</span>
       </button>
+      {open && onRate && (
+        <p className="reveal-rate-hint">Fun or flop? Rate your missions — it helps us write better ones.</p>
+      )}
       {open && (
         <ul className="reveal-list">
           {player.tasks.map((task) => {
@@ -114,6 +120,21 @@ const RevealDossier: React.FC<{
               <li key={task.id} className={`reveal-item ${result.cls}`}>
                 <div className="reveal-text">{task.text}</div>
                 <div className="reveal-outcome">{result.label}</div>
+                {onRate && (
+                  <div className="reveal-rate" role="group" aria-label="Rate this mission">
+                    {(['up', 'down'] as const).map((rating) => (
+                      <button
+                        key={rating}
+                        className={`rate-btn ${task.rating === rating ? 'is-picked' : ''}`}
+                        aria-pressed={task.rating === rating}
+                        aria-label={rating === 'up' ? 'Fun mission' : 'Not fun'}
+                        onClick={() => onRate(task.id, task.rating === rating ? null : rating)}
+                      >
+                        {rating === 'up' ? '👍' : '👎'}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </li>
             );
           })}
@@ -126,7 +147,7 @@ const RevealDossier: React.FC<{
 export default function Recap() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const { state, rematch, leaveGame, createGame } = useGame();
+  const { state, rematch, leaveGame, createGame, rateMission } = useGame();
   const [showTimeline, setShowTimeline] = useState(false);
 
   const currentGame = state.currentGame;
@@ -162,20 +183,27 @@ export default function Recap() {
   const scoreOf = (player: Player) =>
     isHoliday ? (player.challengeScore || 0) : player.score;
 
+  // Podium finishers first, in the order they finished; then score, then fewer failed attempts.
   const finalRankings = useMemo(() => {
     if (!currentGame) return [] as Player[];
-    return [...currentGame.players].sort((a, b) => {
-      const diff = scoreOf(b) - scoreOf(a);
-      if (diff !== 0) return diff;
-      // Tiebreaker: fewer failed attempts
-      return (a.stats?.failed || 0) - (b.stats?.failed || 0);
-    });
+    return rankPlayers(currentGame.players, scoreOf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentGame, isHoliday]);
 
   const winner = finalRankings[0] || null;
   const isWinner = !!winner && winner.id === currentPlayer?.id;
+  const runnersUp = finalRankings.filter((player) => player.place && player.place > 1);
+  const myPlace = finalRankings.find((player) => player.id === currentPlayer?.id)?.place;
   const nameOf = (id?: string) => currentGame?.players.find((p) => p.id === id)?.name || 'a former player';
+
+  // Missions each player caught someone trying (busts, and "I Got Caught" reports naming them).
+  const bustsBy = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const task of currentGame?.players.flatMap((player) => player.tasks) || []) {
+      if (task.status === 'failed' && task.targetId) counts.set(task.targetId, (counts.get(task.targetId) || 0) + 1);
+    }
+    return counts;
+  }, [currentGame]);
 
   const awardsByPlayer = useMemo(() => {
     const result = new Map<string, AwardType[]>();
@@ -244,7 +272,7 @@ export default function Recap() {
 
   return (
     <div className="container">
-      {isWinner && <ConfettiBurst />}
+      {(isWinner || !!myPlace) && <ConfettiBurst />}
 
       {/* Debrief banner */}
       <div className="paper-card text-center" style={{
@@ -270,7 +298,7 @@ export default function Recap() {
           margin: '0 0 0.75rem',
           color: 'var(--paper-ink)',
         }}>
-          {isWinner ? 'You Won' : 'Game Over'}
+          {isWinner ? 'You Won' : myPlace ? `You Came ${ordinal(myPlace)}` : 'Game Over'}
         </h1>
         {winner && (
           <>
@@ -283,6 +311,11 @@ export default function Recap() {
             <p className="type" style={{ fontSize: '1rem', margin: 0, color: 'var(--paper-ink)' }}>
               <CountUpScore value={scoreOf(winner)} /> points
             </p>
+            {runnersUp.length > 0 && (
+              <p className="type" style={{ fontSize: '0.95rem', margin: '0.5rem 0 0', color: 'var(--paper-ink)' }}>
+                {runnersUp.map((player) => `${ordinal(player.place || 0)} ${player.name}`).join(' · ')}
+              </p>
+            )}
           </>
         )}
       </div>
@@ -318,6 +351,8 @@ export default function Recap() {
                       {isHoliday
                         ? `${player.challengeCompletions?.length || 0} challenges`
                         : `${player.stats?.gothcas || 0} gotcha${(player.stats?.gothcas || 0) === 1 ? '' : 's'}`}
+                      {!isHoliday && (bustsBy.get(player.id) || 0) > 0 &&
+                        ` · ${bustsBy.get(player.id)} bust${bustsBy.get(player.id) === 1 ? '' : 's'}`}
                     </div>
                     {awards.length > 0 && (
                       <div style={{ marginTop: '0.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
@@ -396,15 +431,21 @@ export default function Recap() {
             </p>
           </div>
           <div className="flex-column gap-1">
-            {finalRankings.map((player, index) => (
-              <RevealDossier
-                key={player.id}
-                player={player}
-                isYou={player.id === currentPlayer?.id}
-                nameOf={nameOf}
-                defaultOpen={index === 0}
-              />
-            ))}
+            {finalRankings.map((player, index) => {
+              const isYou = player.id === currentPlayer?.id;
+              return (
+                <RevealDossier
+                  key={player.id}
+                  player={player}
+                  isYou={isYou}
+                  nameOf={nameOf}
+                  defaultOpen={index === 0 || isYou}
+                  onRate={isYou
+                    ? (taskId, rating) => { void rateMission(taskId, rating).catch(() => undefined); }
+                    : undefined}
+                />
+              );
+            })}
           </div>
         </div>
       )}

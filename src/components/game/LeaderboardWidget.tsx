@@ -1,11 +1,14 @@
 import React from 'react';
 import { Player } from '../../types';
 import { AnimatedScore } from '../common/AnimatedScore';
+import { rankPlayers, winRule } from '../../utils/gameSettings';
 
 interface LeaderboardWidgetProps {
   players: Player[];
   currentPlayerId: string;
   targetScore: number;
+  /** How many players must reach the target before the game ends. */
+  places?: number;
   scoreOf?: (player: Player) => number;
   onShowLeaderboard: () => void;
 }
@@ -14,10 +17,11 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
   players,
   currentPlayerId,
   targetScore,
+  places = 1,
   scoreOf = (player) => player.score,
   onShowLeaderboard,
 }) => {
-  const sortedPlayers = [...players].sort((a, b) => scoreOf(b) - scoreOf(a));
+  const sortedPlayers = rankPlayers(players, scoreOf);
   const topThree = sortedPlayers.slice(0, 3);
 
   return (
@@ -28,7 +32,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
         style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'inherit' }}
       >
         <div className="leaderboard-label">
-          Leaderboard · first to {targetScore}
+          Leaderboard · {winRule(places, targetScore).replace(/ points$/, '')}
         </div>
 
         <div className="leaderboard-grid">
@@ -39,6 +43,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
             >
               <span className="medal">
                 {index === 0 ? '1st' : index === 1 ? '2nd' : '3rd'}
+                {player.place ? ' ✓' : ''}
               </span>
               <span className="player-name">
                 {player.id === currentPlayerId ? `${player.name} (You)` : player.name}

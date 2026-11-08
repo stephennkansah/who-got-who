@@ -53,3 +53,11 @@ frontend:
           value: 'application/json'
         - key: 'Cache-Control'
           value: 'public, max-age=300'
+    # Amplify adds a trailing slash to extensionless paths, which Apple won't follow.
+    # A console rewrite (200) serves this copy at the extensionless address; see IOS_RELEASE.md.
+    - pattern: '.well-known/apple-app-site-association.json'
+      headers:
+        - key: 'Content-Type'
+          value: 'application/json'
+        - key: 'Cache-Control'
+          value: 'public, max-age=300'

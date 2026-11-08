@@ -3,6 +3,7 @@ import { Game, Player } from '../types';
 import Modal from './common/Modal';
 import { showToast } from './common/Toast';
 import { renderResultsImage } from '../utils/resultsImage';
+import { rankPlayers } from '../utils/gameSettings';
 import { isNativeApp, publicGameOrigin, shareNativeImage, isShareCancelled } from '../services/appPlatform';
 
 interface ResultsShareProps {
@@ -16,7 +17,7 @@ const ResultsShare: React.FC<ResultsShareProps> = ({ game, style }) => {
   const isHoliday = game.gameType === 'holiday-challenge';
   const scoreOf = (player: Player) => (isHoliday ? player.challengeScore || 0 : player.score);
 
-  const sortedPlayers = [...game.players].sort((a, b) => scoreOf(b) - scoreOf(a));
+  const sortedPlayers = rankPlayers(game.players, scoreOf);
   const winner = sortedPlayers[0];
 
   const totalCompleted = isHoliday

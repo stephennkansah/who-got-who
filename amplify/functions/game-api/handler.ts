@@ -23,6 +23,7 @@ import {
 } from './domain';
 import { pushMessages } from './push';
 import { generateVapidKeys, sendWebPush, type VapidKeys } from './webpush';
+import { apnsConfigFromEnv, sendApns } from './apns';
 import { dayKey, statsForChange, type StatIncrement } from './stats';
 import { buildStatsReport } from './statsReport';
 
@@ -275,24 +276,51 @@ function vapidKeys(): Promise<VapidKeys> {
 /** Buzzes the phones this change concerns. Never fails the action that caused it. */
 async function deliverPushes(before: StoredGame, after: StoredGame): Promise<void> {
   try {
-    const messages = pushMessages(before, after).filter(
-      (message) => after.players.find((player) => player.id === message.playerId)?.push,
-    );
-    if (!messages.length) return;
-    const keys = await vapidKeys();
-    const results = await Promise.allSettled(
-      messages.map(({ playerId, title, body, tag, ttlSeconds, urgency }) =>
-        sendWebPush(
-          after.players.find((player) => player.id === playerId)!.push!,
-          { title, body, tag, gameId: after.gameId },
-          keys,
-          VAPID_SUBJECT,
-          { ttlSeconds, urgency },
-        ),
-      ),
-    );
-    const failed = results.filter((result) => result.status === 'rejected' || result.value >= 400).length;
-    if (failed) console.warn('Some push notifications were not delivered', { failed, total: results.length });
+    // iPhone app alerts stay off until APNS_KEY_ID and the APNS_PRIVATE_KEY secret are set.
+    // Read per call: Amplify loads secrets into the environment at runtime.
+    const apnsConfig = apnsConfigFromEnv(process.env);
+    const playerFor = (id: string) => after.players.find((player) => player.id === id);
+    const all = pushMessages(before, after);
+    // A phone in the iPhone app is reached through Apple; browsers through Web Push.
+    const viaApple = apnsConfig ? all.filter((message) => playerFor(message.playerId)?.apns) : [];
+    const viaWeb = all.filter((message) => !viaApple.includes(message) && playerFor(message.playerId)?.push);
+    if (!viaApple.length && !viaWeb.length) return;
+
+    const webResults = viaWeb.length
+      ? await vapidKeys().then((keys) =>
+          Promise.allSettled(
+            viaWeb.map(({ playerId, title, body, tag, ttlSeconds, urgency }) =>
+              sendWebPush(
+                playerFor(playerId)!.push!,
+                { title, body, tag, gameId: after.gameId },
+                keys,
+                VAPID_SUBJECT,
+                { ttlSeconds, urgency },
+              ),
+            ),
+          ),
+        )
+      : [];
+    const appleResults = apnsConfig && viaApple.length
+      ? await sendApns(
+          viaApple.map(({ playerId, title, body, tag, ttlSeconds, urgency }) => ({
+            token: playerFor(playerId)!.apns!,
+            alert: { title, body, tag, gameId: after.gameId },
+            options: { ttlSeconds, urgency },
+          })),
+          apnsConfig,
+        )
+      : [];
+    const failed =
+      webResults.filter((result) => result.status === 'rejected' || result.value >= 400).length +
+      appleResults.filter((status) => status !== 200).length;
+    if (failed) {
+      console.warn('Some push notifications were not delivered', {
+        failed,
+        total: webResults.length + appleResults.length,
+        appleStatuses: appleResults.filter((status) => status !== 200),
+      });
+    }
   } catch (error) {
     console.error('Push notifications failed', { errorName: error instanceof Error ? error.name : 'UnknownError' });
   }

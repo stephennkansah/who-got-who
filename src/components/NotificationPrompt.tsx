@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import NotificationService from '../services/notificationService';
 import { PUSH_PERMISSION_EVENT } from '../services/pushService';
 import { isNativeApp } from '../services/appPlatform';
+import { nativePushState, requestNativePush } from '../services/nativePushService';
 
 interface NotificationPromptProps {
   onPermissionGranted?: () => void;
@@ -14,10 +15,22 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
 }) => {
   const [showPrompt, setShowPrompt] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
+  // In the iPhone app, alerts come through Apple rather than the browser.
+  const native = isNativeApp();
 
   useEffect(() => {
+    if (native) {
+      if (localStorage.getItem('notification-prompted')) return undefined;
+      let active = true;
+      void nativePushState().then((state) => {
+        if (active && state === 'prompt') setShowPrompt(true);
+      });
+      return () => {
+        active = false;
+      };
+    }
     // Check if we should show the prompt
-    if (!isNativeApp() && 'Notification' in window) {
+    if ('Notification' in window) {
       setPermission(Notification.permission);
       // Show prompt if permission hasn't been decided and user hasn't dismissed it
       const hasPrompted = localStorage.getItem('notification-prompted');
@@ -25,9 +38,23 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
         setShowPrompt(true);
       }
     }
-  }, []);
+    return undefined;
+  }, [native]);
 
   const handleEnableNotifications = async () => {
+    if (native) {
+      const allowed = await requestNativePush();
+      setPermission(allowed ? 'granted' : 'denied');
+      if (allowed) {
+        onPermissionGranted?.();
+        window.dispatchEvent(new Event(PUSH_PERMISSION_EVENT));
+      } else {
+        onPermissionDenied?.();
+      }
+      localStorage.setItem('notification-prompted', 'true');
+      setShowPrompt(false);
+      return;
+    }
     const granted = await NotificationService.requestPermission();
 
     if (granted) {
@@ -56,7 +83,7 @@ const NotificationPrompt: React.FC<NotificationPromptProps> = ({
     setShowPrompt(false);
   };
 
-  if (isNativeApp() || !('Notification' in window)) {
+  if (!native && !('Notification' in window)) {
     return null; // Browser doesn't support notifications
   }
 

@@ -3,6 +3,7 @@ import { Game, SettingsUpdate } from '../../types';
 import {
   BRIEFING_OPTIONS,
   lobbySummary,
+  winRule,
 } from '../../utils/gameSettings';
 
 interface GameSetupProps {
@@ -58,7 +59,7 @@ export default function GameSetup({ game, packName, isHost, busy, onChangePack, 
       ]
     : [
         `${summary.missions} secret missions each`,
-        `first to ${summary.target} points`,
+        winRule(summary.places, summary.target),
         `${summary.swaps} swaps`,
         `${summary.responseMinutes} min to respond to a claim`,
       ];

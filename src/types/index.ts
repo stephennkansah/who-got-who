@@ -41,6 +41,7 @@ export interface GameSettings {
   holidaySilverPoints?: number; // points for subsequent completions
   holidayMaxSilverPerChallenge?: number; // max silver points per challenge
   briefingMinutes?: number; // settling-in time between dealing missions and opening gotchas
+  podiumSize?: number; // players who must reach the winning score before the game ends (missing = 1)
 }
 
 /** Lobby settings the host can change before the start. */
@@ -65,6 +66,7 @@ export interface Player {
   // Holiday Challenge Pack specific fields
   challengeScore?: number; // separate score for challenge games
   challengeCompletions?: string[]; // array of completed challenge IDs
+  place?: number; // 1, 2 or 3 once this player has reached the winning score
 }
 
 export interface PlayerStats {
@@ -86,6 +88,18 @@ export interface TaskInstance {
   targetId?: string;
   gotAt?: Date;
   disputeId?: string;
+  rating?: 'up' | 'down'; // the holder's verdict, given on the results screen
+}
+
+/** "I caught you": the catcher names a player, who says which mission it was. */
+export interface Bust {
+  id: string;
+  catcherId: string;
+  playerId: string;
+  openedAt: Date;
+  closesAt: Date;
+  result: 'pending' | 'confirmed' | 'denied' | 'expired';
+  taskInstanceId?: string;
 }
 
 export interface Dispute {
@@ -165,6 +179,8 @@ export interface GameState {
   isLoading: boolean;
   error: string | null;
   activeDisputes: Dispute[];
+  /** Busts you called or that were called on you: open, or settled in the last few minutes. */
+  activeBusts: Bust[];
   leaderboard: Player[];
 }
 
@@ -193,6 +209,12 @@ export interface GameContextType {
   disputeGotcha: (taskInstanceId: string, reason?: string) => Promise<void>;
   voteOnDispute: (disputeId: string, vote: boolean) => Promise<void>;
   acceptGotcha: (taskInstanceId: string) => Promise<void>;
+  /** Tell a player you caught them trying a mission. */
+  callBust: (playerId: string) => Promise<void>;
+  /** Answer a bust on you: the mission you were caught trying, or null if they were wrong. */
+  answerBust: (bustId: string, taskId: string | null) => Promise<void>;
+  /** Thumbs up/down (or null to clear) on one of your missions after the game. */
+  rateMission: (taskId: string, rating: 'up' | 'down' | null) => Promise<void>;
   /** Opens (or joins) a rematch lobby for everyone in the finished game. */
   rematch: () => Promise<void>;
   // Host pacing controls

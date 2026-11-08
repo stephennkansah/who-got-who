@@ -7,10 +7,11 @@ import { useCountdown } from '../hooks/useCountdown';
 import { useGamePhase } from '../hooks/useGamePhase';
 import NotificationService from '../services/notificationService';
 import { TaskInstance } from '../types';
-import { WINNING_SCORE } from '../utils/gameSettings';
+import { WINNING_SCORE, openPlaces, ordinal, podiumPlaces, rankPlayers } from '../utils/gameSettings';
 import TaskListView from './TaskListView';
 import TargetSelectModal from './TargetSelectModal';
 import DisputeModal from './DisputeModal';
+import BustModal from './BustModal';
 import VotingBanner from './VotingBanner';
 
 // Sub-components
@@ -26,6 +27,31 @@ import LoadingScreen from './common/LoadingScreen';
 import { MascotPose } from './common/Mascot';
 
 type Slam = { title: string; subtitle?: string; tone: 'success' | 'danger' | 'amber'; mascot: MascotPose; durationMs?: number };
+
+/** Shown once you've reached the winning score while others play on for the podium. */
+function FinishBanner({ place, stillOpen }: { place: number; stillOpen: string }) {
+  return (
+    <div className="phase-banner finished" role="status">
+      <div className="phase-label type">Mission accomplished</div>
+      <div className="phase-title">{place === 1 ? 'You Win!' : `You Finished ${ordinal(place)}`}</div>
+      <p className="phase-text">
+        Your missions are done. Stay in to vote on disputes
+        {stillOpen ? <> and see who takes {stillOpen} place.</> : '.'}
+      </p>
+    </div>
+  );
+}
+
+/** Shown to a catcher while the player they busted picks the mission. */
+function BustWaitingBanner({ suspectName, closesAt, pausedAt }: { suspectName: string; closesAt: Date; pausedAt?: string }) {
+  const label = useCountdown(closesAt, pausedAt);
+  return (
+    <div className="claim-banner" role="status">
+      <span>You busted {suspectName} — waiting for them to say which mission.</span>
+      <span className="timer">{label}</span>
+    </div>
+  );
+}
 
 /** Shown to the target while the group decides on their dispute. */
 function JuryBanner({ accuserName, closesAt, pausedAt }: { accuserName: string; closesAt: Date; pausedAt?: string }) {
@@ -52,8 +78,11 @@ export default function Game() {
     openClaims,
     pauseGame,
     resumeGame,
+    callBust,
+    answerBust,
   } = useGame();
   const [showHostMenu, setShowHostMenu] = useState(false);
+  const [showBustPicker, setShowBustPicker] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const phase = useGamePhase(state.currentGame);
   const wasBriefing = useRef(phase.briefing);
@@ -97,16 +126,32 @@ export default function Game() {
     (dispute) => dispute.phase === 'voting' && dispute.targetId === currentPlayer?.id,
   );
   const nameOf = (id?: string) => currentGame?.players.find((p) => p.id === id)?.name || 'them';
+  const openBusts = state.activeBusts.filter((bust) => bust.result === 'pending');
+  const bustOnMe = openBusts.find((bust) => bust.playerId === currentPlayer?.id);
+  const myBust = openBusts.find((bust) => bust.catcherId === currentPlayer?.id);
 
   useGameFeed(
     useCallback((outcome: ClaimOutcome) => {
+      if (outcome.finishedPlace) {
+        buzz([200, 80, 200]);
+        setSlam({
+          title: outcome.finishedPlace === 1 ? 'You Win!' : `${ordinal(outcome.finishedPlace)} Place`,
+          subtitle: 'your missions are done — the others play on for the podium',
+          tone: 'success',
+          mascot: 'happy',
+          durationMs: 2400,
+        });
+        return;
+      }
       setSlam(
         outcome.accepted
           ? {
               title: `+${outcome.points}`,
-              subtitle: outcome.points > 1
-                ? `gotcha on ${outcome.targetName} confirmed — first-time bonus included`
-                : `gotcha on ${outcome.targetName} confirmed`,
+              subtitle: outcome.closePrize
+                ? `gotcha on ${outcome.targetName} confirmed — your next one could ${outcome.closePrize}`
+                : outcome.points > 1
+                  ? `gotcha on ${outcome.targetName} confirmed — first-time bonus included`
+                  : `gotcha on ${outcome.targetName} confirmed`,
               tone: 'success',
               mascot: 'happy',
             }
@@ -155,12 +200,22 @@ export default function Game() {
       navigate(`/recap/${currentGame.id}`, { replace: true });
       return;
     }
-    const winner = [...currentGame.players].sort((a, b) => b.score - a.score)[0];
-    const reached = winner && winner.score >= targetScore;
+    const winner = rankPlayers(currentGame.players)[0];
+    const reached = !!winner && (!!winner.place || winner.score >= targetScore);
+    const mine = currentGame.players.find((player) => player.id === currentPlayer?.id)?.place;
+    const iWon = reached && winner.id === currentPlayer?.id;
+    let title = 'Case Closed';
+    if (iWon) title = 'You Win';
+    else if (reached && mine) title = `You Finished ${ordinal(mine)}`;
+    else if (reached) title = `${winner.name} Wins`;
     setFinale({
-      title: !reached ? 'Case Closed' : winner.id === currentPlayer?.id ? 'You Win' : `${winner.name} Wins`,
-      subtitle: reached ? `${winner.score} points — the debrief is in` : 'the host ended the game',
-      tone: reached && winner.id === currentPlayer?.id ? 'success' : 'amber',
+      title,
+      subtitle: !reached
+        ? 'the host ended the game'
+        : mine && !iWon
+          ? `${winner.name} took 1st — the debrief is in`
+          : `${winner.score} points — the debrief is in`,
+      tone: mine ? 'success' : 'amber',
       mascot: 'happy',
       durationMs: 2400,
     });
@@ -253,6 +308,22 @@ export default function Game() {
     }
   };
 
+  const handleBust = async (playerId: string) => {
+    setShowBustPicker(false);
+    try {
+      await callBust(playerId);
+      buzz([80, 40, 80]);
+      setSlam({
+        title: 'Busted!',
+        subtitle: `${nameOf(playerId)} has 5 minutes to say which mission`,
+        tone: 'danger',
+        mascot: 'sneaky',
+      });
+    } catch {
+      // Errors surface via the global toast bridge.
+    }
+  };
+
   const handleEndGame = async () => {
     setConfirmation({
       isOpen: true,
@@ -316,10 +387,15 @@ export default function Game() {
         onShowRules={() => setShowRules(true)}
       />
 
+      {currentPlayer.place && currentGame.status === 'live' && (
+        <FinishBanner place={currentPlayer.place} stillOpen={openPlaces(currentGame)} />
+      )}
+
       <LeaderboardWidget
         players={currentGame.players}
         currentPlayerId={currentPlayer.id}
         targetScore={targetScore}
+        places={podiumPlaces(currentGame)}
         onShowLeaderboard={() => setShowLeaderboard(true)}
       />
 
@@ -336,6 +412,29 @@ export default function Game() {
         <VotingBanner key={dispute.id} dispute={dispute} />
       ))}
 
+      {myBust && (
+        <BustWaitingBanner
+          key={myBust.id}
+          suspectName={nameOf(myBust.playerId)}
+          closesAt={myBust.closesAt}
+          pausedAt={currentGame.pausedAt}
+        />
+      )}
+
+      {/* Catching people is half the game: make it one tap. */}
+      <div className="bust-bar">
+        <span className="bust-bar-hint">
+          {phase.lockReason ? 'Busts open when gotchas do.' : 'Caught someone trying a mission on you?'}
+        </span>
+        <button
+          className="btn btn-danger btn-small"
+          onClick={() => setShowBustPicker(true)}
+          disabled={!!phase.lockReason || !!myBust}
+        >
+          Bust Them
+        </button>
+      </div>
+
       {/* Mission dossiers — straight on the desk */}
       <section style={{ marginTop: '0.25rem' }}>
         <TaskListView
@@ -349,6 +448,7 @@ export default function Game() {
           currentPlayerId={currentPlayer.id}
           filing={filing}
           lockReason={phase.lockReason}
+          finished={!!currentPlayer.place}
         />
       </section>
 
@@ -386,6 +486,27 @@ export default function Game() {
         isReverse={selectedResult === 'failed'}
         previousTargets={currentPlayer.stats?.uniqueTargets || []}
       />
+
+      <TargetSelectModal
+        isOpen={showBustPicker}
+        onClose={() => setShowBustPicker(false)}
+        onSelectTarget={handleBust}
+        availableTargets={currentGame.players.filter((p) => p.id !== currentPlayer.id && !p.place)}
+        taskText=""
+        isBust
+      />
+
+      {/* A claim on you comes first; a bust waits behind it. */}
+      {bustOnMe && !responseClaim && (
+        <BustModal
+          key={bustOnMe.id}
+          bust={bustOnMe}
+          catcherName={nameOf(bustOnMe.catcherId)}
+          missions={currentPlayer.tasks.filter((task) => task.status === 'pending')}
+          pausedAt={currentGame.pausedAt}
+          onAnswer={(taskId) => answerBust(bustOnMe.id, taskId)}
+        />
+      )}
 
       {responseClaim && (
         <DisputeModal
@@ -430,6 +551,7 @@ export default function Game() {
           subtitle={slam.subtitle}
           tone={slam.tone}
           mascot={slam.mascot}
+          durationMs={slam.durationMs}
           onDone={() => setSlam(null)}
         />
       )}

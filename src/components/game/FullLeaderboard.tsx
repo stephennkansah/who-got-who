@@ -2,6 +2,7 @@ import React from 'react';
 import { Player } from '../../types';
 import PlayerAvatar from '../PlayerAvatar';
 import Modal from '../common/Modal';
+import { ONE_AWAY_SCORE, ordinal, rankPlayers } from '../../utils/gameSettings';
 
 interface FullLeaderboardProps {
   players: Player[];
@@ -10,7 +11,7 @@ interface FullLeaderboardProps {
 }
 
 export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, currentPlayerId, onClose }) => {
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+  const sortedPlayers = rankPlayers(players);
 
   // All completed / failed tasks across players, newest first
   const allCompletions = players.flatMap(player =>
@@ -117,6 +118,8 @@ export const FullLeaderboard: React.FC<FullLeaderboardProps> = ({ players, curre
                       {player.name} {isYou && '(You)'}
                     </div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--paper-dim)' }}>
+                      {player.place && <strong>Finished {ordinal(player.place)} · </strong>}
+                      {!player.place && player.score >= ONE_AWAY_SCORE && <strong>One gotcha away · </strong>}
                       {player.tasks.filter(t => t.status === 'completed').length} tasks completed
                     </div>
                   </div>

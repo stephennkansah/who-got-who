@@ -1,4 +1,5 @@
 import { gamePacks, getAllHolidayChallenges } from './packs';
+import { GROUP_SIZES } from './stats';
 
 /** Summary of the anonymous counters in the Stats table, for the /stats page and `npm run stats`. */
 
@@ -30,12 +31,24 @@ export type StatsReport = {
     pauses: number;
     challengeClaims: number;
     proofPhotos: number;
+    bustsCalled: number;
+    bustsConfirmed: number;
+    bustsDenied: number;
   };
   packs: Counts;
   lengths: Counts;
   withBriefing: number;
+  /** Finished secret-missions games and their average length, per group size. */
+  bySize: Array<{ size: string; games: number; avgMinutes: number | null }>;
   daily: Array<{ date: string; started: number }>;
-  missions: { mostSwapped: MissionRow[]; mostCompleted: MissionRow[]; neverCompleted: MissionRow[] };
+  missions: {
+    mostSwapped: MissionRow[];
+    mostCompleted: MissionRow[];
+    neverCompleted: MissionRow[];
+    /** Players' end-of-game thumbs, for missions rated at least 3 times; rate = share of thumbs up. */
+    mostLiked: MissionRow[];
+    mostDisliked: MissionRow[];
+  };
 };
 
 const missionTexts = (() => {
@@ -92,6 +105,21 @@ export function buildStatsReport(items: Array<Record<string, unknown>>, days: nu
     dealt: mission.dealt,
     rate,
   });
+  const rated = items
+    .filter((item) => String(item.key).startsWith('mission#'))
+    .map((item) => {
+      const up = Math.max(0, Number(item.ratedUp ?? 0));
+      const down = Math.max(0, Number(item.ratedDown ?? 0));
+      return { id: String(item.key).slice('mission#'.length), dealt: Number(item.dealt ?? 0), up, down };
+    })
+    .filter((mission) => mission.up + mission.down >= 3);
+  const byRating = (liked: boolean) => rated
+    .map((mission) => ({ mission, share: mission.up / (mission.up + mission.down) }))
+    .filter(({ share }) => (liked ? share > 0.5 : share < 0.5))
+    .sort((a, b) => (liked ? b.share - a.share : a.share - b.share))
+    .slice(0, 5)
+    .map(({ mission, share }) => row(mission, share));
+
   const ranked = (score: (m: (typeof missions)[number]) => number) => missions
     .map((mission) => ({ mission, rate: score(mission) }))
     .filter(({ rate }) => rate > 0)
@@ -134,10 +162,21 @@ export function buildStatsReport(items: Array<Record<string, unknown>>, days: nu
       pauses: get('pauses'),
       challengeClaims: get('challengeClaims'),
       proofPhotos: get('proofPhotos'),
+      bustsCalled: get('bustsCalled'),
+      bustsConfirmed: get('bustsConfirmed'),
+      bustsDenied: get('bustsDenied'),
     },
     packs: prefixed('pack_'),
     lengths: prefixed('length_'),
     withBriefing: get('startedWithBriefing'),
+    bySize: GROUP_SIZES.map((size) => {
+      const games = get(`ended_${size}`);
+      return {
+        size: size === '12plus' ? '12+' : size.replace('to', '–'),
+        games,
+        avgMinutes: games ? Math.round(get(`minutes_${size}`) / games) : null,
+      };
+    }),
     daily,
     missions: {
       mostSwapped: ranked((m) => m.swapped / m.dealt),
@@ -146,6 +185,8 @@ export function buildStatsReport(items: Array<Record<string, unknown>>, days: nu
         .filter((m) => m.dealt >= 8 && m.completed === 0)
         .slice(0, 8)
         .map((m) => row(m, 0)),
+      mostLiked: byRating(true),
+      mostDisliked: byRating(false),
     },
   };
 }

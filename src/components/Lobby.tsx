@@ -198,9 +198,38 @@ export default function Lobby() {
     );
   }
 
+  // Guests see this first: in a big group the roster is long, and a button below
+  // it was easy to miss. Ready is how the host knows you've read the rules.
+  const readyCard = (
+    <div className={`card ready-card ${currentPlayer.lockedIn ? 'is-ready' : ''}`} style={{ textAlign: 'center' }}>
+      <p style={{ color: 'var(--text-main)', fontWeight: 700, marginBottom: '0.3rem' }}>
+        {currentPlayer.lockedIn ? "You're ready" : 'Read the rules, then tap Ready'}
+      </p>
+      <p style={{ fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
+        {currentPlayer.lockedIn
+          ? `${hostName} starts the game once everyone's ready. Your missions appear here.`
+          : `It tells ${hostName} you know how to play. They start once everyone's ready.`}
+      </p>
+      <button
+        className={`btn ${currentPlayer.lockedIn ? 'btn-secondary' : 'btn-success'}`}
+        onClick={() => attempt(() => setReady(!currentPlayer.lockedIn))}
+        disabled={state.isLoading}
+      >
+        {currentPlayer.lockedIn ? 'Not Ready Yet' : "I'm Ready"}
+      </button>
+      {!currentPlayer.lockedIn && (
+        <button className="link-btn" onClick={() => setShowRules(true)} style={{ marginTop: '0.6rem' }}>
+          Read the rules first
+        </button>
+      )}
+    </div>
+  );
+
   // ---------- Lobby ----------
   return (
     <div className="container">
+      {!isHost && readyCard}
+
       <InvitePanel
         gameId={currentGame.id}
         gameType={currentGame.gameType}
@@ -226,15 +255,17 @@ export default function Lobby() {
         onUpdate={handleUpdateSettings}
       />
 
-      {/* Start / ready */}
-      <div className="card" style={{ textAlign: 'center' }}>
-        {isHost ? (
-          canStart ? (
+      {/* Start (guests have their Ready card at the top) */}
+      {isHost && (
+        <div className="card" style={{ textAlign: 'center' }}>
+          {canStart ? (
             <>
               <p style={{ color: 'var(--text-main)', fontWeight: 700, marginBottom: '0.75rem' }}>
                 {notReady.length === 0
                   ? "Everyone's ready. Unseal the missions."
-                  : `Still reading: ${notReady.map((player) => player.name).join(', ')}`}
+                  : `${playerCount - 1 - notReady.length} of ${playerCount - 1} ready · still reading: ${
+                    notReady.slice(0, 3).map((player) => player.name).join(', ')
+                  }${notReady.length > 3 ? ` and ${notReady.length - 3} more` : ''}`}
               </p>
               <button
                 className="btn btn-success"
@@ -257,22 +288,9 @@ export default function Lobby() {
                 Share the code, link or QR above and the game can begin.
               </p>
             </>
-          )
-        ) : (
-          <>
-            <p style={{ color: 'var(--text-main)', fontWeight: 700, marginBottom: '0.75rem' }}>
-              {currentPlayer.lockedIn ? `Ready — waiting for ${hostName} to start` : 'Read the rules? Tell the host you\'re in.'}
-            </p>
-            <button
-              className={`btn ${currentPlayer.lockedIn ? 'btn-secondary' : 'btn-success'}`}
-              onClick={() => attempt(() => setReady(!currentPlayer.lockedIn))}
-              disabled={state.isLoading}
-            >
-              {currentPlayer.lockedIn ? 'Not Ready Yet' : "I'm Ready"}
-            </button>
-          </>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Sealed dossier teaser */}
       <div className="paper-card" style={{ textAlign: 'center', padding: '1.25rem', marginBottom: '0.9rem' }}>

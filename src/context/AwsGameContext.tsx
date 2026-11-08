@@ -17,12 +17,16 @@ import {
   uploadPrivateImage,
 } from '../services/aws';
 import { serverNow, syncServerClock } from '../utils/serverClock';
+import { rankPlayers } from '../utils/gameSettings';
 import { currentPushSubscription, PUSH_PERMISSION_EVENT } from '../services/pushService';
+import { nativePushToken } from '../services/nativePushService';
+import { isNativeApp } from '../services/appPlatform';
 
 type GameViewPayload = {
   game: Game;
   currentPlayer: Player;
   activeDisputes?: GameState['activeDisputes'];
+  activeBusts?: GameState['activeBusts'];
   serverTime?: string;
   /** The server's public push key, for subscribing this phone. */
   pushKey?: string;
@@ -44,6 +48,7 @@ const initialState: GameState = {
   isLoading: true,
   error: null,
   activeDisputes: [],
+  activeBusts: [],
   leaderboard: [],
 };
 
@@ -68,11 +73,10 @@ function reducer(state: GameState, action: AwsGameAction): GameState {
         currentGame: action.value.game,
         currentPlayer: action.value.currentPlayer,
         activeDisputes: action.value.activeDisputes || [],
-        leaderboard: [...players].sort((left, right) =>
-          usesChallengeScore
-            ? (right.challengeScore || 0) - (left.challengeScore || 0)
-            : right.score - left.score,
-        ),
+        activeBusts: action.value.activeBusts || [],
+        leaderboard: usesChallengeScore
+          ? [...players].sort((left, right) => (right.challengeScore || 0) - (left.challengeScore || 0))
+          : rankPlayers(players),
         error: null,
       };
     }
@@ -141,6 +145,11 @@ function reviveView(value: unknown): GameViewPayload {
       ...vote,
       votedAt: new Date(vote.votedAt),
     })),
+  }));
+  view.activeBusts = (view.activeBusts || []).map((bust) => ({
+    ...bust,
+    openedAt: new Date(bust.openedAt),
+    closesAt: new Date(bust.closesAt),
   }));
   return view;
 }
@@ -390,6 +399,27 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
       run(() => sendAction('VOTE_DISPUTE', { disputeId, vote }).then(() => undefined)),
     [run, sendAction],
   );
+  const callBust = useCallback(
+    (playerId: string) => run(() => sendAction('CALL_BUST', { playerId }).then(() => undefined)),
+    [run, sendAction],
+  );
+  const answerBust = useCallback(
+    (bustId: string, taskId: string | null) =>
+      run(() => sendAction('ANSWER_BUST', { bustId, taskId }).then(() => undefined)),
+    [run, sendAction],
+  );
+  // Rating is a quiet aside on the results screen: no loading state, errors still toast.
+  const rateMission = useCallback(
+    async (taskId: string, rating: 'up' | 'down' | null) => {
+      try {
+        await sendAction('RATE_MISSION', { taskId, rating });
+      } catch (error) {
+        dispatch({ type: 'ERROR', value: errorMessage(error) });
+        throw error;
+      }
+    },
+    [sendAction],
+  );
 
   const uploadProofImage = useCallback(async (file: File, challengeId: string) => {
     if (!file.type.startsWith('image/')) throw new Error('Photo proof must be an image');
@@ -512,13 +542,22 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
   const pushGameId = state.currentGame?.status === 'ended' ? undefined : state.currentGame?.id;
   const pushPlayerId = state.currentPlayer?.id;
   useEffect(() => {
-    if (!pushGameId || !pushPlayerId || !pushKey) return undefined;
+    const native = isNativeApp();
+    // The iPhone app goes through Apple and needs no browser push key.
+    if (!pushGameId || !pushPlayerId || (!native && !pushKey)) return undefined;
     let cancelled = false;
     void (async () => {
       try {
-        const subscription = await currentPushSubscription(pushKey);
-        if (cancelled || !subscription?.endpoint) return;
         const savedKey = `wgw-push:${pushGameId}:${pushPlayerId}`;
+        if (native) {
+          const apnsToken = await nativePushToken();
+          if (cancelled || !apnsToken || localStorage.getItem(savedKey) === apnsToken) return;
+          await sendAction('SAVE_PUSH', { apnsToken }, pushGameId, false);
+          localStorage.setItem(savedKey, apnsToken);
+          return;
+        }
+        const subscription = await currentPushSubscription(pushKey!);
+        if (cancelled || !subscription?.endpoint) return;
         if (localStorage.getItem(savedKey) === subscription.endpoint) return;
         await sendAction('SAVE_PUSH', { subscription }, pushGameId, false);
         localStorage.setItem(savedKey, subscription.endpoint);
@@ -585,6 +624,9 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
       disputeGotcha,
       voteOnDispute,
       acceptGotcha,
+      callBust,
+      answerBust,
+      rateMission,
       rematch,
       updateSettings,
       openClaims,
@@ -594,6 +636,9 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
     }),
     [
       acceptGotcha,
+      answerBust,
+      callBust,
+      rateMission,
       claimGotcha,
       completeChallenge,
       createGame,

@@ -1,0 +1,8 @@
+{
+  "applinks": {
+    "details": [{
+      "appIDs": ["T3PAKNXT8A.club.whogotwho.app"],
+      "components": [{ "/": "/", "?": { "join": "?*" }, "comment": "Open game invitations in Who Got Who; other website pages stay in the browser." }]
+    }]
+  }
+}
