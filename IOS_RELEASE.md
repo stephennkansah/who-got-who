@@ -93,8 +93,13 @@ a gotcha or bust you.
 
 ## iOS 1.0.2: prepared 8 November 2026
 
-Prepared only: not yet built, uploaded or submitted. `MARKETING_VERSION` is
-`1.0.2`; the workflow sets the build number from its run number.
+`MARKETING_VERSION` is `1.0.2`; the workflow sets the build number from its
+run number. Source commit `b9280416c62a1f07f39811c527475e9787c133c2`.
+
+- Check passed on 8 November 2026: tests, typecheck, simulator compile and
+  launch (welcome screen shown). The bundle reports 1.0.2 and includes the
+  how-to-play video: https://github.com/dentistrydashboard/myformatic-frontend/actions/runs/42514599689
+- Not yet uploaded to TestFlight or submitted.
 
 New for iPhone players since 1.0.1 (source commit `0726d180`):
 
@@ -113,8 +118,7 @@ Draft "What's New" text for App Store Connect:
 
 Remaining steps:
 
-1. Push `main`, then run the shared workflow with the full 40-character commit
-   that contains this version bump: `check` first, then `release`.
+1. Run the shared workflow in `release` mode with the source commit above.
 2. App Store Connect only accepts the 1.0.2 version for review once 1.0.1 is
    approved or removed from review. TestFlight uploads of 1.0.2 work meanwhile.
 3. Update the saved review notes: hosts now pick a pack before the lobby
