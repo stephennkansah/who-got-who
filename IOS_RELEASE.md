@@ -91,7 +91,29 @@ come through Apple once the APNs setup above is complete. Verify on a device:
 allow notifications in the lobby, lock the phone, and have another player claim
 a gotcha or bust you.
 
-## Verified release state: 25 October 2026
+## Push setup and iOS 1.0.1: 8 November 2026
+
+- Push Notifications is enabled and saved for `club.whogotwho.app`.
+- APNs key **Who Got Who Push**, Key ID `M9944JY5X6`, is configured for
+  Sandbox & Production under team `T3PAKNXT8A`. It is team-scoped.
+- The private key is stored as Amplify's encrypted `APNS_PRIVATE_KEY` secret
+  for app `d34y6yuzpmd94v` in `eu-west-2`. Do not print or commit its value.
+- Amplify environment variables `APNS_KEY_ID=M9944JY5X6` and
+  `APNS_ENABLED=true` are saved. Deployment job **96** succeeded; the live game Lambda is Active with a successful update and the APNs key/secret binding configured.
+- The AASA 200 rewrite is the first hosting rule. The public extensionless
+  URL was verified as HTTP 200, `application/json`, without a redirect and
+  with app ID `T3PAKNXT8A.club.whogotwho.app` and the invitation query matcher.
+- Version 1.0.1 uses source commit `0726d1806845fa0c2edf38207c44ae26089f1cb9`.
+  All 59 frontend tests, backend checks and TypeScript checking passed.
+  Simulator compilation and launch passed:
+  https://github.com/dentistrydashboard/myformatic-frontend/actions/runs/42500313059
+- Signed upload succeeded:
+  https://github.com/dentistrydashboard/myformatic-frontend/actions/runs/42500956554
+- Apple processed **1.0.1 (build 3)**. It is available to the existing internal group **Who Got Who testing**; testing instructions are saved. The account holder still shows Invited, with no install recorded. The App Store 1.0.1 entry is saved with build 3, release notes and automatic release after approval selected. Stephen authorised submitting now without waiting for real-device testing. Submitted on 8 November 2026 at approximately 16:52 UTC. Apple confirmed **1 Item Submitted** and **1.0.1 Waiting for Review**. Submission: https://appstoreconnect.apple.com/apps/6826935487/distribution/reviewsubmissions/details/4ce58adb-5ed5-4344-8e85-c14f82fd68d8
+- Lock-screen delivery and native invitation opening still need a real iPhone
+  test with this new build. A successful upload alone does not verify these.
+
+## Historical release state: 25 October 2026
 
 - Version **1.0 (build 1)** was submitted at **22:36 UTC**. App Store Connect
   explicitly confirmed **Waiting for Review**. It is not yet approved or live.
