@@ -1,6 +1,7 @@
 import React from 'react';
 import { Game } from '../types';
 import { lobbySummary } from '../utils/gameSettings';
+import HowToPlayVideo from './HowToPlayVideo';
 
 interface RuleCardProps {
   title: string;
@@ -93,6 +94,7 @@ export default function RulesContent({ game }: { game: Game }) {
 
   return (
     <div className="flex-column gap-2">
+      <HowToPlayVideo style={{ margin: 0 }} />
       <RuleCard title="1 · Your secret missions" tone="info">
         You get <strong>{summary.missions} missions</strong> — things to get <strong>other players in this game</strong> to
         say or do. Nobody else can see yours, and no one else has the same ones. Don't fancy one?

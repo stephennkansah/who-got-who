@@ -260,8 +260,7 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
           false,
         );
         localStorage.setItem('currentGameId', response.gameId);
-        // Start on the Core pack so the host lands straight in the lobby; it can be changed there.
-        await sendAction('SELECT_PACK', { packId: 'core' }, response.gameId, false).catch(() => undefined);
+        // No pack yet: the host sees every pack (including new releases) on the next screen.
         await refreshGame(response.gameId);
       }),
     [prepareAvatar, refreshGame, run, sendAction],

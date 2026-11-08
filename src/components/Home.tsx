@@ -10,6 +10,7 @@ import { showToast } from './common/Toast';
 import LoadingScreen from './common/LoadingScreen';
 import BrandMark from './common/BrandMark';
 import { useBackToClose } from '../hooks/useBackToClose';
+import HowToPlayVideo from './HowToPlayVideo';
 import './Home.css';
 
 const PROFILE_KEY = 'wgw-profile';
@@ -380,6 +381,7 @@ function Home() {
         maxWidth={420}
       >
         <h2 style={{ color: 'var(--paper-ink)' }}>How to Play</h2>
+        <HowToPlayVideo />
         <div className="flex-column" style={{ gap: '0.8rem', textAlign: 'left', marginBottom: '1.25rem' }}>
           <Step number="1" text="Everyone gets secret missions to pull off on the other players." />
           <Step number="2" text="Pull yours off without anyone noticing. Spot someone trying one on you? Call it out and tap Bust Them — a busted mission is gone for good." />
