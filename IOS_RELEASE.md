@@ -95,6 +95,18 @@ a gotcha or bust you.
 
 `MARKETING_VERSION` is `1.0.3`; the workflow sets the build number from its
 run number. This build carries the redesign, so it changes every screen.
+Source commit `2f2769e837794ec546c0d426b7bfaace9ce209ee`, pushed as the tag
+`ios-1.0.3-source` only. `main` on GitHub was not moved, so the website and
+the Android app still show the previous design until `main` is pushed.
+
+- Check passed on 10 November 2026: 82 tests, typecheck, simulator compile and
+  launch on iPhone 16 Pro (new welcome screen shown). The bundle reports 1.0.3:
+  https://github.com/dentistrydashboard/myformatic-frontend/actions/runs/42845567964
+- Signed upload succeeded as **1.0.3 (build 7)** ("Upload succeeded", export
+  succeeded): https://github.com/dentistrydashboard/myformatic-frontend/actions/runs/42846702143
+- Not yet done: confirming in App Store Connect that Apple finished processing
+  build 7, adding it to the TestFlight group, and submitting 1.0.3 for review.
+  1.0.2 was still Waiting for Review when last checked on 8 November.
 
 New for iPhone players since 1.0.2:
 
