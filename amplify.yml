@@ -22,7 +22,7 @@ frontend:
     - pattern: '**/*'
       headers:
         - key: 'Content-Security-Policy'
-          value: "default-src 'self'; connect-src 'self' https://*.amazonaws.com wss://*.amazonaws.com; img-src 'self' data: blob: https://*.amazonaws.com; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self' mailto:"
+          value: "default-src 'self'; connect-src 'self' https://*.amazonaws.com wss://*.amazonaws.com https://*.clarity.ms https://c.bing.com; img-src 'self' data: blob: https://*.amazonaws.com https://*.clarity.ms https://c.bing.com; style-src 'self' 'unsafe-inline'; script-src 'self' https://*.clarity.ms; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self' mailto:"
         - key: 'Referrer-Policy'
           value: 'strict-origin-when-cross-origin'
         - key: 'X-Content-Type-Options'
