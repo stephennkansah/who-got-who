@@ -1,9 +1,9 @@
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Haptics } from '@capacitor/haptics';
-import { invitePath, publicGameOrigin, shareInvite, buzz, isShareCancelled } from './appPlatform';
+import { invitePath, publicGameOrigin, shareInvite, buzz, isShareCancelled, playerDevice } from './appPlatform';
 
-jest.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: jest.fn() } }));
+jest.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: jest.fn(), getPlatform: jest.fn(() => 'ios') } }));
 jest.mock('@capacitor/share', () => ({ Share: { share: jest.fn() } }));
 jest.mock('@capacitor/haptics', () => ({ Haptics: { impact: jest.fn() }, ImpactStyle: { Medium: 'MEDIUM' } }));
 jest.mock('@capacitor/camera', () => ({ Camera: {}, CameraResultType: {}, CameraSource: {}, CameraDirection: {} }));
@@ -14,6 +14,23 @@ beforeEach(() => {
   jest.clearAllMocks();
   native.mockReturnValue(false);
   Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
+});
+
+test('reports how the player is playing for the stats', () => {
+  sessionStorage.clear();
+  expect(playerDevice()).toBe('website');
+  native.mockReturnValue(true);
+  expect(playerDevice()).toBe('iphone-app');
+  native.mockReturnValue(false);
+
+  // The Android app opens the site with itself as referrer; a reload keeps the answer.
+  const referrer = jest.spyOn(document, 'referrer', 'get').mockReturnValue('android-app://club.whogotwho.twa/');
+  expect(playerDevice()).toBe('android-app');
+  referrer.mockReturnValue('');
+  expect(playerDevice()).toBe('android-app');
+  referrer.mockRestore();
+  sessionStorage.clear();
+  expect(playerDevice()).toBe('website');
 });
 
 test('native invites use the public site instead of the WebView origin', () => {

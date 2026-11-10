@@ -62,6 +62,7 @@ async function main() {
   console.log(`Spreading  guests who became hosts ${spreading.guestsWhoBecameHosts} · repeat hosts ${spreading.repeatHosts} · brand-new hosts ${spreading.brandNewHosts} · rematches ${spreading.rematches} (${pct(spreading.rematchRate)} of finished games)`);
   console.log(`Games      created ${games.created} · started ${games.started} · won ${games.won} · ended by host ${games.endedByHost} · never finished ${games.unfinished}`);
   console.log(`Players    avg ${players.avgPerGame ?? '—'} per game · ${players.bigGames} games of 7+ · ${players.lateJoins} late joins · ${players.leftMidGame} left mid-game`);
+  console.log(`Devices    iPhone app ${report.devices.iphoneApp} · Android app ${report.devices.androidApp} · website ${report.devices.website} · not known ${report.devices.unknown} · notifications on at start ${report.notifications.on} (${pct(report.notifications.rate)})`);
   console.log(`By size    ${report.bySize.map((row) => `${row.size}: ${row.games} games${row.avgMinutes === null ? '' : `, avg ${row.avgMinutes} min`}`).join(' · ')}`);
   console.log(`Play       avg ${play.avgMinutes ?? '—'} min · gotchas claimed ${play.claimed}, confirmed ${play.confirmed} · disputes ${play.disputes} (${pct(play.disputeRate)}) · overturned ${play.overturned} · swaps ${play.swaps} · pauses ${play.pauses}`);
   console.log(`Setup      packs ${list(report.packs)} | lengths ${list(report.lengths)} | with settling-in time ${report.withBriefing}`);

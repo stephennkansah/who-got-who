@@ -20,7 +20,7 @@ import { serverNow, syncServerClock } from '../utils/serverClock';
 import { rankPlayers } from '../utils/gameSettings';
 import { currentPushSubscription, PUSH_PERMISSION_EVENT } from '../services/pushService';
 import { nativePushToken } from '../services/nativePushService';
-import { isNativeApp } from '../services/appPlatform';
+import { isNativeApp, playerDevice } from '../services/appPlatform';
 
 type GameViewPayload = {
   game: Game;
@@ -255,7 +255,7 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
         const preparedAvatar = await prepareAvatar(avatar, avatarType);
         const response = await sendAction(
           'CREATE',
-          { name: hostName, ...preparedAvatar },
+          { name: hostName, ...preparedAvatar, device: playerDevice() },
           undefined,
           false,
         );
@@ -271,7 +271,7 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
       run(async () => {
         const id = gameId.trim().toUpperCase();
         const preparedAvatar = await prepareAvatar(avatar, avatarType);
-        await sendAction('JOIN', { name: playerName, ...preparedAvatar }, id);
+        await sendAction('JOIN', { name: playerName, ...preparedAvatar, device: playerDevice() }, id);
         localStorage.setItem('currentGameId', id);
       }),
     [prepareAvatar, run, sendAction],
@@ -325,6 +325,7 @@ export function AwsGameProvider({ children }: { children: ReactNode }) {
             name: me.name,
             avatar: me.avatarType === 'photo' ? me.avatarKey : me.avatar,
             avatarType: me.avatarType === 'photo' && me.avatarKey ? 'photo' : 'emoji',
+            device: playerDevice(),
           },
           rematchId,
           false,

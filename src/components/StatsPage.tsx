@@ -17,6 +17,8 @@ type StatsReport = {
   packs: Record<string, number>;
   lengths: Record<string, number>;
   withBriefing: number;
+  devices?: { iphoneApp: number; androidApp: number; website: number; unknown: number };
+  notifications?: { on: number; rate: number | null };
   bySize?: Array<{ size: string; games: number; avgMinutes: number | null }>;
   daily: Array<{ date: string; started: number }>;
   missions: {
@@ -206,6 +208,23 @@ export function StatsReportView({ report, days, busy, onDays, onLock }: {
         <Row label="Brand-new hosts" value={spreading.brandNewHosts} />
         <Row label="Rematches" value={`${spreading.rematches} (${pct(spreading.rematchRate)} of finished games)`} />
       </details>
+
+      {report.devices && (
+        <details className="card stat-section">
+          <summary>How people play</summary>
+          <Row label="iPhone app" value={report.devices.iphoneApp} />
+          <Row label="Android app" value={report.devices.androidApp} />
+          <Row label="Website" value={report.devices.website} />
+          {report.devices.unknown > 0 && (
+            <Row label="Not known (mostly older iPhone apps)" value={report.devices.unknown} />
+          )}
+          <Row
+            label="Notifications on at the start"
+            value={`${report.notifications?.on ?? 0} (${pct(report.notifications?.rate ?? null)})`}
+          />
+          <p className="stat-hint">Players when each game started. Counted from 10 November 2026.</p>
+        </details>
+      )}
 
       <details className="card stat-section">
         <summary>How games go</summary>

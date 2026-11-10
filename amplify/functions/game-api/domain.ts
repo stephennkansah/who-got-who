@@ -145,7 +145,12 @@ export type StoredPlayer = {
   push?: PushSubscriptionKeys;
   /** Apple's device token when playing in the iPhone app. Never sent to other players. */
   apns?: string;
+  /** How this player is playing, for the anonymous stats. Never sent to other players. */
+  device?: PlayerDevice;
 };
+
+export const PLAYER_DEVICES = ['iphone-app', 'android-app', 'website'] as const;
+export type PlayerDevice = (typeof PLAYER_DEVICES)[number];
 
 export type StoredDispute = {
   id: string;
@@ -297,6 +302,12 @@ function avatarFromPayload(payload: Record<string, unknown>, identityId: string)
   return { avatar: rawAvatar || '🎮', avatarType };
 }
 
+/** The app reports how it is being played; anything else (older iPhone apps send nothing) is left unset. */
+function deviceFromPayload(payload: Record<string, unknown>): { device?: PlayerDevice } {
+  const device = PLAYER_DEVICES.find((known) => known === payload.device);
+  return device ? { device } : {};
+}
+
 function newPlayer(
   identityId: string,
   gameId: string,
@@ -323,6 +334,7 @@ function newPlayer(
     },
   avatar,
     avatarType,
+    ...deviceFromPayload(payload),
   };
 }
 
@@ -1230,7 +1242,7 @@ export async function projectGameView(
         player.avatarType === 'photo' && player.avatar
           ? await mediaUrl(player.avatar)
           : player.avatar;
-      const { identityId: _identityId, push: _push, apns: _apns, ...safePlayer } = player;
+      const { identityId: _identityId, push: _push, apns: _apns, device: _device, ...safePlayer } = player;
       return {
         ...safePlayer,
         avatar,
@@ -1314,6 +1326,7 @@ export function rematchPlayerPayload(game: StoredGame, identityId: string): {
   name: string;
   avatar?: string;
   avatarType?: 'emoji' | 'photo';
+  device?: PlayerDevice;
   packId?: string;
 } {
   const player = member(game, identityId);
@@ -1322,6 +1335,7 @@ export function rematchPlayerPayload(game: StoredGame, identityId: string): {
     name: player.name,
     avatar: player.avatar,
     avatarType: player.avatarType,
+    device: player.device,
     packId: game.settings.selectedPack || undefined,
   };
 }

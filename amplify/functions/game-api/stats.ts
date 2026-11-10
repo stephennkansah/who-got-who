@@ -1,4 +1,4 @@
-import type { StoredGame } from './domain';
+import type { PlayerDevice, StoredGame, StoredPlayer } from './domain';
 
 /**
  * Anonymous play statistics. Each action is turned into counter increments by
@@ -36,6 +36,15 @@ export function groupSize(players: number): (typeof GROUP_SIZES)[number] {
   return '2to6';
 }
 
+/**
+ * iPhone app 1.0.2 and older don't report how they are played, but an Apple
+ * notification token only comes from the iPhone app. Any other player who
+ * didn't report is "unknown": mostly older iPhone apps with notifications off.
+ */
+export function playerDevice(player: StoredPlayer): PlayerDevice | 'unknown' {
+  return player.device ?? (player.apns ? 'iphone-app' : 'unknown');
+}
+
 function minutesBetween(start?: string, end?: string): number {
   if (!start || !end) return 0;
   return Math.max(0, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000));
@@ -66,6 +75,11 @@ export function statsForChange(before: StoredGame | null, after: StoredGame, now
       for (const challenge of after.selectedChallenges) tally.add(`challenge#${challenge.id}`, 'dealt');
     }
     if ((after.settings.briefingMinutes ?? 0) > 0) tally.add(day, 'startedWithBriefing');
+    // How everyone is playing, and whether their phone will buzz once it is put away.
+    for (const player of after.players) {
+      tally.add(day, `device_${playerDevice(player)}`);
+      if (player.push || player.apns) tally.add(day, 'notificationsOnAtStart');
+    }
   }
 
   // → ended

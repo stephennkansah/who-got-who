@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { applyAction, createGame, type StoredGame } from './domain';
+import { applyAction, createGame, projectGameView, rematchPlayerPayload, type StoredGame } from './domain';
 import { groupSize, statsForChange, type StatIncrement } from './stats';
 import { buildStatsReport } from './statsReport';
 
@@ -95,6 +95,53 @@ async function run() {
     ], 7, now);
     assert.deepEqual(report.missions.mostLiked.map((row) => [row.id, row.rate]), [['core-1', 1]]);
     assert.deepEqual(report.missions.mostDisliked.map((row) => [row.id, row.rate]), [['core-2', 0]]);
+  }
+
+  {
+    // How everyone plays, and who has notifications on, is counted when the game starts.
+    const phone = {
+      endpoint: 'https://fcm.googleapis.com/fcm/send/device-token',
+      keys: {
+        p256dh: 'BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4',
+        auth: 'BTBZMqHH6r4Tts7J_aSIgg',
+      },
+    };
+    const appleToken = 'a'.repeat(64);
+    let played = createGame('DEV234', 'a', { ...player('A'), device: 'website' }, request());
+    ({ after: played } = await step(played, 'JOIN', 'b', { ...player('B'), device: 'android-app' }));
+    ({ after: played } = await step(played, 'JOIN', 'c', { ...player('C'), device: 'fridge' }));
+    // iPhone app 1.0.2 says nothing, but its Apple notification token gives it away.
+    ({ after: played } = await step(played, 'JOIN', 'd', player('D')));
+    ({ after: played } = await step(played, 'SAVE_PUSH', 'b', { subscription: phone }));
+    ({ after: played } = await step(played, 'SAVE_PUSH', 'd', { apnsToken: appleToken }));
+    assert.equal(played.players[2].device, undefined, 'an unknown device name is not stored');
+    ({ after: played } = await step(played, 'SELECT_PACK', 'a', { packId: 'core' }));
+    ({ after: played } = await step(played, 'UPDATE_SETTINGS', 'a', { briefingMinutes: 0 }));
+    let counted: StatIncrement[];
+    ({ after: played, stats: counted } = await step(played, 'START', 'a'));
+    assert.equal(count(counted, day, 'device_website'), 1);
+    assert.equal(count(counted, day, 'device_android-app'), 1);
+    assert.equal(count(counted, day, 'device_iphone-app'), 1);
+    assert.equal(count(counted, day, 'device_unknown'), 1);
+    assert.equal(count(counted, day, 'notificationsOnAtStart'), 2);
+
+    // Other players never see how someone is playing.
+    for (const viewer of ['a', 'b']) {
+      const view = await projectGameView(played, viewer, async (key) => key);
+      assert.ok(!JSON.stringify(view.payload).includes('android-app'), `${viewer}'s view holds no device`);
+    }
+    // The player who opens a rematch keeps their device in the new lobby.
+    ({ after: played } = await step(played, 'END', 'a'));
+    assert.equal(rematchPlayerPayload(played, 'b').device, 'android-app');
+
+    const report = buildStatsReport([{
+      key: day, 'device_iphone-app': 3, 'device_android-app': 2, device_website: 4, device_unknown: 1,
+      notificationsOnAtStart: 4, playersAtStart: 40,
+    }], 7, now);
+    assert.deepEqual(report.devices, { iphoneApp: 3, androidApp: 2, website: 4, unknown: 1 });
+    // The share is of players counted by device, not every player since the stats began.
+    assert.deepEqual(report.notifications, { on: 4, rate: 0.4 });
+    assert.deepEqual(buildStatsReport([], 7, now).notifications, { on: 0, rate: null });
   }
 
   {

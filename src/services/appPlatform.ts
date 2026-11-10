@@ -6,6 +6,33 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 
 export const isNativeApp = () => Capacitor.isNativePlatform();
 
+// The Android app is this website inside Chrome (a Trusted Web Activity). Chrome
+// marks the page it opens with the app as referrer; later reloads lose that, so
+// it is remembered for the rest of the session.
+const ANDROID_APP_REFERRER = 'android-app://club.whogotwho.twa';
+const ANDROID_APP_KEY = 'wgw-android-app';
+
+function rememberAndroidApp(): void {
+  try {
+    if (document.referrer.startsWith(ANDROID_APP_REFERRER)) sessionStorage.setItem(ANDROID_APP_KEY, '1');
+  } catch {
+    // Storage can be blocked; the player is then counted as on the website.
+  }
+}
+rememberAndroidApp();
+
+/** How this player is playing, sent with joining for the anonymous stats. */
+export function playerDevice(): 'iphone-app' | 'android-app' | 'website' {
+  if (isNativeApp()) return Capacitor.getPlatform() === 'android' ? 'android-app' : 'iphone-app';
+  rememberAndroidApp();
+  try {
+    if (sessionStorage.getItem(ANDROID_APP_KEY) === '1') return 'android-app';
+  } catch {
+    // As above.
+  }
+  return 'website';
+}
+
 // The bundled iPhone app has a local origin. Invites must always point to the website.
 export const publicGameOrigin = () => isNativeApp() ? 'https://whogotwho.club' : window.location.origin;
 

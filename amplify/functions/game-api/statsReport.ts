@@ -38,6 +38,10 @@ export type StatsReport = {
   packs: Counts;
   lengths: Counts;
   withBriefing: number;
+  /** Players at the start of each game, by how they play. Counted from 10 November 2026. */
+  devices: { iphoneApp: number; androidApp: number; website: number; unknown: number };
+  /** Of those players, how many had notifications on; rate is the share of them. */
+  notifications: { on: number; rate: number | null };
   /** Finished secret-missions games and their average length, per group size. */
   bySize: Array<{ size: string; games: number; avgMinutes: number | null }>;
   daily: Array<{ date: string; started: number }>;
@@ -83,6 +87,14 @@ export function buildStatsReport(items: Array<Record<string, unknown>>, days: nu
   const started = get('gamesStarted');
   const finished = get('gamesWon') + get('gamesEndedByHost');
   const claimed = get('gotchasClaimed');
+  const devices = {
+    iphoneApp: get('device_iphone-app'),
+    androidApp: get('device_android-app'),
+    website: get('device_website'),
+    unknown: get('device_unknown'),
+  };
+  // Days before the device counters existed would otherwise drag the share down.
+  const playersCounted = devices.iphoneApp + devices.androidApp + devices.website + devices.unknown;
 
   const daily: StatsReport['daily'] = [];
   for (let offset = days - 1; offset >= 0; offset -= 1) {
@@ -169,6 +181,11 @@ export function buildStatsReport(items: Array<Record<string, unknown>>, days: nu
     packs: prefixed('pack_'),
     lengths: prefixed('length_'),
     withBriefing: get('startedWithBriefing'),
+    devices,
+    notifications: {
+      on: get('notificationsOnAtStart'),
+      rate: ratio(get('notificationsOnAtStart'), playersCounted),
+    },
     bySize: GROUP_SIZES.map((size) => {
       const games = get(`ended_${size}`);
       return {
