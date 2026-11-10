@@ -37,7 +37,7 @@ createRoot(document.getElementById('root')!).render(
       <GameSetup game={game} packName="Core Pack" isHost={false} busy={false} onChangePack={noop} onUpdate={noop}/>
       <p style={{textAlign:'center'}}>Ready — waiting for Jordan to start</p>
     </> : <>
-      <GameHeader currentPlayer={players[0]} playerCount={4} targetScore={5} onOpenHostMenu={noop} onLeaveGame={noop} onShowLeaderboard={noop}/>
+      <GameHeader score={players[0].score} scoreLabel="OF 5" scoreAria="Your score 1.5 of 5" title="Who Got Who" subtitle="4 players · first to 5" onOpenMenu={noop} onShowLeaderboard={noop}/>
       <LeaderboardWidget players={players} currentPlayerId="alex" targetScore={5} onShowLeaderboard={noop}/>
       <TaskListView tasks={tasks} players={players} currentPlayerId="alex" onTaskResult={noop} onSwapTask={noop} swapsLeft={2} swapsTotal={2} activeDisputes={[]} filing={null}/>
     </>}

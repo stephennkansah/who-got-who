@@ -1,4 +1,5 @@
 import { buzz } from '../services/appPlatform';
+import { playSound } from '../services/sounds';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
@@ -6,8 +7,6 @@ import { Player, SettingsUpdate } from '../types';
 import NotificationPrompt from './NotificationPrompt';
 import { ConfirmationModal } from './common/ConfirmationModal';
 import LoadingScreen from './common/LoadingScreen';
-import BrandMark from './common/BrandMark';
-import Mascot from './common/Mascot';
 import { showToast } from './common/Toast';
 import { getAllPackOptions } from '../data/packCatalog';
 import { lobbySummary } from '../utils/gameSettings';
@@ -16,8 +15,11 @@ import Roster from './lobby/Roster';
 import GameSetup from './lobby/GameSetup';
 import ProfileEditor from './lobby/ProfileEditor';
 import PlayerActions from './lobby/PlayerActions';
+import WarmUp from './lobby/WarmUp';
 import RulesContent from './RulesContent';
 import { useBackToClose } from '../hooks/useBackToClose';
+import StampSplash from './common/StampSplash';
+import { takeJustJoined } from '../utils/justJoined';
 
 const RULES_SEEN_KEY = 'wgw-rules-seen';
 
@@ -35,7 +37,10 @@ function useLobbyFeed(players: Player[], currentPlayerId?: string) {
       .filter((player) => !had.has(player.id) && player.id !== currentPlayerId)
       .forEach((player) => {
         showToast(`${player.name} joined`, 'success');
-        if (amHost) buzz(60);
+        if (amHost) {
+          buzz(60);
+          playSound('join');
+        }
       });
     before
       .filter((player) => !has.has(player.id))
@@ -62,6 +67,7 @@ export default function Lobby() {
   const [kickTarget, setKickTarget] = useState<Player | null>(null);
   const [managing, setManaging] = useState<Player | null>(null);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [welcome, setWelcome] = useState(false);
 
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
@@ -76,6 +82,12 @@ export default function Lobby() {
   const notReady = players.filter((player) => !player.isHost && !player.lockedIn);
 
   useLobbyFeed(players, currentPlayer?.id);
+
+  // Fresh from the home screen into someone's game: say so, once.
+  const lobbyId = currentGame?.id;
+  useEffect(() => {
+    if (lobbyId && takeJustJoined(lobbyId)) setWelcome(true);
+  }, [lobbyId]);
 
   useEffect(() => {
     if (!gameId || (!currentGame && !state.isLoading)) navigate('/', { replace: true });
@@ -159,39 +171,40 @@ export default function Lobby() {
     return <LoadingScreen message="finding your game…" showBack />;
   }
 
+  const welcomeSplash = welcome && (
+    <StampSplash
+      title="You're In!"
+      subtitle={`${hostName}'s game · ${playerCount} player${playerCount === 1 ? '' : 's'} here so far`}
+      tone="success"
+      mascot="lobby"
+      sound="join"
+      durationMs={1900}
+      onDone={() => setWelcome(false)}
+    />
+  );
+
   // ---------- Rules (first visit, or on request) ----------
   if (showRules) {
     return (
       <div className="container">
+        {welcomeSplash}
         <button className="back-link" onClick={closeRules}>
           ← Lobby
         </button>
-        <header style={{ textAlign: 'center', margin: '0.25rem 0 1.25rem' }}>
-          {isHoliday
-            ? <BrandMark className="brand-mark-centered" />
-            : <Mascot pose="mission" size={80} className="mascot-centered" />}
-          <h1 style={{ fontSize: '1.9rem', marginBottom: '0.2rem' }}>
-            {isHoliday ? 'You Got Who?' : 'Who Got Who'}
-          </h1>
+        <header className="rules-head">
+          <h1>{isHoliday ? 'You Got Who?' : 'How to Play'}</h1>
           <div className="app-subtitle">
-            How to play · {playerCount} player{playerCount !== 1 ? 's' : ''} in the lobby
+            {isHoliday ? 'How to play · ' : ''}{playerCount} player{playerCount !== 1 ? 's' : ''} in the lobby
           </div>
         </header>
 
-        <div style={{ marginBottom: '0.9rem' }}>
-          <RulesContent game={currentGame} />
-        </div>
-
-        <NotificationPrompt />
-
-        <button
-          className="btn btn-primary"
-          onClick={dismissRules}
-          style={{ marginTop: '0.5rem' }}
-        >
-          {isHost || currentPlayer.lockedIn ? 'Got It — to the Lobby' : "Got It — I'm Ready"}
-        </button>
-        <p className="app-subtitle" style={{ marginTop: '0.6rem' }}>
+        <RulesContent
+          game={currentGame}
+          doneLabel={isHost || currentPlayer.lockedIn ? 'Got It — to the Lobby' : "Got It — I'm Ready"}
+          onDone={dismissRules}
+          lastExtra={<NotificationPrompt />}
+        />
+        <p className="app-subtitle" style={{ marginTop: '0.7rem' }}>
           You can reopen these anytime — in the lobby or mid-game.
         </p>
       </div>
@@ -230,12 +243,52 @@ export default function Lobby() {
     <div className="container">
       {!isHost && readyCard}
 
+      {/* Ready and waiting: something to do until the host starts */}
+      {!isHost && !isHoliday && currentPlayer.lockedIn && <WarmUp missions={summary.missions} />}
+
       <InvitePanel
         gameId={currentGame.id}
         gameType={currentGame.gameType}
         playerCount={playerCount}
         maxPlayers={currentGame.settings.maxPlayers}
       />
+
+      {/* Start: straight under the code, so the host never has to scroll for it.
+          Guests have their Ready card at the top instead. */}
+      {isHost && (
+        <div className="card" style={{ textAlign: 'center' }}>
+          {canStart ? (
+            <>
+              <p style={{ color: 'var(--text-main)', fontWeight: 700, marginBottom: '0.75rem' }}>
+                {notReady.length === 0
+                  ? "Everyone's ready. Deal the missions."
+                  : `${playerCount - 1 - notReady.length} of ${playerCount - 1} ready · still reading: ${
+                    notReady.slice(0, 3).map((player) => player.name).join(', ')
+                  }${notReady.length > 3 ? ` and ${notReady.length - 3} more` : ''}`}
+              </p>
+              <button
+                className={`btn btn-success ${notReady.length === 0 ? 'is-go' : ''}`}
+                onClick={handleStartGame}
+                disabled={isStarting}
+              >
+                {isStarting ? 'Starting…' : notReady.length === 0 ? 'Start the Game' : 'Start Anyway'}
+              </button>
+              <p style={{ fontSize: '0.86rem', margin: '0.6rem 0 0' }}>
+                Latecomers can still join with the code after you start.
+              </p>
+            </>
+          ) : (
+            <>
+              <p style={{ color: 'var(--amber)', fontWeight: 700, marginBottom: '0.25rem' }}>
+                You need at least 2 players to start
+              </p>
+              <p style={{ fontSize: '0.9rem', margin: 0 }}>
+                Share the code, link or QR above and the game can begin.
+              </p>
+            </>
+          )}
+        </div>
+      )}
 
       <Roster
         players={players}
@@ -255,65 +308,30 @@ export default function Lobby() {
         onUpdate={handleUpdateSettings}
       />
 
-      {/* Start (guests have their Ready card at the top) */}
-      {isHost && (
-        <div className="card" style={{ textAlign: 'center' }}>
-          {canStart ? (
-            <>
-              <p style={{ color: 'var(--text-main)', fontWeight: 700, marginBottom: '0.75rem' }}>
-                {notReady.length === 0
-                  ? "Everyone's ready. Unseal the missions."
-                  : `${playerCount - 1 - notReady.length} of ${playerCount - 1} ready · still reading: ${
-                    notReady.slice(0, 3).map((player) => player.name).join(', ')
-                  }${notReady.length > 3 ? ` and ${notReady.length - 3} more` : ''}`}
-              </p>
-              <button
-                className="btn btn-success"
-                onClick={handleStartGame}
-                disabled={isStarting}
-                style={{ fontSize: '1.35rem' }}
-              >
-                {isStarting ? 'Starting…' : notReady.length === 0 ? 'Start the Game' : 'Start Anyway'}
-              </button>
-              <p style={{ fontSize: '0.86rem', margin: '0.6rem 0 0' }}>
-                Latecomers can still join with the code after you start.
-              </p>
-            </>
-          ) : (
-            <>
-              <p style={{ color: 'var(--amber)', fontWeight: 700, marginBottom: '0.25rem' }}>
-                You need at least 2 agents to start
-              </p>
-              <p style={{ fontSize: '0.9rem', margin: 0 }}>
-                Share the code, link or QR above and the game can begin.
-              </p>
-            </>
-          )}
+      {/* What's coming: a warm-up for anyone not already shown one, or the sealed missions */}
+      {!isHoliday && !(!isHost && currentPlayer.lockedIn) ? (
+        <WarmUp missions={summary.missions} />
+      ) : isHoliday ? (
+        <div className="paper-card" style={{ textAlign: 'center', padding: '1.25rem', marginBottom: '0.9rem' }}>
+          <div className="type" style={{
+            fontSize: '0.76rem',
+            letterSpacing: '0.16em',
+            textTransform: 'uppercase',
+            color: 'var(--paper-dim)',
+            marginBottom: '0.75rem',
+          }}>
+            Your challenges · sealed until the start
+          </div>
+          <div className="flex-column gap-1" style={{ alignItems: 'center', marginBottom: '0.75rem' }} aria-hidden="true">
+            <span className="redacted" style={{ width: '82%', height: '0.95rem' }}>&nbsp;</span>
+            <span className="redacted" style={{ width: '64%', height: '0.95rem' }}>&nbsp;</span>
+            <span className="redacted" style={{ width: '74%', height: '0.95rem' }}>&nbsp;</span>
+          </div>
+          <p className="type" style={{ fontSize: '0.88rem', margin: 0, color: 'var(--paper-dim)' }}>
+            everyone races the same {summary.challenges} challenges once the game starts.
+          </p>
         </div>
-      )}
-
-      {/* Sealed dossier teaser */}
-      <div className="paper-card" style={{ textAlign: 'center', padding: '1.25rem', marginBottom: '0.9rem' }}>
-        <div className="type" style={{
-          fontSize: '0.76rem',
-          letterSpacing: '0.16em',
-          textTransform: 'uppercase',
-          color: 'var(--paper-dim)',
-          marginBottom: '0.75rem',
-        }}>
-          Your dossier · sealed until start
-        </div>
-        <div className="flex-column gap-1" style={{ alignItems: 'center', marginBottom: '0.75rem' }} aria-hidden="true">
-          <span className="redacted" style={{ width: '82%', height: '0.95rem' }}>&nbsp;</span>
-          <span className="redacted" style={{ width: '64%', height: '0.95rem' }}>&nbsp;</span>
-          <span className="redacted" style={{ width: '74%', height: '0.95rem' }}>&nbsp;</span>
-        </div>
-        <p className="type" style={{ fontSize: '0.88rem', margin: 0, color: 'var(--paper-dim)' }}>
-          {isHoliday
-            ? `everyone races the same ${summary.challenges} challenges once the game starts.`
-            : `${summary.missions} missions decrypt when the host starts. tell no one.`}
-        </p>
-      </div>
+      ) : null}
 
       <NotificationPrompt />
 
@@ -357,6 +375,8 @@ export default function Lobby() {
           setKickTarget(player);
         }}
       />
+
+      {welcomeSplash}
 
       <ProfileEditor
         player={editingProfile ? currentPlayer : null}

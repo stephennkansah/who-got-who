@@ -11,6 +11,7 @@ import LoadingScreen from './common/LoadingScreen';
 import BrandMark from './common/BrandMark';
 import { useBackToClose } from '../hooks/useBackToClose';
 import HowToPlayVideo from './HowToPlayVideo';
+import { clearJustJoined, markJustJoined } from '../utils/justJoined';
 import './Home.css';
 
 const PROFILE_KEY = 'wgw-profile';
@@ -164,6 +165,8 @@ function Home() {
       return;
     }
     remember(validation.sanitizedValues.playerName!);
+    // Set before joining: the lobby can open before the call returns.
+    markJustJoined(validation.sanitizedValues.gameId!);
     try {
       await joinGame(
         validation.sanitizedValues.gameId!,
@@ -172,6 +175,7 @@ function Home() {
         chosen.type,
       );
     } catch {
+      clearJustJoined();
       // The provider renders the actionable service error below.
     }
   };
@@ -275,7 +279,7 @@ function Home() {
             <div className="mission-number type" style={{ marginBottom: '0.5rem' }}>
               You're already in a game
             </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', letterSpacing: '0.14em', lineHeight: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: '2.2rem', letterSpacing: '0.12em', lineHeight: 1 }}>
               {activeGame.id}
             </div>
             <p style={{ color: 'var(--paper-dim)', fontSize: '0.93rem', margin: '0.5rem 0 1rem' }}>
@@ -402,8 +406,8 @@ function Home() {
 const Step = ({ number, text }: { number: string, text: string }) => (
   <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'baseline' }}>
     <div style={{
-      fontFamily: 'var(--font-display)',
-      fontSize: '1.2rem',
+      fontWeight: 700,
+      fontSize: '1.05rem',
       color: 'var(--primary)',
       flexShrink: 0,
       width: '18px',

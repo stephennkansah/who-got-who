@@ -1,4 +1,5 @@
 import { buzz } from '../services/appPlatform';
+import { SoundName } from '../services/sounds';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
@@ -6,8 +7,10 @@ import { useGameFeed, ClaimOutcome } from '../hooks/useGameFeed';
 import { useCountdown } from '../hooks/useCountdown';
 import { useGamePhase } from '../hooks/useGamePhase';
 import NotificationService from '../services/notificationService';
-import { TaskInstance } from '../types';
-import { WINNING_SCORE, openPlaces, ordinal, podiumPlaces, rankPlayers } from '../utils/gameSettings';
+import { Game as GameData, TaskInstance } from '../types';
+import {
+  ONE_AWAY_SCORE, WINNING_SCORE, nextPrize, openPlaces, ordinal, podiumPlaces, rankPlayers, winRule,
+} from '../utils/gameSettings';
 import TaskListView from './TaskListView';
 import TargetSelectModal from './TargetSelectModal';
 import DisputeModal from './DisputeModal';
@@ -20,13 +23,24 @@ import { LeaderboardWidget } from './game/LeaderboardWidget';
 import { FullLeaderboard } from './game/FullLeaderboard';
 import PhaseBanner from './game/PhaseBanner';
 import HostMenu from './game/HostMenu';
+import GameMenu from './game/GameMenu';
 import RulesSheet from './game/RulesSheet';
 import { ConfirmationModal } from './common/ConfirmationModal';
 import StampSplash from './common/StampSplash';
+import StartCountdown from './common/StartCountdown';
+import { serverNow } from '../utils/serverClock';
 import LoadingScreen from './common/LoadingScreen';
 import { MascotPose } from './common/Mascot';
 
-type Slam = { title: string; subtitle?: string; tone: 'success' | 'danger' | 'amber'; mascot: MascotPose; durationMs?: number };
+type Slam = {
+  title: string;
+  subtitle?: string;
+  tone: 'success' | 'danger' | 'amber';
+  mascot: MascotPose;
+  durationMs?: number;
+  sound?: SoundName;
+  celebrate?: boolean;
+};
 
 /** Shown once you've reached the winning score while others play on for the podium. */
 function FinishBanner({ place, stillOpen }: { place: number; stillOpen: string }) {
@@ -38,6 +52,36 @@ function FinishBanner({ place, stillOpen }: { place: number; stillOpen: string }
         Your missions are done. Stay in to vote on disputes
         {stillOpen ? <> and see who takes {stillOpen} place.</> : '.'}
       </p>
+    </div>
+  );
+}
+
+/** The host pressed Start a moment ago (as opposed to you opening a game already under way). */
+function justStarted(startedAt?: string): boolean {
+  if (!startedAt) return false;
+  const age = serverNow() - Date.parse(startedAt);
+  return age > -5000 && age < 20000;
+}
+
+/** Someone's next gotcha could finish them: everyone should know, all the time. */
+function OneAwayBanner({ game, meId }: { game: GameData; meId: string }) {
+  const close = game.players.filter((player) => !player.place && player.score >= ONE_AWAY_SCORE);
+  if (close.length === 0) return null;
+  const prize = nextPrize(game);
+  const me = close.some((player) => player.id === meId);
+  const others = close.filter((player) => player.id !== meId);
+  let text: string;
+  if (me && others.length === 0) text = `You could ${prize} with your next gotcha!`;
+  else if (me) {
+    text = `You and ${others.length === 1 ? others[0].name : `${others.length} others`} could ${prize} with the next gotcha!`;
+  } else if (others.length === 1) text = `${others[0].name} could ${prize} with their next gotcha — watch them!`;
+  else if (others.length === 2) {
+    text = `${others[0].name} and ${others[1].name} could each ${prize} with their next gotcha — watch them!`;
+  } else text = `${others.length} players could each ${prize} with their next gotcha — watch out!`;
+  return (
+    <div className={`one-away ${me ? 'is-me' : ''}`} role="status">
+      <span className="one-away-tag">So close</span>
+      <span>{text}</span>
     </div>
   );
 }
@@ -82,6 +126,7 @@ export default function Game() {
     answerBust,
   } = useGame();
   const [showHostMenu, setShowHostMenu] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [showBustPicker, setShowBustPicker] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const phase = useGamePhase(state.currentGame);
@@ -92,6 +137,7 @@ export default function Game() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [slam, setSlam] = useState<Slam | null>(null);
   const [showIntro, setShowIntro] = useState(false);
+  const [showCountdown, setShowCountdown] = useState(false);
   const [finale, setFinale] = useState<Slam | null>(null);
   const sawLive = useRef(false);
 
@@ -140,6 +186,8 @@ export default function Game() {
           tone: 'success',
           mascot: 'happy',
           durationMs: 2400,
+          sound: 'win',
+          celebrate: true,
         });
         return;
       }
@@ -154,6 +202,8 @@ export default function Game() {
                   : `gotcha on ${outcome.targetName} confirmed`,
               tone: 'success',
               mascot: 'happy',
+              sound: 'score',
+              celebrate: true,
             }
           : {
               title: 'Overturned',
@@ -188,7 +238,7 @@ export default function Game() {
     if (!gameId || (!currentGame && !state.isLoading)) navigate('/', { replace: true });
   }, [gameId, currentGame, state.isLoading, navigate]);
 
-  // Game over: stamp the result first if we watched it happen, then the debrief.
+  // Game over: stamp the result first if we watched it happen, then the results.
   useEffect(() => {
     if (!currentGame) return;
     if (currentGame.status === 'live') {
@@ -204,7 +254,7 @@ export default function Game() {
     const reached = !!winner && (!!winner.place || winner.score >= targetScore);
     const mine = currentGame.players.find((player) => player.id === currentPlayer?.id)?.place;
     const iWon = reached && winner.id === currentPlayer?.id;
-    let title = 'Case Closed';
+    let title = 'Game Over';
     if (iWon) title = 'You Win';
     else if (reached && mine) title = `You Finished ${ordinal(mine)}`;
     else if (reached) title = `${winner.name} Wins`;
@@ -213,11 +263,13 @@ export default function Game() {
       subtitle: !reached
         ? 'the host ended the game'
         : mine && !iWon
-          ? `${winner.name} took 1st — the debrief is in`
-          : `${winner.score} points — the debrief is in`,
+          ? `${winner.name} took 1st — the results are in`
+          : `${winner.score} points — the results are in`,
       tone: mine ? 'success' : 'amber',
       mascot: 'happy',
       durationMs: 2400,
+      sound: mine ? 'win' : 'gameOver',
+      celebrate: !!mine,
     });
   }, [currentGame, currentPlayer?.id, navigate, targetScore]);
 
@@ -227,17 +279,20 @@ export default function Game() {
       const key = `wgw-intro-${gameId}`;
       if (!sessionStorage.getItem(key)) {
         sessionStorage.setItem(key, '1');
-        setShowIntro(true);
+        // Everyone who was waiting gets 3-2-1; a latecomer goes straight in.
+        if (justStarted(currentGame.startedAt)) setShowCountdown(true);
+        else setShowIntro(true);
         NotificationService.notifyIfHidden('The game has started', 'Your missions are in — open the game to read them.', `game-started-${gameId}`);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentGame?.status, currentPlayer, gameId]);
 
   // The settling-in clock just hit zero: everyone hears the starting gun.
   useEffect(() => {
     if (wasBriefing.current && !phase.briefing && !phase.paused && currentGame?.status === 'live') {
       buzz([150, 80, 150]);
-      setSlam({ title: 'Gotchas Open', subtitle: 'the briefing is over — happy hunting', tone: 'success', mascot: 'mission' });
+      setSlam({ title: 'Gotchas Open', subtitle: 'the briefing is over — happy hunting', tone: 'success', mascot: 'mission', sound: 'go' });
       NotificationService.notifyIfHidden('Gotchas are open!', 'The briefing is over — go get them.', 'claims-open');
     }
     wasBriefing.current = phase.briefing;
@@ -362,18 +417,28 @@ export default function Game() {
   };
 
   if (!currentGame || !currentPlayer) {
-    return <LoadingScreen message="decrypting your game…" showBack />;
+    return <LoadingScreen message="loading your game…" showBack />;
   }
+
+  // A group vote pops up by itself, but never over something you're in the middle of.
+  const busy = showMenu || showHostMenu || showBustPicker || showRules || showLeaderboard || !!selectedTask
+    || confirmation.isOpen || !!responseClaim || !!bustOnMe || !!slam || showIntro || showCountdown || !!finale;
+  const nextVoteId = votingDisputes.find(
+    (dispute) => !dispute.votes.some((vote) => vote.voterId === currentPlayer.id),
+  )?.id;
+  const playerCount = currentGame.players.length;
 
   return (
     <div className="container">
       <GameHeader
-        currentPlayer={currentPlayer}
-        playerCount={currentGame.players.length}
-        targetScore={targetScore}
-        briefing={phase.briefing}
-        onOpenHostMenu={() => setShowHostMenu(true)}
-        onLeaveGame={handleLeaveGame}
+        score={currentPlayer.score}
+        scoreLabel={`OF ${targetScore}`}
+        scoreAria={`Your score ${currentPlayer.score} of ${targetScore}`}
+        title="Who Got Who"
+        subtitle={`${playerCount} player${playerCount === 1 ? '' : 's'} · ${
+          winRule(podiumPlaces(currentGame), targetScore).replace(/ points$/, '')
+        }`}
+        onOpenMenu={() => setShowMenu(true)}
         onShowLeaderboard={() => setShowLeaderboard(true)}
       />
 
@@ -395,9 +460,11 @@ export default function Game() {
         players={currentGame.players}
         currentPlayerId={currentPlayer.id}
         targetScore={targetScore}
-        places={podiumPlaces(currentGame)}
+        matchPoint={ONE_AWAY_SCORE}
         onShowLeaderboard={() => setShowLeaderboard(true)}
       />
+
+      {currentGame.status === 'live' && <OneAwayBanner game={currentGame} meId={currentPlayer.id} />}
 
       {myJuryDisputes.map((dispute) => (
         <JuryBanner
@@ -409,7 +476,7 @@ export default function Game() {
       ))}
 
       {votingDisputes.map((dispute) => (
-        <VotingBanner key={dispute.id} dispute={dispute} />
+        <VotingBanner key={dispute.id} dispute={dispute} canPopUp={!busy && dispute.id === nextVoteId} />
       ))}
 
       {myBust && (
@@ -435,8 +502,8 @@ export default function Game() {
         </button>
       </div>
 
-      {/* Mission dossiers — straight on the desk */}
-      <section style={{ marginTop: '0.25rem' }}>
+      {/* The missions — straight on the desk */}
+      <section>
         <TaskListView
           tasks={currentPlayer.tasks}
           players={currentGame.players}
@@ -452,9 +519,14 @@ export default function Game() {
         />
       </section>
 
-      <button className="btn btn-ghost" onClick={() => setShowRules(true)} style={{ marginTop: '0.25rem' }}>
-        How to play
-      </button>
+      <GameMenu
+        isOpen={showMenu}
+        isHost={currentPlayer.isHost}
+        onClose={() => setShowMenu(false)}
+        onShowRules={() => setShowRules(true)}
+        onHostControls={() => setShowHostMenu(true)}
+        onLeave={handleLeaveGame}
+      />
 
       <RulesSheet game={currentGame} isOpen={showRules} onClose={() => setShowRules(false)} />
 
@@ -531,15 +603,25 @@ export default function Game() {
         confirmLabel={confirmation.confirmLabel}
       />
 
+      {showCountdown && (
+        <StartCountdown
+          onDone={() => {
+            setShowCountdown(false);
+            setShowIntro(true);
+          }}
+        />
+      )}
+
       {showIntro && (
         <StampSplash
           title={phase.briefing ? 'Missions In' : 'Missions Live'}
           subtitle={phase.briefing
             ? 'read up and settle in — gotchas open when the clock runs out'
-            : `case file ${currentGame.id} · trust no one`}
+            : `game ${currentGame.id} · trust no one`}
           tone="amber"
           mascot="mission"
           durationMs={1900}
+          sound={phase.briefing ? undefined : 'go'}
           onDone={() => setShowIntro(false)}
         />
       )}
@@ -552,6 +634,8 @@ export default function Game() {
           tone={slam.tone}
           mascot={slam.mascot}
           durationMs={slam.durationMs}
+          sound={slam.sound}
+          celebrate={slam.celebrate}
           onDone={() => setSlam(null)}
         />
       )}
@@ -563,6 +647,8 @@ export default function Game() {
           tone={finale.tone}
           mascot={finale.mascot}
           durationMs={finale.durationMs}
+          sound={finale.sound}
+          celebrate={finale.celebrate}
           onDone={() => navigate(`/recap/${currentGame.id}`, { replace: true })}
         />
       )}

@@ -131,16 +131,16 @@ const ShareButton: React.FC<ShareButtonProps> = ({
         aria-label={gameId ? 'Share game invite' : 'Share Who Got Who'}
         style={{
           background: 'var(--primary-gradient)',
-          color: '#fdf6ec',
+          color: '#fff',
           border: 'none',
-          borderRadius: 'var(--radius-sm)',
+          borderRadius: 'var(--radius-pill)',
           ...buttonSizes[size],
           fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          boxShadow: '0 3px 0 var(--primary-deep)',
-          transition: 'transform 0.08s ease',
+          boxShadow: 'var(--glow-primary)',
+          transition: 'transform 0.12s ease',
           ...style
         }}
       >

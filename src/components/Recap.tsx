@@ -1,103 +1,51 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../hooks/useGame';
-import { Player, AwardType, TaskInstance } from '../types';
+import { AwardType, Player } from '../types';
 import ResultsShare from './ResultsShare';
 import PlayerAvatar from './PlayerAvatar';
 import LoadingScreen from './common/LoadingScreen';
 import BrandMark from './common/BrandMark';
 import Mascot from './common/Mascot';
+import Fold from './common/Fold';
 import PhotoAlbum from './PhotoAlbum';
-import { ordinal, rankPlayers } from '../utils/gameSettings';
+import RecapShow, { missionOutcome, RateButtons } from './recap/RecapShow';
+import { WINNING_SCORE, ordinal, rankPlayers } from '../utils/gameSettings';
+import { AWARDS, awardsByPlayer } from '../utils/awards';
+import './Recap.css';
 
-const CONFETTI_COLORS = ['#e5484d', '#e8b554', '#3f9b5b', '#efe5c6', '#d13c41', '#c9ac68'];
+const showSeenKey = (gameId: string) => `wgw-recap-show-${gameId}`;
 
-/** One-shot celebratory confetti (CSS-driven, honors prefers-reduced-motion). */
-const ConfettiBurst: React.FC = () => {
-  const pieces = useMemo(
-    () =>
-      Array.from({ length: 28 }, (_, i) => ({
-        left: (i * 37) % 100,
-        delay: ((i * 53) % 120) / 100,
-        duration: 2.6 + ((i * 29) % 140) / 100,
-        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-        size: 8 + ((i * 13) % 8),
-      })),
-    [],
-  );
+/** The show plays once per game on this phone; after that you land on the results. */
+function showAlreadySeen(gameId?: string): boolean {
+  if (!gameId) return true;
+  try {
+    return sessionStorage.getItem(showSeenKey(gameId)) === '1';
+  } catch {
+    return false;
+  }
+}
 
-  return (
-    <div aria-hidden="true" className="no-rise">
-      {pieces.map((piece, i) => (
-        <span
-          key={i}
-          className="confetti-piece"
-          style={{
-            left: `${piece.left}vw`,
-            width: piece.size,
-            height: piece.size * 1.4,
-            background: piece.color,
-            animationDelay: `${piece.delay}s`,
-            animationDuration: `${piece.duration}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
-/** Counts up to the final score once on mount. */
-const CountUpScore: React.FC<{ value: number }> = ({ value }) => {
-  const [display, setDisplay] = useState(() =>
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches ? value : 0,
-  );
-
-  useEffect(() => {
-    if (display === value) return undefined;
-    const steps = 24;
-    const stepTime = 900 / steps;
-    let step = 0;
-    const interval = window.setInterval(() => {
-      step += 1;
-      const next = Math.round((value * step) / steps * 10) / 10;
-      setDisplay(step >= steps ? value : next);
-      if (step >= steps) window.clearInterval(interval);
-    }, stepTime);
-    return () => window.clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-
-  return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{display}</span>;
-};
-
-const AWARDS: Record<AwardType, { name: string; description: string }> = {
-  sneakiest: { name: 'Sneakiest', description: 'Most successful Gotchas' },
-  social: { name: 'Social Butterfly', description: 'Got the most different people' },
-  detective: { name: 'Detective', description: 'Caught the most people in the act' },
-  untouchable: { name: 'Untouchable', description: 'Scored without ever getting caught' },
-  jester: { name: 'Court Jester', description: 'Most failed attempts' },
-};
+function markShowSeen(gameId: string): void {
+  try {
+    sessionStorage.setItem(showSeenKey(gameId), '1');
+  } catch {
+    // Storage blocked (private mode): the show just plays again on a reload.
+  }
+}
 
 /** Every mission a player held, and what became of it. */
 const RevealDossier: React.FC<{
   player: Player;
   isYou: boolean;
+  meId?: string;
   nameOf: (id?: string) => string;
   defaultOpen: boolean;
-  /** Your own dossier only: thumbs up/down on each mission (tap again to clear). */
+  /** Your own missions only: thumbs up/down on each (tap again to clear). */
   onRate?: (taskId: string, rating: 'up' | 'down' | null) => void;
-}> = ({ player, isYou, nameOf, defaultOpen, onRate }) => {
+}> = ({ player, isYou, meId, nameOf, defaultOpen, onRate }) => {
   const [open, setOpen] = useState(defaultOpen);
   const done = player.tasks.filter((task) => task.status === 'completed').length;
-
-  const outcome = (task: TaskInstance) => {
-    switch (task.status) {
-      case 'completed': return { cls: 'completed', label: <>Got <strong>{nameOf(task.targetId)}</strong></> };
-      case 'failed': return { cls: 'failed', label: <>Busted by <strong>{nameOf(task.targetId)}</strong></> };
-      case 'disputed': return { cls: 'disputed', label: <>Claim on {nameOf(task.targetId)} still open</> };
-      default: return { cls: 'pending', label: <>Never pulled off</> };
-    }
-  };
 
   return (
     <div className="reveal-dossier">
@@ -115,26 +63,12 @@ const RevealDossier: React.FC<{
       {open && (
         <ul className="reveal-list">
           {player.tasks.map((task) => {
-            const result = outcome(task);
+            const result = missionOutcome(task, nameOf, meId);
             return (
               <li key={task.id} className={`reveal-item ${result.cls}`}>
                 <div className="reveal-text">{task.text}</div>
                 <div className="reveal-outcome">{result.label}</div>
-                {onRate && (
-                  <div className="reveal-rate" role="group" aria-label="Rate this mission">
-                    {(['up', 'down'] as const).map((rating) => (
-                      <button
-                        key={rating}
-                        className={`rate-btn ${task.rating === rating ? 'is-picked' : ''}`}
-                        aria-pressed={task.rating === rating}
-                        aria-label={rating === 'up' ? 'Fun mission' : 'Not fun'}
-                        onClick={() => onRate(task.id, task.rating === rating ? null : rating)}
-                      >
-                        {rating === 'up' ? '👍' : '👎'}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {onRate && <RateButtons task={task} onRate={onRate} />}
               </li>
             );
           })}
@@ -148,7 +82,7 @@ export default function Recap() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const { state, rematch, leaveGame, createGame, rateMission } = useGame();
-  const [showTimeline, setShowTimeline] = useState(false);
+  const [showing, setShowing] = useState(() => !showAlreadySeen(gameId));
 
   const currentGame = state.currentGame;
   const currentPlayer = state.currentPlayer;
@@ -194,6 +128,7 @@ export default function Recap() {
   const isWinner = !!winner && winner.id === currentPlayer?.id;
   const runnersUp = finalRankings.filter((player) => player.place && player.place > 1);
   const myPlace = finalRankings.find((player) => player.id === currentPlayer?.id)?.place;
+  const myRank = finalRankings.findIndex((player) => player.id === currentPlayer?.id) + 1;
   const nameOf = (id?: string) => currentGame?.players.find((p) => p.id === id)?.name || 'a former player';
 
   // Missions each player caught someone trying (busts, and "I Got Caught" reports naming them).
@@ -205,31 +140,10 @@ export default function Recap() {
     return counts;
   }, [currentGame]);
 
-  const awardsByPlayer = useMemo(() => {
-    const result = new Map<string, AwardType[]>();
-    if (!currentGame || isHoliday) return result;
-    const all = currentGame.players;
-    const catches = (player: Player) =>
-      all.flatMap((other) => other.tasks).filter((task) => task.status === 'failed' && task.targetId === player.id).length;
-    const max = (value: (player: Player) => number) => Math.max(...all.map(value));
-    const maxGotchas = max((p) => p.stats?.gothcas || 0);
-    const maxTargets = max((p) => p.stats?.uniqueTargets?.length || 0);
-    const maxCatches = max(catches);
-    const maxFailed = max((p) => p.stats?.failed || 0);
-
-    for (const player of all) {
-      const awards: AwardType[] = [];
-      const gotchas = player.stats?.gothcas || 0;
-      const failed = player.stats?.failed || 0;
-      if (gotchas > 0 && gotchas === maxGotchas) awards.push('sneakiest');
-      if (maxCatches > 0 && catches(player) === maxCatches) awards.push('detective');
-      if (maxTargets > 1 && (player.stats?.uniqueTargets?.length || 0) === maxTargets) awards.push('social');
-      if (all.length > 2 && gotchas > 0 && failed === 0) awards.push('untouchable');
-      if (maxFailed > 2 && failed === maxFailed) awards.push('jester');
-      result.set(player.id, awards.slice(0, 2));
-    }
-    return result;
-  }, [currentGame, isHoliday]);
+  const awards = useMemo(
+    () => (currentGame ? awardsByPlayer(currentGame) : new Map<string, AwardType[]>()),
+    [currentGame],
+  );
 
   const handleRematch = async () => {
     try {
@@ -262,7 +176,35 @@ export default function Recap() {
   };
 
   if (!currentGame) {
-    return <LoadingScreen message="loading the debrief…" showBack />;
+    return <LoadingScreen message="loading the results…" showBack />;
+  }
+
+  const rate = (taskId: string, rating: 'up' | 'down' | null) => {
+    void rateMission(taskId, rating).catch(() => undefined);
+  };
+
+  // Someone actually reached the winning score (not just leading when the host ended it).
+  const hasWinner = !!winner && (isHoliday
+    ? scoreOf(winner) >= (currentGame.settings.holidayChallengeWinCondition ?? 18)
+    : !!winner.place || winner.score >= WINNING_SCORE);
+
+  // ---------- The show: podium, the reveal, the awards ----------
+  if (showing && currentGame.status === 'ended' && finalRankings.length > 0) {
+    return (
+      <RecapShow
+        game={currentGame}
+        rankings={finalRankings}
+        meId={currentPlayer?.id}
+        scoreOf={scoreOf}
+        nameOf={nameOf}
+        hasWinner={hasWinner}
+        onRate={rate}
+        onDone={() => {
+          markShowSeen(currentGame.id);
+          setShowing(false);
+        }}
+      />
+    );
   }
 
   const totalGotchas = isHoliday
@@ -270,114 +212,48 @@ export default function Recap() {
     : currentGame.players.reduce((sum, p) => sum + (p.stats?.gothcas || 0), 0);
   const photos = (currentGame.challengeCompletions || []).filter((completion) => completion.proofUrl);
 
+  const timeline = isHoliday ? [] : currentGame.players
+    .flatMap((player) => player.tasks
+      .filter((task) => (task.status === 'completed' || task.status === 'failed') && task.gotAt && task.targetId)
+      .map((task) => ({
+        id: task.id,
+        playerName: player.name,
+        targetName: nameOf(task.targetId),
+        gotAt: new Date(task.gotAt as Date),
+        isCaught: task.status === 'failed',
+        text: task.text,
+      })))
+    .sort((a, b) => a.gotAt.getTime() - b.gotAt.getTime());
+
+  let headline = 'Game Over';
+  if (hasWinner && isWinner) headline = 'You Won';
+  else if (myPlace) headline = `You Came ${ordinal(myPlace)}`;
+
   return (
     <div className="container">
-      {(isWinner || !!myPlace) && <ConfettiBurst />}
-
-      {/* Debrief banner */}
-      <div className="paper-card text-center" style={{
-        position: 'relative',
-        overflow: 'hidden',
-        padding: '1.75rem 1.25rem 1.5rem',
-        marginBottom: '0.9rem',
-      }}>
+      {/* Result banner */}
+      <div className="recap-banner">
         {isHoliday
-          ? <BrandMark size={64} alt="Who Got Who" className="brand-mark-centered" />
-          : <Mascot pose="happy" size={112} className="mascot-centered" />}
-        <div className="type" style={{
-          fontSize: '0.76rem',
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-          color: 'var(--paper-dim)',
-          marginBottom: '0.6rem',
-        }}>
-          Final debrief · case closed
-        </div>
-        <h1 style={{
-          fontSize: '2.6rem',
-          margin: '0 0 0.75rem',
-          color: 'var(--paper-ink)',
-        }}>
-          {isWinner ? 'You Won' : myPlace ? `You Came ${ordinal(myPlace)}` : 'Game Over'}
-        </h1>
+          ? <BrandMark size={56} alt="Who Got Who" className="brand-mark-centered" />
+          : <Mascot pose="happy" size={84} className="mascot-centered" />}
+        <div className="type recap-banner-label">Final results</div>
+        <h1>{headline}</h1>
         {winner && (
-          <>
-            <div className="flex-center gap-1" style={{ marginBottom: '0.6rem' }}>
-              <PlayerAvatar player={winner} size="large" />
-            </div>
-            <div className="stamp success big" style={{ marginBottom: '0.6rem' }}>
-              {isWinner ? 'Top Agent' : `${winner.name} wins`}
-            </div>
-            <p className="type" style={{ fontSize: '1rem', margin: 0, color: 'var(--paper-ink)' }}>
-              <CountUpScore value={scoreOf(winner)} /> points
-            </p>
-            {runnersUp.length > 0 && (
-              <p className="type" style={{ fontSize: '0.95rem', margin: '0.5rem 0 0', color: 'var(--paper-ink)' }}>
-                {runnersUp.map((player) => `${ordinal(player.place || 0)} ${player.name}`).join(' · ')}
-              </p>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Final Rankings */}
-      <div className="card">
-        <div className="card-header">
-          <h3 style={{ margin: 0 }}>Final standings</h3>
-        </div>
-
-        <div className="flex-column gap-1">
-          {finalRankings.map((player: Player, index: number) => {
-            const isYou = player.id === currentPlayer?.id;
-            const awards = awardsByPlayer.get(player.id) || [];
-            return (
-              <div key={player.id} className="flex-between" style={{
-                padding: '0.75rem 0.85rem',
-                borderRadius: 'var(--radius-sm)',
-                background: isYou ? 'var(--me-bg)' : 'rgba(241, 237, 224, 0.04)',
-                border: isYou ? '1.5px solid var(--me-border)' : '1.5px solid transparent',
-                gap: '0.6rem',
-              }}>
-                <div className="flex gap-1" style={{ alignItems: 'center', minWidth: 0, flex: 1 }}>
-                  <span style={{ fontSize: index < 3 ? '1.5rem' : '1rem', fontWeight: 700, minWidth: '30px', textAlign: 'center', color: 'var(--text-muted)' }} aria-hidden="true">
-                    {`${index + 1}.`}
-                  </span>
-                  <PlayerAvatar player={player} size="medium" />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {player.name} {isYou && <span style={{ color: 'var(--amber)' }}>(You)</span>}
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                      {isHoliday
-                        ? `${player.challengeCompletions?.length || 0} challenges`
-                        : `${player.stats?.gothcas || 0} gotcha${(player.stats?.gothcas || 0) === 1 ? '' : 's'}`}
-                      {!isHoliday && (bustsBy.get(player.id) || 0) > 0 &&
-                        ` · ${bustsBy.get(player.id)} bust${bustsBy.get(player.id) === 1 ? '' : 's'}`}
-                    </div>
-                    {awards.length > 0 && (
-                      <div style={{ marginTop: '0.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                        {awards.map((awardType) => (
-                          <span key={awardType} className="award-chip" title={AWARDS[awardType].description}>
-                            {AWARDS[awardType].name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.5rem',
-                  color: 'var(--amber)',
-                  fontVariantNumeric: 'tabular-nums',
-                  flexShrink: 0,
-                }}>
-                  {scoreOf(player)}
-                </div>
+          <div className="recap-winner">
+            <PlayerAvatar player={winner} size="medium" />
+            <div>
+              <div className="recap-winner-name">
+                {hasWinner
+                  ? (isWinner ? 'Winner — that\'s you' : `${winner.name} wins`)
+                  : `${isWinner ? 'You were' : `${winner.name} was`} in the lead`}
               </div>
-            );
-          })}
-        </div>
+              <div className="recap-winner-score">
+                {scoreOf(winner)} points
+                {runnersUp.length > 0 && ` · ${runnersUp.map((player) => `${ordinal(player.place || 0)} ${player.name}`).join(' · ')}`}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* What's next — the rematch is the main event */}
@@ -394,22 +270,18 @@ export default function Recap() {
           </button>
           <p className="text-small" style={{ textAlign: 'center', margin: '-0.15rem 0 0.35rem' }}>
             {currentGame.rematchGameId
-              ? 'A new lobby is open for this crew — tap to jump in.'
+              ? 'A new lobby is open for this group — tap to jump in.'
               : 'Opens a new lobby — everyone here gets a one-tap invite.'}
           </p>
 
           <ResultsShare game={currentGame} style={{ width: '100%' }} />
-
-          <button className="btn btn-ghost" onClick={handleHome}>
-            Back to home
-          </button>
         </div>
       </div>
 
       {/* Guests: run the next one yourself */}
       {!currentPlayer?.isHost && (
-        <div className="paper-card host-cta">
-          <div className="type host-cta-label">Your turn to run the op</div>
+        <div className="host-cta">
+          <div className="type host-cta-label">Your turn to host</div>
           <h3>Host Your Own Game</h3>
           <p>
             Take it to your next party, dinner or trip. You get a code, your friends get a link —
@@ -421,53 +293,99 @@ export default function Recap() {
         </div>
       )}
 
-      {/* The Reveal: everyone's dossier, declassified */}
+      {/* Trip album (holiday mode): the photos are the payoff, so they start open */}
+      {isHoliday && photos.length > 0 && (
+        <Fold title="Trip album" hint={`${photos.length} photo${photos.length === 1 ? '' : 's'}`} defaultOpen>
+          <p className="text-small" style={{ margin: '0 0 0.6rem' }}>
+            Save your favourites — photos are deleted within 30 days.
+          </p>
+          <PhotoAlbum game={currentGame} completions={photos} />
+        </Fold>
+      )}
+
+      <Fold
+        title="Final standings"
+        hint={myRank > 0 ? `you came ${ordinal(myRank)}` : `${finalRankings.length} players`}
+        defaultOpen={finalRankings.length <= 4}
+      >
+        <div className="flex-column gap-1">
+          {finalRankings.map((player: Player, index: number) => {
+            const isYou = player.id === currentPlayer?.id;
+            const playerAwards = awards.get(player.id) || [];
+            return (
+              <div key={player.id} className={`standing-row ${isYou ? 'is-me' : ''}`}>
+                <span className={`standing-rank ${index < 3 ? 'top' : ''}`} aria-hidden="true">{index + 1}.</span>
+                <PlayerAvatar player={player} size="medium" />
+                <div className="standing-info">
+                  <div className="standing-name">
+                    {player.name} {isYou && <span style={{ color: 'var(--amber)' }}>(You)</span>}
+                  </div>
+                  <div className="standing-sub">
+                    {isHoliday
+                      ? `${player.challengeCompletions?.length || 0} challenges`
+                      : `${player.stats?.gothcas || 0} gotcha${(player.stats?.gothcas || 0) === 1 ? '' : 's'}`}
+                    {!isHoliday && (bustsBy.get(player.id) || 0) > 0 &&
+                      ` · ${bustsBy.get(player.id)} bust${bustsBy.get(player.id) === 1 ? '' : 's'}`}
+                  </div>
+                  {playerAwards.length > 0 && (
+                    <div className="standing-awards">
+                      {playerAwards.map((awardType) => (
+                        <span key={awardType} className="award-chip" title={AWARDS[awardType].description}>
+                          {AWARDS[awardType].name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="standing-score">{scoreOf(player)}</div>
+              </div>
+            );
+          })}
+        </div>
+      </Fold>
+
+      {/* The Reveal: every secret mission, face up */}
       {!isHoliday && (
-        <div className="card">
-          <div className="card-header">
-            <h3 style={{ margin: 0 }}>The Reveal</h3>
-            <p className="text-small" style={{ margin: '0.25rem 0 0' }}>
-              Every secret mission — including the ones nobody pulled off.
-            </p>
-          </div>
+        <Fold title="Every secret mission" hint="including the ones nobody pulled off">
           <div className="flex-column gap-1">
-            {finalRankings.map((player, index) => {
+            {finalRankings.map((player) => {
               const isYou = player.id === currentPlayer?.id;
               return (
                 <RevealDossier
                   key={player.id}
                   player={player}
                   isYou={isYou}
+                  meId={currentPlayer?.id}
                   nameOf={nameOf}
-                  defaultOpen={index === 0 || isYou}
-                  onRate={isYou
-                    ? (taskId, rating) => { void rateMission(taskId, rating).catch(() => undefined); }
-                    : undefined}
+                  defaultOpen={isYou}
+                  onRate={isYou ? rate : undefined}
                 />
               );
             })}
           </div>
-        </div>
+        </Fold>
       )}
 
-      {/* Trip album (holiday mode) */}
-      {isHoliday && photos.length > 0 && (
-        <div className="card">
-          <div className="card-header">
-            <h3 style={{ margin: 0 }}>Trip album</h3>
-            <p className="text-small" style={{ margin: '0.25rem 0 0' }}>
-              Save your favourites — photos are deleted within 30 days.
+      {!isHoliday && (
+        <Fold title="Timeline" hint={`${timeline.length} moment${timeline.length === 1 ? '' : 's'}`}>
+          {timeline.length === 0 ? (
+            <p className="text-small" style={{ textAlign: 'center', margin: 0 }}>
+              A quiet game — no gotchas were claimed.
             </p>
-          </div>
-          <PhotoAlbum game={currentGame} completions={photos} />
-        </div>
+          ) : timeline.map((moment) => (
+            <div key={moment.id} className={`timeline-row ${moment.isCaught ? 'caught' : ''}`}>
+              <div className="timeline-who">
+                {moment.playerName} {moment.isCaught ? 'got caught by' : 'got'} {moment.targetName}
+              </div>
+              <div className="timeline-what">
+                "{moment.text}" · {moment.gotAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            </div>
+          ))}
+        </Fold>
       )}
 
-      {/* Game Stats */}
-      <div className="card">
-        <div className="card-header">
-          <h3 style={{ margin: 0 }}>Game stats</h3>
-        </div>
+      <Fold title="Game stats" hint={`${durationMinutes} min · ${currentGame.players.length} players`}>
         <div className="flex-column gap-1" style={{ fontSize: '0.9rem' }}>
           <div className="flex-between">
             <span style={{ color: 'var(--text-muted)' }}>Mode</span>
@@ -486,82 +404,18 @@ export default function Recap() {
             <strong>{totalGotchas}</strong>
           </div>
         </div>
+      </Fold>
+
+      <div className="recap-foot">
+        {currentGame.status === 'ended' && (
+          <button className="btn btn-ghost" onClick={() => setShowing(true)}>
+            {isHoliday ? 'Watch the podium again' : 'Watch the reveal again'}
+          </button>
+        )}
+        <button className="btn btn-ghost" onClick={handleHome}>
+          Back to home
+        </button>
       </div>
-
-      {/* Timeline (classic mode) */}
-      {!isHoliday && (
-        <div className="card">
-          <div className="flex-between" style={{ marginBottom: showTimeline ? '1rem' : 0 }}>
-            <h3 style={{ margin: 0 }}>Timeline</h3>
-            <button
-              className="btn btn-secondary btn-small"
-              onClick={() => setShowTimeline(!showTimeline)}
-            >
-              {showTimeline ? 'Hide' : 'Show'}
-            </button>
-          </div>
-
-          {showTimeline && (
-            <div className="text-small">
-              {(() => {
-                const allGotchas: Array<{
-                  playerName: string;
-                  targetName: string;
-                  gotAt: Date;
-                  isCaught: boolean;
-                  text: string;
-                }> = [];
-
-                currentGame.players.forEach(player => {
-                  player.tasks.forEach(task => {
-                    if ((task.status === 'completed' || task.status === 'failed') && task.gotAt && task.targetId) {
-                      allGotchas.push({
-                        playerName: player.name,
-                        targetName: nameOf(task.targetId),
-                        gotAt: new Date(task.gotAt),
-                        isCaught: task.status === 'failed',
-                        text: task.text,
-                      });
-                    }
-                  });
-                });
-
-                allGotchas.sort((a, b) => a.gotAt.getTime() - b.gotAt.getTime());
-
-                if (allGotchas.length === 0) {
-                  return (
-                    <p style={{ textAlign: 'center', margin: 0 }}>
-                      A quiet game — no gotchas were claimed.
-                    </p>
-                  );
-                }
-
-                return allGotchas.map((gotcha, index) => (
-                  <div key={index} style={{
-                    padding: '0.6rem 0.75rem',
-                    borderLeft: `4px solid ${gotcha.isCaught ? 'var(--danger)' : 'var(--success)'}`,
-                    background: gotcha.isCaught ? 'var(--danger-soft)' : 'var(--success-soft)',
-                    borderRadius: '0 8px 8px 0',
-                    marginBottom: '0.5rem',
-                  }}>
-                    <div style={{
-                      fontWeight: 700,
-                      marginBottom: '0.15rem',
-                      color: gotcha.isCaught ? 'var(--danger-ink)' : 'var(--success-ink)',
-                    }}>
-                      {gotcha.playerName}{' '}
-                      {gotcha.isCaught ? 'got caught by' : 'got'} {gotcha.targetName}
-                    </div>
-                    <div style={{ fontSize: '0.86rem', color: 'var(--paper-dim)' }}>
-                      "{gotcha.text}" · {gotcha.gotAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
-                ));
-              })()}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

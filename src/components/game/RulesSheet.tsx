@@ -8,10 +8,7 @@ export default function RulesSheet({ game, isOpen, onClose }: { game: Game; isOp
   return (
     <Modal isOpen={isOpen} onClose={onClose} labelledBy="rules-sheet-title" showClose maxWidth={460}>
       <h2 id="rules-sheet-title">How to Play</h2>
-      <RulesContent game={game} />
-      <button className="btn btn-primary" onClick={onClose} style={{ marginTop: '1rem' }}>
-        Back to the Game
-      </button>
+      <RulesContent game={game} doneLabel="Back to the Game" onDone={onClose} />
     </Modal>
   );
 }

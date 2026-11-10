@@ -110,9 +110,9 @@ export default function TaskListView({
   if (tasks.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-        <div className="type" style={{ fontSize: '0.95rem', fontWeight: 700 }}>No missions on file.</div>
+        <div className="type" style={{ fontSize: '0.95rem', fontWeight: 700 }}>No missions yet.</div>
         <div style={{ fontSize: '0.9rem', marginTop: '0.4rem' }}>
-          Your dossier arrives when the game starts.
+          Your missions arrive when the game starts.
         </div>
       </div>
     );
@@ -161,7 +161,7 @@ export default function TaskListView({
                   {filing?.result === 'passed' ? "Got 'em" : 'Busted'}
                 </div>
                 <div className="type" style={{ color: 'var(--paper)', fontSize: '0.82rem' }}>
-                  filing report…
+                  sending…
                 </div>
               </div>
             )}
@@ -264,7 +264,7 @@ export default function TaskListView({
 
       {active.length === 0 && (
         <div className="paper-card" style={{ padding: '1.25rem', textAlign: 'center', marginBottom: '0.8rem' }}>
-          <div className="type" style={{ fontWeight: 700 }}>Every mission filed.</div>
+          <div className="type" style={{ fontWeight: 700 }}>Every mission done.</div>
           <div style={{ fontSize: '0.9rem', color: 'var(--paper-dim)', marginTop: '0.3rem' }}>
             Lie low and watch the board.
           </div>
@@ -274,7 +274,7 @@ export default function TaskListView({
       {filed.length > 0 && (
         <div className="filed-missions">
           <button className="filed-toggle" onClick={() => setShowFiled((value) => !value)} aria-expanded={showFiled}>
-            <span>Filed missions · {filed.length}</span>
+            <span>Finished missions · {filed.length}</span>
             <span aria-hidden="true">{showFiled ? '▴' : '▾'}</span>
           </button>
           {showFiled && filed.map((task) => (

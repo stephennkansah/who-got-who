@@ -1,0 +1,456 @@
+/* ---------- The ending, one screen at a time ---------- */
+
+/* A show screen never scrolls as a whole: the middle scrolls if it must, the buttons stay put. */
+.container.show {
+  overflow: hidden;
+  padding-bottom: calc(1rem + var(--safe-bottom));
+}
+
+.show-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  flex-shrink: 0;
+}
+
+.show-progress {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(241, 237, 224, 0.12);
+  overflow: hidden;
+}
+
+.show-progress span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--amber);
+  transition: width 0.35s ease;
+}
+
+.show-skip { color: var(--text-muted); text-decoration: none; }
+
+.show-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem 0 0.75rem;
+  scrollbar-width: none;
+}
+
+.show-body::-webkit-scrollbar { width: 0; height: 0; }
+
+.show-foot {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  padding-top: 0.6rem;
+}
+
+.show-foot .show-back {
+  width: auto;
+  flex-shrink: 0;
+  padding-left: 1.1rem;
+  padding-right: 1.1rem;
+}
+
+/* The podium */
+
+.podium-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.35rem;
+}
+
+.podium-headline {
+  font-size: clamp(2rem, 10vw, 2.8rem);
+  margin: 0.2rem 0;
+  animation: rise 0.35s ease-out both;
+}
+
+.podium-headline.is-final {
+  color: var(--amber);
+  animation: popIn 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+.podium-note { font-size: 0.9rem; margin: 0; }
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.podium-col {
+  flex: 1;
+  max-width: 124px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.podium-who {
+  width: 100%;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.2rem;
+  padding-bottom: 0.5rem;
+}
+
+.podium-col.is-up .podium-who > * { animation: popIn 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+
+.podium-name {
+  max-width: 100%;
+  font-weight: 800;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.podium-col.is-me .podium-name { color: var(--amber); }
+
+.podium-score {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--amber);
+}
+
+.podium-mystery {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px dashed var(--line-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 1.4rem;
+}
+
+.podium-block {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 0.6rem;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(180deg, #2a2620 0%, #1a1814 100%);
+  border: 1px solid var(--line);
+  border-bottom: none;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  transform-origin: bottom;
+}
+
+.place-1 .podium-block {
+  height: 120px;
+  background: var(--warning-gradient);
+  border-color: transparent;
+  color: #3a2b0c;
+  box-shadow: 0 0 40px -6px rgba(232, 181, 84, 0.55);
+}
+
+.place-2 .podium-block { height: 84px; }
+.place-3 .podium-block { height: 56px; }
+
+/* One player's missions, face up */
+
+.reveal-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.reveal-who {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.reveal-who-text { min-width: 0; }
+
+.reveal-who h2 {
+  margin: 0;
+  text-align: left;
+  font-size: 1.45rem;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.reveal-who-sub {
+  margin-top: 0.25rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.reveal-screen .reveal-rate-hint { margin: 0; }
+
+.reveal-list.show-list { padding: 0; gap: 0.45rem; }
+
+/* A mission that was pulled off on the person holding this phone */
+.reveal-item.on-me { box-shadow: 0 0 0 3px var(--amber); }
+
+.flip-in {
+  transform-origin: top center;
+  animation: flipIn 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+/* The awards */
+
+.awards-title { margin: 0 0 0.2rem; text-align: left; font-size: 1.6rem; }
+
+.award-cards {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.award-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem;
+}
+
+.award-card-text { min-width: 0; }
+
+.award-card-name {
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+  color: var(--paper-ink);
+}
+
+.award-card-why { margin-top: 0.2rem; font-size: 0.84rem; color: var(--paper-dim); }
+
+.award-card-winners {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  max-width: 46%;
+}
+
+.award-card-winner {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.award-card-winner span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@keyframes flipIn {
+  from { opacity: 0; transform: perspective(600px) rotateX(-80deg); }
+  to { opacity: 1; transform: perspective(600px) rotateX(0deg); }
+}
+
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.4); }
+  70% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- Results page ---------- */
+
+.recap-banner {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 1.3rem 1.1rem 1.2rem;
+  margin-bottom: 0.85rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background:
+  radial-gradient(80% 70% at 50% 0%, rgba(232, 181, 84, 0.22) 0%, rgba(232, 181, 84, 0) 70%),
+  linear-gradient(180deg, #221f1a 0%, #191713 100%);
+  box-shadow: var(--shadow-card);
+}
+
+.recap-banner-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.recap-banner h1 { font-size: 2.2rem; margin: 0 0 0.75rem; }
+
+.recap-winner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  text-align: left;
+  max-width: 100%;
+}
+
+.recap-winner-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--success-bright);
+}
+
+.recap-winner-score { font-size: 0.88rem; font-weight: 500; color: var(--text-muted); }
+
+.recap-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.standing-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 14px;
+  background: rgba(241, 237, 224, 0.04);
+  border: 1px solid transparent;
+}
+
+.standing-row.is-me { background: var(--me-bg); border-color: var(--me-border); }
+
+.standing-rank {
+  min-width: 28px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.standing-rank.top { font-size: 1.4rem; }
+
+.standing-info { flex: 1; min-width: 0; }
+
+.standing-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.standing-sub { font-size: 0.82rem; color: var(--text-muted); }
+
+.standing-awards { margin-top: 0.25rem; display: flex; flex-wrap: wrap; gap: 0.25rem; }
+
+.standing-score {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-row {
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border-left: 4px solid var(--success);
+  border-radius: 12px;
+  background: var(--success-soft);
+}
+
+.timeline-row.caught { border-left-color: var(--danger); background: var(--danger-soft); }
+
+.timeline-who { font-weight: 700; margin-bottom: 0.15rem; color: var(--success-ink); }
+
+.timeline-row.caught .timeline-who { color: var(--danger-ink); }
+
+.timeline-what { font-size: 0.86rem; color: var(--paper-dim); }
+
+/* The winner's block rises last, in a pool of light */
+.podium-col.is-up .podium-block { animation: blockRise 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+.podium-col.place-1.is-up .podium-who { filter: drop-shadow(0 0 22px rgba(232, 181, 84, 0.45)); }
+
+@keyframes blockRise {
+  from { transform: scaleY(0.55); }
+  to { transform: scaleY(1); }
+}
+
+/* Your night: your own game in four numbers */
+
+.night { align-items: stretch; }
+
+.night-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0 0.1rem;
+  text-align: center;
+}
+
+.night-title {
+  margin: 0.3rem 0 0;
+  font-size: clamp(1.9rem, 9vw, 2.5rem);
+  line-height: 1;
+  color: var(--amber);
+  animation: popIn 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+.night-tiles {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.night-tile {
+  min-width: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #221f1a 0%, #191713 100%);
+  box-shadow: var(--shadow-card);
+  animation: popIn 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+
+.night-value {
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.night-label {
+  margin-top: 0.25rem;
+  font-size: 0.82rem;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+.night-awards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+}
+
+.night-share { margin-top: 0.3rem; min-height: 46px; padding: 0.6rem 1rem; }

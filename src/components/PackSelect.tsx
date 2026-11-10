@@ -40,9 +40,9 @@ const PackTile: React.FC<PackTileProps> = ({
     }}
   >
     <div style={{
-      fontFamily: 'var(--font-display)',
-      fontSize: '1.5rem',
-      letterSpacing: '0.06em',
+      fontWeight: 700,
+      fontSize: '1.25rem',
+      letterSpacing: '-0.015em',
       color: 'var(--paper-ink)',
       marginBottom: '0.3rem',
     }}>

@@ -89,7 +89,7 @@ export default function Roster({ players, currentPlayerId, isHost, maxPlayers, o
           <li key={`ghost-${index}`} className="roster-row ghost" aria-hidden="true">
             <span className="ghost-avatar" />
             <span className="roster-status">
-              {index === 0 ? 'Waiting for agents — best with 4 or more' : ''}
+              {index === 0 ? 'Waiting for players — best with 4 or more' : ''}
             </span>
           </li>
         ))}

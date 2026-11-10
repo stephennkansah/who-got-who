@@ -91,6 +91,38 @@ come through Apple once the APNs setup above is complete. Verify on a device:
 allow notifications in the lobby, lock the phone, and have another player claim
 a gotcha or bust you.
 
+## iOS 1.0.3: prepared 10 November 2026
+
+`MARKETING_VERSION` is `1.0.3`; the workflow sets the build number from its
+run number. This build carries the redesign, so it changes every screen.
+
+New for iPhone players since 1.0.2:
+
+- A new look: dark rounded panels, cream paper kept for missions and pop-up
+  sheets, one red button per screen. The play screen puts missions first and
+  moves How to play, Sounds, Host controls and Leave into one Menu button.
+- The ending is a show: podium, each player's missions revealed in turn,
+  awards, then a personal "Your Night" screen with a shareable picture.
+- Rules are four swipe cards. Guests get a warm-up card while they wait.
+- A 3-2-1 countdown when the host starts, a "You're In!" stamp when you join,
+  and a "So close" banner when someone could win with their next gotcha.
+- A group vote pops up on its own. The host's Start button sits under the code.
+- Game sounds for shared moments, with an on/off switch in the Menu.
+- The share pictures are drawn by hand so they also work on iOS 15.
+
+Draft "What's New" text for App Store Connect:
+
+> • A whole new look: cleaner, darker and easier to read at a party.
+> • A proper ending: a podium, every secret mission revealed, awards, and your
+> own "Your Night" card to share.
+> • Quicker to learn: the rules are now four swipe cards.
+> • More drama: a 3-2-1 start, sounds, and a warning when someone is one
+> gotcha from winning.
+
+Real-device checks remain unverified for this build: the new layouts on a
+small iPhone and on iPad, sounds with the Ring/Silent switch, the share sheet
+for both pictures, and the animations.
+
 ## iOS 1.0.2: submitted 8 November 2026
 
 `MARKETING_VERSION` is `1.0.2`; the workflow sets the build number from its

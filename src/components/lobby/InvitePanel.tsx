@@ -54,7 +54,7 @@ export default function InvitePanel({ gameId, gameType, playerCount, maxPlayers 
         ? <BrandMark size={64} className="brand-mark-centered" />
         : <Mascot pose="lobby" size={104} className="mascot-centered" />}
       <div className="overline" style={{ marginBottom: '0.6rem' }}>
-        {gameType === 'holiday-challenge' ? 'You Got Who? · Operation' : 'Who Got Who · Operation'}
+        {gameType === 'holiday-challenge' ? 'You Got Who? · Game code' : 'Who Got Who · Game code'}
       </div>
       <button
         className="invite-code"
@@ -67,7 +67,7 @@ export default function InvitePanel({ gameId, gameType, playerCount, maxPlayers 
         {gameId}
       </button>
       <div className="app-subtitle" style={{ marginTop: '0.3rem' }}>
-        tap the code to copy · {playerCount}/{maxPlayers} agents in
+        tap the code to copy · {playerCount}/{maxPlayers} players in
       </div>
 
       <div className="invite-actions">

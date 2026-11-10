@@ -31,9 +31,9 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       maxWidth={350}
     >
       <h3 id="confirmation-title" style={{
-        fontSize: '1.4rem',
+        fontSize: '1.3rem',
         marginBottom: '0.8rem',
-        fontWeight: 800
+        fontWeight: 700
       }}>
         {title}
       </h3>

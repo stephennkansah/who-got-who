@@ -4,7 +4,8 @@ import Modal from './common/Modal';
 import { showToast } from './common/Toast';
 import { renderResultsImage } from '../utils/resultsImage';
 import { rankPlayers } from '../utils/gameSettings';
-import { isNativeApp, publicGameOrigin, shareNativeImage, isShareCancelled } from '../services/appPlatform';
+import { publicGameOrigin, isShareCancelled } from '../services/appPlatform';
+import { sharePicture } from '../utils/sharePicture';
 
 interface ResultsShareProps {
   game: Game;
@@ -95,20 +96,12 @@ Play: ${publicGameOrigin()}`;
   const shareImage = async () => {
     try {
       const blob = await renderResultsImage(game);
-      const file = new File([blob], `who-got-who-${game.id}.png`, { type: 'image/png' });
-      if (isNativeApp()) {
-        await shareNativeImage(blob, `${gameName} — ${winner?.name || 'we'} won! ${publicGameOrigin()}`);
-      } else if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], text: `${gameName} — ${winner?.name || 'we'} won! ${publicGameOrigin()}` });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = file.name;
-        link.click();
-        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-        showToast('Results image saved', 'success');
-      }
+      const how = await sharePicture(
+        blob,
+        `who-got-who-${game.id}.png`,
+        `${gameName} — ${winner?.name || 'we'} won! ${publicGameOrigin()}`,
+      );
+      if (how === 'saved') showToast('Results image saved', 'success');
       setShowShareOptions(false);
     } catch (error) {
       if (isShareCancelled(error)) return;
@@ -131,13 +124,8 @@ Play: ${publicGameOrigin()}`;
     <>
       <button
         onClick={() => setShowShareOptions(true)}
-        className="btn"
-        style={{
-          background: 'var(--warning-gradient)',
-          color: '#3a2b0c',
-          boxShadow: '0 4px 0 var(--warning-deep)',
-          ...style
-        }}
+        className="btn btn-secondary"
+        style={style}
       >
         Share Results
       </button>

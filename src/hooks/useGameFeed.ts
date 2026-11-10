@@ -1,4 +1,5 @@
 import { buzz } from '../services/appPlatform';
+import { playSound } from '../services/sounds';
 import { useEffect, useRef } from 'react';
 import { useGame } from './useGame';
 import { showToast } from '../components/common/Toast';
@@ -98,6 +99,7 @@ export function useGameFeed(onMyClaimResolved?: (outcome: ClaimOutcome) => void)
       const was = before.busts.get(bust.id);
       if (bust.playerId === me.id && bust.result === 'pending' && !was) {
         buzz([200, 80, 200, 80, 200]);
+        playSound('busted');
         NotificationService.notifyIfHidden(
           'Busted?',
           `${nameOf(bust.catcherId)} says they caught you trying a mission — open the game to say which one.`,
@@ -171,6 +173,7 @@ export function useGameFeed(onMyClaimResolved?: (outcome: ClaimOutcome) => void)
     for (const dispute of state.activeDisputes) {
       if (dispute.targetId !== me.id || dispute.phase !== 'response' || before.claimsOnMe.has(dispute.id)) continue;
       buzz([120, 60, 120]);
+      playSound('alert');
       NotificationService.notifyIfHidden(
         'Gotcha claimed!',
         `${nameOf(dispute.accuserId)} says they got you — open the game to accept or dispute.`,
@@ -181,6 +184,7 @@ export function useGameFeed(onMyClaimResolved?: (outcome: ClaimOutcome) => void)
     for (const dispute of state.activeDisputes) {
       if (!snapshot.votesForMe.has(dispute.id) || before.votesForMe.has(dispute.id)) continue;
       buzz([120, 60, 120]);
+      playSound('alert');
       NotificationService.notifyIfHidden(
         'Your vote is needed',
         `${nameOf(dispute.targetId)} disputes ${nameOf(dispute.accuserId)}'s gotcha — open the game to vote.`,

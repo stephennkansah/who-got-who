@@ -4,6 +4,7 @@ import './index.css';
 import App from './App';
 import { UPDATE_READY_EVENT } from './components/common/UpdateNotice';
 import { isNativeApp } from './services/appPlatform';
+import { installSounds } from './services/sounds';
 // reportWebVitals removed - not needed for PWA
 
 const root = ReactDOM.createRoot(
@@ -14,6 +15,8 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+installSounds();
 
 // Register service worker for PWA — production only.
 // In development it must be absent (a cache-first worker serves stale bundles).

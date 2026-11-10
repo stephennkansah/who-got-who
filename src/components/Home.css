@@ -1,11 +1,12 @@
 /* Home: a friendly "what is this?" screen, then a short "who are you?" screen. */
 
 .home-title {
-  font-size: clamp(2.6rem, 13vw, 3.4rem);
-  margin-bottom: 0.5rem;
+  font-size: clamp(2.4rem, 12vw, 3.1rem);
+  line-height: 1;
+  margin-bottom: 0.6rem;
 }
 .home-title.small {
-  font-size: 2.1rem;
+  font-size: 1.7rem;
   margin-bottom: 0;
 }
 
@@ -26,43 +27,45 @@
 }
 
 .home-line {
-  font-size: 1.06rem;
-  line-height: 1.42;
-  color: var(--text-main);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--text-soft);
   max-width: 22em;
   margin: 0 auto 1.1rem;
 }
 
 .home-example {
-  padding: 0.85rem 1.1rem 0.9rem;
+  padding: 1rem 1.15rem 1.05rem;
   text-align: left;
-  transform: rotate(-0.6deg);
+  transform: rotate(-0.8deg);
 }
 
 .home-example-label {
-  font-size: 0.8rem;
+  font-size: 0.66rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--paper-dim);
+  color: #8d8368;
 }
 
 .home-example-mission {
-  font-family: var(--font-type);
-  font-size: 1.02rem;
-  line-height: 1.38;
-  margin: 0.3rem 0 0.6rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.42;
+  margin: 0.35rem 0 0.7rem;
 }
 
 .home-example-steps {
   margin: 0;
-  padding-left: 1.35rem;
-  font-size: 0.98rem;
-  line-height: 1.35;
+  padding: 0.65rem 0 0 1.35rem;
+  border-top: 1px solid var(--paper-line);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #4c4636;
 }
 .home-example-steps li + li { margin-top: 0.15rem; }
 .home-example-steps li::marker {
-  font-family: var(--font-display);
+  font-weight: 700;
   color: var(--primary-deep);
 }
 
@@ -73,9 +76,26 @@
 }
 
 .home-cta {
-  font-size: 1.45rem;
-  padding: 1.05rem;
+  position: relative;
+  overflow: hidden;
+  min-height: 58px;
+  font-size: 1.14rem;
+  padding: 1rem;
 }
+
+/* A slow glint, so the eye lands on the way in */
+.home-cta::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 34%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.32) 50%, rgba(255, 255, 255, 0) 100%);
+  animation: sheen 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+.home-cta:disabled::after { display: none; }
 
 .home-note {
   margin: 0 0 0.55rem;

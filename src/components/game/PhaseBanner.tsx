@@ -19,7 +19,7 @@ export default function PhaseBanner({
   if (phase.paused) {
     return (
       <div className="phase-banner paused" role="status">
-        <div className="phase-label type">Ceasefire</div>
+        <div className="phase-label type">Time out</div>
         <div className="phase-title">Game Paused</div>
         <p className="phase-text">
           No {isHoliday ? 'challenges' : 'gotchas'} until {isHost ? 'you resume' : `${hostName} resumes`}.
@@ -37,21 +37,25 @@ export default function PhaseBanner({
   if (!phase.briefing) return null;
 
   return (
-    <div className="phase-banner" role="timer" aria-label={phase.lockReason ?? undefined}>
-      <div className="phase-label type">Briefing · settle in</div>
-      <div className="phase-clock">{formatSeconds(phase.secondsToOpen)}</div>
+    <div className="phase-banner briefing" role="timer" aria-label={phase.lockReason ?? undefined}>
+      <div className="phase-row">
+        <div className="phase-label type">
+          {isHoliday ? 'Challenges' : 'Gotchas'} open in
+        </div>
+        <div className="phase-clock">{formatSeconds(phase.secondsToOpen)}</div>
+      </div>
       <p className="phase-text">
         {isHoliday
-          ? 'Read the challenges and get your bearings. Claims open when the clock hits zero.'
-          : 'Read your missions, grab a drink, blend in. Gotchas only count once the clock hits zero.'}
+          ? 'Read the challenges and get your bearings. Nothing counts until the clock hits zero.'
+          : 'Read your missions and blend in. Gotchas only count once the clock hits zero.'}
       </p>
-      <div className="flex-column gap-1" style={{ alignItems: 'center' }}>
+      <div className="phase-links">
         <button className="link-btn phase-rules" onClick={onShowRules}>
           New here? How to play
         </button>
         {isHost && (
           <button className="btn btn-secondary btn-small" onClick={onOpenNow}>
-            Everyone's ready — open now
+            Open now
           </button>
         )}
       </div>

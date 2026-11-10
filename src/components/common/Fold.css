@@ -1,0 +1,39 @@
+/* Tap-to-expand cards */
+
+.fold {
+  background: linear-gradient(180deg, #201d18 0%, #191713 100%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.6rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.fold-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 52px;
+  padding: 0.7rem 1rem;
+  background: none;
+  color: var(--text-main);
+  text-align: left;
+}
+
+.fold-title { font-weight: 700; flex-shrink: 0; }
+
+.fold-hint {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fold-arrow { color: var(--text-muted); margin-left: auto; }
+
+.fold-body { padding: 0 1rem 1rem; }

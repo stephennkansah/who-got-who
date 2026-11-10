@@ -9,22 +9,34 @@ import Modal from './common/Modal';
 import { ConfirmationModal } from './common/ConfirmationModal';
 import { showToast } from './common/Toast';
 import StampSplash from './common/StampSplash';
+import StartCountdown from './common/StartCountdown';
+import { serverNow } from '../utils/serverClock';
 import LoadingScreen from './common/LoadingScreen';
-import BrandMark from './common/BrandMark';
 import { LeaderboardWidget } from './game/LeaderboardWidget';
 import PhaseBanner from './game/PhaseBanner';
 import HostMenu from './game/HostMenu';
 import RulesSheet from './game/RulesSheet';
+import GameMenu from './game/GameMenu';
+import { GameHeader } from './game/GameHeader';
 import { useGamePhase } from '../hooks/useGamePhase';
 import NotificationService from '../services/notificationService';
 import { isNativeApp, pickNativePhoto, isShareCancelled, buzz } from '../services/appPlatform';
+import { playSound } from '../services/sounds';
+
+/** The host pressed Start a moment ago (as opposed to you opening a game already under way). */
+function justStarted(startedAt?: string): boolean {
+  if (!startedAt) return false;
+  const age = serverNow() - Date.parse(startedAt);
+  return age > -5000 && age < 20000;
+}
 
 export default function HolidayChallengeGame() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const { state, completeChallenge, endGame, leaveGame, openClaims, pauseGame, resumeGame } = useGame();
-  const [finale, setFinale] = useState<{ title: string; subtitle: string; tone: 'success' | 'amber' } | null>(null);
+  const [finale, setFinale] = useState<{ title: string; subtitle: string; tone: 'success' | 'amber'; won: boolean } | null>(null);
   const [showHostMenu, setShowHostMenu] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const sawLive = useRef(false);
   const phase = useGamePhase(state.currentGame);
@@ -48,6 +60,7 @@ export default function HolidayChallengeGame() {
   const [confirmAction, setConfirmAction] = useState<'end' | 'leave' | null>(null);
   const [slam, setSlam] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
+  const [showCountdown, setShowCountdown] = useState(false);
 
   const currentPlayer = state.currentPlayer;
   const currentGame = state.currentGame;
@@ -68,7 +81,7 @@ export default function HolidayChallengeGame() {
     if (!gameId || (!currentGame && !state.isLoading)) navigate('/', { replace: true });
   }, [gameId, currentGame, state.isLoading, navigate]);
 
-  // Stamp the winner if we watched it happen, then go to the debrief.
+  // Stamp the winner if we watched it happen, then go to the results.
   useEffect(() => {
     if (!currentGame) return;
     if (currentGame.status === 'live') {
@@ -83,10 +96,12 @@ export default function HolidayChallengeGame() {
     const target = currentGame.settings.holidayChallengeWinCondition || 18;
     const winner = [...currentGame.players].sort((a, b) => (b.challengeScore || 0) - (a.challengeScore || 0))[0];
     const reached = winner && (winner.challengeScore || 0) >= target;
+    const won = !!reached && winner.id === currentPlayer?.id;
     setFinale({
-      title: !reached ? 'Trip Over' : winner.id === currentPlayer?.id ? 'You Win' : `${winner.name} Wins`,
+      title: !reached ? 'Trip Over' : won ? 'You Win' : `${winner.name} Wins`,
       subtitle: reached ? `${winner.challengeScore} points — see the album` : 'the host ended the game',
-      tone: reached && winner.id === currentPlayer?.id ? 'success' : 'amber',
+      tone: won ? 'success' : 'amber',
+      won,
     });
   }, [currentGame, currentPlayer?.id, navigate]);
 
@@ -96,16 +111,20 @@ export default function HolidayChallengeGame() {
       const key = `wgw-intro-${gameId}`;
       if (!sessionStorage.getItem(key)) {
         sessionStorage.setItem(key, '1');
-        setShowIntro(true);
+        // Everyone who was waiting gets 3-2-1; a latecomer goes straight in.
+        if (justStarted(currentGame.startedAt)) setShowCountdown(true);
+        else setShowIntro(true);
         NotificationService.notifyIfHidden('The game has started', 'Your challenges are in — open the game to see them.', `game-started-${gameId}`);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentGame?.status, currentPlayer, gameId]);
 
   // The settling-in clock just hit zero: everyone hears the starting gun.
   useEffect(() => {
     if (wasBriefing.current && !phase.briefing && !phase.paused && currentGame?.status === 'live') {
       buzz([150, 80, 150]);
+      playSound('go');
       showToast('Challenges are open — go!', 'success');
       NotificationService.notifyIfHidden('Challenges are open!', 'The briefing is over — go get them.', 'claims-open');
     }
@@ -205,44 +224,15 @@ export default function HolidayChallengeGame() {
 
   return (
     <div className="container">
-      {/* Header */}
-      <div className="game-header">
-        <button
-          onClick={() => setShowLeaderboard(true)}
-          className="rank-badge"
-          aria-label="Show leaderboard"
-        >
-          <div style={{ fontSize: '1.3rem', lineHeight: 1 }}>{currentPlayer.challengeScore || 0}</div>
-          <div style={{ fontSize: '0.68rem', letterSpacing: '0.2em', opacity: 0.8 }}>
-            #{myRank + 1} OF {sortedPlayers.length}
-          </div>
-        </button>
-
-        <div className="header-title" style={{ textAlign: 'center' }}>
-          <BrandMark className="brand-mark-centered brand-mark-header" />
-          <h1>You Got Who?</h1>
-          <div className="player-count">FIRST TO {winCondition} POINTS</div>
-        </div>
-
-        <div className="game-header-controls">
-          {currentPlayer.isHost && (
-            <button
-              onClick={() => setShowHostMenu(true)}
-              className="chip-btn"
-              aria-label="Host controls: pause, open early, or end the game"
-            >
-              Host
-            </button>
-          )}
-          <button
-            onClick={() => setConfirmAction('leave')}
-            className="chip-btn"
-            aria-label="Leave game"
-          >
-            Exit
-          </button>
-        </div>
-      </div>
+      <GameHeader
+        score={currentPlayer.challengeScore || 0}
+        scoreLabel={`#${myRank + 1} OF ${sortedPlayers.length}`}
+        scoreAria={`Your score ${currentPlayer.challengeScore || 0}, place ${myRank + 1} of ${sortedPlayers.length}`}
+        title="You Got Who?"
+        subtitle={`${sortedPlayers.length} player${sortedPlayers.length === 1 ? '' : 's'} · first to ${winCondition}`}
+        onOpenMenu={() => setShowMenu(true)}
+        onShowLeaderboard={() => setShowLeaderboard(true)}
+      />
 
       <PhaseBanner
         phase={phase}
@@ -284,14 +274,11 @@ export default function HolidayChallengeGame() {
 
       {/* Challenge List */}
       <div className="card">
-        <div className="overline" style={{ textAlign: 'center', marginBottom: '0.25rem' }}>
-          Open assignments
-        </div>
         <h2 style={{ marginBottom: '0.25rem' }}>
           Challenges
         </h2>
         <p className="type" style={{ textAlign: 'center', fontSize: '0.85rem', marginBottom: '1rem' }}>
-          {completedCount}/{challenges.length} filed · gold {goldPoints} pts, then {currentGame.settings.holidayMaxSilverPerChallenge || 2} silvers at {silverPoints}
+          {completedCount}/{challenges.length} done · gold {goldPoints} pts, then {currentGame.settings.holidayMaxSilverPerChallenge || 2} silvers at {silverPoints}
         </p>
 
         <div className="flex-column gap-1">
@@ -348,9 +335,10 @@ export default function HolidayChallengeGame() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, gap: '0.1rem' }}>
                     <div style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '0.85rem',
-                      letterSpacing: '0.14em',
+                      fontWeight: 700,
+                      fontSize: '0.68rem',
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
                       color: status.awardsClosed && !status.completed
                         ? 'var(--paper-dim)'
                         : (status.completed ? status.type === 'gold' : !status.goldTaken)
@@ -364,7 +352,7 @@ export default function HolidayChallengeGame() {
                           : (status.goldTaken ? 'Silver' : 'Gold')}
                     </div>
                     <div style={{
-                      fontFamily: 'var(--font-display)',
+                      fontWeight: 700,
                       fontSize: '1.05rem',
                       color: status.completed || !status.goldTaken ? 'var(--warning-ink)' : 'var(--paper-dim)',
                     }}>
@@ -513,9 +501,14 @@ export default function HolidayChallengeGame() {
         </Modal>
       )}
 
-      <button className="btn btn-ghost" onClick={() => setShowRules(true)}>
-        How to play
-      </button>
+      <GameMenu
+        isOpen={showMenu}
+        isHost={currentPlayer.isHost}
+        onClose={() => setShowMenu(false)}
+        onShowRules={() => setShowRules(true)}
+        onHostControls={() => setShowHostMenu(true)}
+        onLeave={() => setConfirmAction('leave')}
+      />
 
       <RulesSheet game={currentGame} isOpen={showRules} onClose={() => setShowRules(false)} />
 
@@ -565,12 +558,22 @@ export default function HolidayChallengeGame() {
         onCancel={() => setConfirmAction(null)}
       />
 
+      {showCountdown && (
+        <StartCountdown
+          onDone={() => {
+            setShowCountdown(false);
+            setShowIntro(true);
+          }}
+        />
+      )}
+
       {showIntro && (
         <StampSplash
           title="Challenges Live"
           subtitle={`first to ${winCondition} points takes the trip`}
           tone="amber"
           durationMs={1900}
+          sound={phase.briefing ? undefined : 'go'}
           onDone={() => setShowIntro(false)}
         />
       )}
@@ -580,6 +583,8 @@ export default function HolidayChallengeGame() {
           title="Claimed!"
           subtitle="points banked — check the board"
           tone="amber"
+          sound="score"
+          celebrate
           onDone={() => setSlam(false)}
         />
       )}
@@ -590,6 +595,8 @@ export default function HolidayChallengeGame() {
           subtitle={finale.subtitle}
           tone={finale.tone}
           durationMs={2400}
+          sound={finale.won ? 'win' : 'gameOver'}
+          celebrate={finale.won}
           onDone={() => navigate(`/recap/${currentGame.id}`, { replace: true })}
         />
       )}

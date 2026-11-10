@@ -63,7 +63,7 @@ ${formData.message}
           background: 'var(--ink-2)',
           color: 'var(--text-muted)',
           border: '1px solid var(--line-strong)',
-          borderRadius: 'var(--radius-sm)',
+          borderRadius: 'var(--radius-pill)',
           padding: '8px 14px',
           fontSize: '12px',
           fontWeight: 700,
