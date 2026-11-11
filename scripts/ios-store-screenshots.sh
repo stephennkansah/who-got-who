@@ -1,5 +1,17 @@
 #!/bin/bash
 set -euo pipefail
+simctl() {
+  python3 - "$@" <<'PY'
+import subprocess, sys
+try:
+    subprocess.run(['xcrun', 'simctl', *sys.argv[2:]], timeout=int(sys.argv[1]), check=True)
+except subprocess.TimeoutExpired:
+    print('Simulator command timed out: ' + sys.argv[2], flush=True)
+    sys.exit(124)
+except subprocess.CalledProcessError as error:
+    sys.exit(error.returncode)
+PY
+}
 # Use the already compiled simulator artifact; this job never signs or uploads an app.
 SOURCE_APP=$(find "$RUNNER_TEMP/ios-check" -type d -name App.app -print -quit)
 test -n "$SOURCE_APP"
@@ -29,21 +41,24 @@ for prefix, label in [('iPhone', 'iphone'), ('iPad Pro 13-inch', 'ipad')]:
     print(label + '\t' + device['udid'])
 PY
 while IFS=$'\t' read -r LABEL DEVICE; do
-  xcrun simctl boot "$DEVICE"
-  xcrun simctl bootstatus "$DEVICE" -b
-  xcrun simctl status_bar "$DEVICE" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
+  if [ -n "${SCREENSHOT_DEVICE:-}" ] && [ "$LABEL" != "$SCREENSHOT_DEVICE" ]; then continue; fi
+  echo "Booting $LABEL"
+  simctl 120 boot "$DEVICE"
+  simctl 300 bootstatus "$DEVICE" -b
+  simctl 20 status_bar "$DEVICE" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100 || true
   for SCREEN in launch packs missions mission podium; do
     if [ "$SCREEN" = launch ]; then
       cp "$RUNNER_TEMP/original-index.html" "$APP/public/index.html"
     else
       cp "$APP/public/$SCREEN.html" "$APP/public/index.html"
     fi
-    xcrun simctl uninstall "$DEVICE" club.whogotwho.app || true
-    xcrun simctl install "$DEVICE" "$APP"
-    xcrun simctl launch "$DEVICE" club.whogotwho.app
+    echo "Capturing $LABEL $SCREEN"
+    simctl 30 uninstall "$DEVICE" club.whogotwho.app || true
+    simctl 120 install "$DEVICE" "$APP"
+    simctl 120 launch "$DEVICE" club.whogotwho.app
     sleep 10
-    xcrun simctl io "$DEVICE" screenshot "$RUNNER_TEMP/store-screenshots/$LABEL-$SCREEN.png"
-    xcrun simctl terminate "$DEVICE" club.whogotwho.app
+    simctl 30 io "$DEVICE" screenshot "$RUNNER_TEMP/store-screenshots/$LABEL-$SCREEN.png"
+    simctl 20 terminate "$DEVICE" club.whogotwho.app || true
   done
-  xcrun simctl shutdown "$DEVICE"
+  simctl 30 shutdown "$DEVICE" || true
 done < "$RUNNER_TEMP/screenshot-targets.tsv"
