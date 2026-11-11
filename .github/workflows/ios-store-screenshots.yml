@@ -31,12 +31,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v4
-        with:
-          name: ${{ inputs.artifact_name }}
-          run-id: ${{ inputs.check_run_id }}
-          github-token: ${{ github.token }}
-          path: ${{ runner.temp }}/ios-check
+      - name: Compile the exact release source for simulator captures
+        run: |
+          npm run ios:sync
+          set -o pipefail
+          xcodebuild build -project ios/App/App.xcodeproj -scheme App \
+            -configuration Release -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/derived" CODE_SIGNING_ALLOWED=NO \
+            > "$RUNNER_TEMP/simulator-build.log" 2>&1
+          mkdir -p "$RUNNER_TEMP/ios-check"
+          ditto "$RUNNER_TEMP/derived/Build/Products/Release-iphonesimulator/App.app" "$RUNNER_TEMP/ios-check/App.app"
       - name: Capture iPhone and iPad with fictional game data
         run: bash scripts/ios-store-screenshots.sh
       - uses: actions/upload-artifact@v4

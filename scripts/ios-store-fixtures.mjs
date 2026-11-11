@@ -13,7 +13,7 @@ await build({
   loader: { '.woff2': 'file' },
   define: { 'process.env.PUBLIC_URL': '""', 'process.env.NODE_ENV': '"production"' },
 });
-for (const screen of ['lobby', 'missions', 'mission']) {
+for (const screen of ['lobby', 'missions', 'mission', 'packs', 'podium']) {
   await writeFile(resolve(output, `${screen}.html`), `<!doctype html>
 <html lang="en"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">

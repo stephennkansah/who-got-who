@@ -1,5 +1,10 @@
 // Local-only store screenshot fixtures. Never connect to or mutate a live game.
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
+import { AwsGameContext } from '../../src/context/AwsGameContext';
+import PackSelect from '../../src/components/PackSelect';
+import RecapShow from '../../src/components/recap/RecapShow';
+import '../../src/components/Recap.css';
 import { createRoot } from 'react-dom/client';
 import TaskListView from '../../src/components/TaskListView';
 import { GameHeader } from '../../src/components/game/GameHeader';
@@ -8,7 +13,7 @@ import InvitePanel from '../../src/components/lobby/InvitePanel';
 import Roster from '../../src/components/lobby/Roster';
 import GameSetup from '../../src/components/lobby/GameSetup';
 import '../../src/index.css';
-import type { Player, TaskInstance, Game } from '../../src/types';
+import type { Player, TaskInstance, Game, GameContextType } from '../../src/types';
 
 const noop = () => {};
 const tasks: TaskInstance[] = [
@@ -29,7 +34,14 @@ const players = ['Alex', 'Jordan', 'Sam', 'Taylor'].map((name, i) => ({
 })) as Player[];
 const game = {id:'DEMO42', players, gameType:'traditional', settings:{swapsAllowed:2,disputeTimeoutSeconds:300,targetScore:5,briefingMinutes:5},status:'draft'} as Game;
 const page = new URLSearchParams(location.search).get('screen');
+const finalPlayers = players.map((p, i) => ({ ...p, score: [3, 5, 2, 1][i], place: i === 1 ? 1 : undefined }));
+const rankings = [...finalPlayers].sort((a, b) => b.score - a.score);
+const demoContext = { state: { currentGame: { ...game, hostId: 'alex' }, currentPlayer: players[0] }, selectPack: noop, leaveGame: noop } as unknown as GameContextType;
 createRoot(document.getElementById('root')!).render(
+  <MemoryRouter>
+  {page === 'packs' ? <AwsGameContext.Provider value={demoContext}><PackSelect gameId="DEMO42" /></AwsGameContext.Provider>
+  : page === 'podium' ? <RecapShow game={{ ...game, status: 'ended', players: finalPlayers }} rankings={rankings} meId="alex" scoreOf={p => p.score} nameOf={id => players.find(p => p.id === id)?.name || 'someone'} hasWinner onDone={noop} />
+  :
   <div className="container">
     {page === 'lobby' ? <>
       <InvitePanel gameId="DEMO42" playerCount={4} maxPlayers={18}/>
@@ -42,6 +54,8 @@ createRoot(document.getElementById('root')!).render(
       <TaskListView tasks={tasks} players={players} currentPlayerId="alex" onTaskResult={noop} onSwapTask={noop} swapsLeft={2} swapsTotal={2} activeDisputes={[]} filing={null}/>
     </>}
   </div>
+  }
+  </MemoryRouter>
 );
 // Drive the same public controls as a player for the example screenshot.
 if (page === 'mission') {

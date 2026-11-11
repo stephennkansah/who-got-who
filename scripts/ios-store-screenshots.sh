@@ -32,7 +32,7 @@ while IFS=$'\t' read -r LABEL DEVICE; do
   xcrun simctl boot "$DEVICE"
   xcrun simctl bootstatus "$DEVICE" -b
   xcrun simctl status_bar "$DEVICE" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
-  for SCREEN in launch lobby missions mission; do
+  for SCREEN in launch packs missions mission podium; do
     if [ "$SCREEN" = launch ]; then
       cp "$RUNNER_TEMP/original-index.html" "$APP/public/index.html"
     else
