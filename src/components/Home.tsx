@@ -196,6 +196,31 @@ function Home() {
     return <LoadingScreen message="getting things ready…" />;
   }
 
+  const briefing = (
+    <Modal
+      isOpen={showBriefing}
+      onClose={() => setShowBriefing(false)}
+      ariaLabel="How the game works"
+      showClose
+      maxWidth={420}
+    >
+      <h2 style={{ color: 'var(--paper-ink)' }}>How to Play</h2>
+      <HowToPlayVideo />
+      <div className="flex-column" style={{ gap: '0.8rem', textAlign: 'left', marginBottom: '1.25rem' }}>
+        <Step number="1" text="Everyone gets secret missions to pull off on the other players." />
+        <Step number="2" text="Pull yours off without anyone noticing. Spot someone trying one on you? Call it out and tap Bust Them — a busted mission is gone for good." />
+        <Step number="3" text={'Done one? Say "Gotcha!" out loud, then claim it in the app. Your target can accept, or dispute it to a group vote.'} />
+        <Step number="4" text={`First to ${WINNING_SCORE} points wins — bigger groups play on for 2nd and 3rd. Then everyone's missions are revealed.`} />
+      </div>
+      <div className="type" style={{ fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: '1.25rem' }}>
+        Best at house parties, dinners, pre-drinks &amp; game nights.
+      </div>
+      <button className="btn btn-primary" onClick={() => setShowBriefing(false)}>
+        Got It
+      </button>
+    </Modal>
+  );
+
   // ---------- Screen 1: what is this? ----------
   if (screen === 'welcome') {
     return (
@@ -226,7 +251,11 @@ function Home() {
           <button className="btn btn-primary home-cta" onClick={goToSetup}>
             {requestedCode ? `Join Game ${requestedCode}` : "Let's Play"}
           </button>
+          <button className="btn btn-secondary home-how-to-play" onClick={() => setShowBriefing(true)}>
+            How to play
+          </button>
         </div>
+        {briefing}
       </div>
     );
   }
@@ -377,28 +406,7 @@ function Home() {
       </footer>
 
       {/* The rules, on request */}
-      <Modal
-        isOpen={showBriefing}
-        onClose={() => setShowBriefing(false)}
-        ariaLabel="How the game works"
-        showClose
-        maxWidth={420}
-      >
-        <h2 style={{ color: 'var(--paper-ink)' }}>How to Play</h2>
-        <HowToPlayVideo />
-        <div className="flex-column" style={{ gap: '0.8rem', textAlign: 'left', marginBottom: '1.25rem' }}>
-          <Step number="1" text="Everyone gets secret missions to pull off on the other players." />
-          <Step number="2" text="Pull yours off without anyone noticing. Spot someone trying one on you? Call it out and tap Bust Them — a busted mission is gone for good." />
-          <Step number="3" text={'Done one? Say "Gotcha!" out loud, then claim it in the app. Your target can accept, or dispute it to a group vote.'} />
-          <Step number="4" text={`First to ${WINNING_SCORE} points wins — bigger groups play on for 2nd and 3rd. Then everyone's missions are revealed.`} />
-        </div>
-        <div className="type" style={{ fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: '1.25rem' }}>
-          Best at house parties, dinners, pre-drinks &amp; game nights.
-        </div>
-        <button className="btn btn-primary" onClick={() => setShowBriefing(false)}>
-          Got It
-        </button>
-      </Modal>
+      {briefing}
     </div>
   );
 }

@@ -75,6 +75,10 @@
   flex-shrink: 0;
 }
 
+.home-how-to-play {
+  margin-top: 0.6rem;
+}
+
 .home-cta {
   position: relative;
   overflow: hidden;
