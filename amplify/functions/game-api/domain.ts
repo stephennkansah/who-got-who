@@ -604,12 +604,47 @@ function makeTasks(
   }));
 }
 
+/**
+ * Missions each device has held in earlier games, oldest first, keyed by its
+ * identity. It follows the player from group to group, so a deal can give them
+ * missions they have not had yet.
+ */
+export type MissionHistory = Record<string, string[]>;
+
+/** Enough to cycle through every pack before a mission comes round again. */
+const HISTORY_LIMIT = 400;
+
+/** Whose history this action deals from: everyone at the start, else the player joining late or swapping. */
+export function historyNeeded(game: StoredGame, action: GameActionName, identityId: string): string[] {
+  if (game.gameType === 'holiday-challenge') return [];
+  if (action === 'START') return game.players.map((player) => player.identityId);
+  if (action === 'SWAP_TASK' || (action === 'JOIN' && game.status === 'live')) return [identityId];
+  return [];
+}
+
+/** The updated history of every player this change handed new missions to. */
+export function historyAfter(before: StoredGame, after: StoredGame, had: MissionHistory): MissionHistory {
+  const updated: MissionHistory = {};
+  for (const player of after.players) {
+    const held = before.players.find((old) => old.id === player.id)?.tasks.map((task) => task.templateId) ?? [];
+    const dealt = player.tasks.map((task) => task.templateId).filter((id) => !held.includes(id));
+    if (!dealt.length) continue;
+    const earlier = (had[player.identityId] ?? []).filter((id) => !dealt.includes(id));
+    updated[player.identityId] = [...earlier, ...dealt].slice(-HISTORY_LIMIT);
+  }
+  return updated;
+}
+
 /** A hand for someone joining mid-game: never a task another player already holds. */
-function lateArrivalHand(game: StoredGame, count: number): Array<{ id: string; text: string; tips?: string }> {
+function lateArrivalHand(
+  game: StoredGame,
+  count: number,
+  had: string[],
+): Array<{ id: string; text: string; tips?: string }> {
   const taken = game.players.flatMap((player) => player.tasks.map((task) => task.templateId));
   const hand: Array<{ id: string; text: string; tips?: string }> = [];
   while (hand.length < count) {
-    const next = getReplacementTask(game.packId, hand, false, taken);
+    const next = getReplacementTask(game.packId, hand, false, taken, had);
     if (!next) break;
     hand.push(next);
   }
@@ -624,6 +659,7 @@ export async function applyAction(
   requestId: string,
   now = new Date(),
   proofExists: (key: string) => Promise<boolean> = async () => true,
+  had: MissionHistory = {},
 ): Promise<ActionResult> {
   if (source.requestIds.includes(requestId)) return { game: source, changed: false };
 
@@ -652,7 +688,7 @@ export async function applyAction(
           joining.challengeCompletions = [];
         } else {
           const size = game.players[0]?.tasks.length || handSize(game.players.length + 1);
-          joining.tasks = makeTasks(game, joining, lateArrivalHand(game, size));
+          joining.tasks = makeTasks(game, joining, lateArrivalHand(game, size, had[identityId] ?? []));
           joining.swapsLeft = game.settings.swapsAllowed;
         }
       }
@@ -706,7 +742,12 @@ export async function applyAction(
           player.challengeCompletions = [];
         }
       } else {
-        const hands = dealTasks(game.packId, game.players.length, handSize(game.players.length));
+        const hands = dealTasks(
+          game.packId,
+          game.players.length,
+          handSize(game.players.length),
+          game.players.map((player) => had[player.identityId] ?? []),
+        );
         game.players.forEach((player, index) => {
           player.tasks = makeTasks(game, player, hands[index]);
           player.swapsLeft = game.settings.swapsAllowed;
@@ -896,6 +937,7 @@ export async function applyAction(
           tips: task.tips,
         }),
         takenIds,
+        had[identityId] ?? [],
       );
       if (!replacement) throw new GameRuleError('No replacement task is available');
       task.templateId = replacement.id;

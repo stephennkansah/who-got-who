@@ -3,7 +3,10 @@ import {
   applyAction,
   createGame,
   GameRuleError,
+  historyAfter,
+  historyNeeded,
   projectGameView,
+  type MissionHistory,
   type StoredGame,
 } from './domain';
 import { isBonusTask } from './packs';
@@ -722,6 +725,73 @@ async function run() {
     await assert.rejects(() => action(game, 'RATE_MISSION', 'rate-0', { taskId, rating: 'meh' }));
     game = await action(game, 'RATE_MISSION', 'rate-0', { taskId, rating: null });
     assert.equal(byIdentity(game, 'rate-0').tasks[0].rating, undefined);
+  }
+
+  {
+    // What a device has held follows it from group to group: a returning player
+    // is dealt, swapped and late-joined missions they have not had before.
+    let had: MissionHistory = {};
+    const remembering = async (
+      game: StoredGame,
+      name: Parameters<typeof applyAction>[1],
+      identity: string,
+      payload: Record<string, unknown> = {},
+    ) => {
+      const dealtTo = historyNeeded(game, name, identity);
+      const known = Object.fromEntries(dealtTo.map((id) => [id, had[id] ?? []]));
+      const after = (await applyAction(game, name, identity, payload, nextRequest(), new Date(), async () => true, known)).game;
+      had = { ...had, ...historyAfter(game, after, known) };
+      return after;
+    };
+    const lobby = async (identities: string[]) => {
+      let game = createGame('ABC234', identities[0], playerPayload('Host'), nextRequest());
+      for (let index = 1; index < identities.length; index += 1) {
+        game = await action(game, 'JOIN', identities[index], playerPayload(`Player ${index + 1}`));
+      }
+      return action(game, 'SELECT_PACK', identities[0], { packId: 'core' });
+    };
+    const hand = (game: StoredGame, identity: string) =>
+      byIdentity(game, identity).tasks.map((task) => task.templateId);
+
+    const family = ['memory-regular', 'memory-mum', 'memory-dad'];
+    const familyLobby = await lobby(family);
+    assert.deepEqual(historyNeeded(familyLobby, 'START', family[0]), family, 'the start deals to everyone');
+    assert.deepEqual(historyNeeded(familyLobby, 'JOIN', 'memory-late'), [], 'joining a lobby deals nothing');
+    let game = await remembering(familyLobby, 'START', family[0]);
+    const firstHand = hand(game, 'memory-regular');
+    assert.deepEqual(had['memory-regular'], firstHand);
+
+    // A swap is remembered too, and never brings back something already had.
+    game = await remembering(game, 'SWAP_TASK', 'memory-regular', { taskId: byIdentity(game, 'memory-regular').tasks[0].id });
+    const swappedIn = hand(game, 'memory-regular')[0];
+    assert.ok(!firstHand.includes(swappedIn));
+    assert.deepEqual(had['memory-regular'], [...firstHand, swappedIn]);
+    assert.deepEqual(had['memory-mum'], hand(game, 'memory-mum'), 'only the swapper changes');
+
+    // The same player with a different group: all new missions for them.
+    const friends = ['memory-friend-1', 'memory-regular', 'memory-friend-2', 'memory-friend-3'];
+    const before = [...had['memory-regular']];
+    game = await remembering(await lobby(friends), 'START', friends[0]);
+    assert.deepEqual(hand(game, 'memory-regular').filter((id) => before.includes(id)), []);
+    assert.equal(had['memory-regular'].length, before.length + 7);
+
+    // And joining a third group late.
+    const strangers = await liveGame(['memory-s1', 'memory-s2', 'memory-s3']);
+    assert.deepEqual(historyNeeded(strangers, 'JOIN', 'memory-regular'), ['memory-regular']);
+    const known = [...had['memory-regular']];
+    game = await remembering(strangers, 'JOIN', 'memory-regular', playerPayload('Regular'));
+    assert.equal(hand(game, 'memory-regular').length, 7);
+    assert.deepEqual(hand(game, 'memory-regular').filter((id) => known.includes(id)), []);
+    assert.equal(had['memory-s1'], undefined, 'nobody else was dealt anything');
+
+    // Having a mission again moves it to the end; the oldest drop off after 400.
+    const longMemory = { 'memory-s1': Array.from({ length: 400 }, (_, index) => `old-${index}`) };
+    const pair = await lobby(['memory-s1', 'memory-s2']);
+    const restarted = (await applyAction(pair, 'START', 'memory-s1', {}, nextRequest(), new Date(), async () => true, longMemory)).game;
+    const kept = historyAfter(pair, restarted, longMemory)['memory-s1'];
+    assert.equal(kept.length, 400);
+    assert.deepEqual(kept.slice(-7), hand(restarted, 'memory-s1'));
+    assert.equal(kept[0], 'old-7');
   }
 
   console.log('AWS game domain checks passed');

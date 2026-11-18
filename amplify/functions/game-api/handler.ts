@@ -15,10 +15,13 @@ import {
   applyAction,
   createGame,
   GameRuleError,
+  historyAfter,
+  historyNeeded,
   INTERNAL_ACTIONS,
   projectGameView,
   rematchPlayerPayload,
   type GameActionName,
+  type MissionHistory,
   type StoredGame,
 } from './domain';
 import { pushMessages } from './push';
@@ -194,6 +197,40 @@ async function trackPerson(identity: string, role: 'joined' | 'hosted', now: Dat
   }
 }
 
+/** Not a valid game code, so no client can ever read these rows. Scrambled so a row cannot be traced to a device. */
+function historyRow(identity: string): string {
+  return `#had#${createHash('sha256').update(`who-got-who-missions:${identity}`).digest('hex').slice(0, 32)}`;
+}
+
+/** The missions these devices have held before. Null if they could not be read, so nothing is overwritten. */
+async function loadHistory(identities: string[]): Promise<MissionHistory | null> {
+  try {
+    const rows = await Promise.all(
+      identities.map((identity) =>
+        dynamo.send(new GetCommand({ TableName: tableName, Key: { gameId: historyRow(identity) } })),
+      ),
+    );
+    return Object.fromEntries(
+      identities.map((identity, index) => [identity, (rows[index].Item?.missions as string[] | undefined) ?? []]),
+    );
+  } catch (error) {
+    console.warn('Mission history was not read', { errorName: error instanceof Error ? error.name : 'UnknownError' });
+    return null;
+  }
+}
+
+/** Remembers newly dealt missions for 400 days after a device's last game. Never fails the action that caused it. */
+async function saveHistory(history: MissionHistory, now: Date): Promise<void> {
+  const expiresAt = Math.floor(now.getTime() / 1000) + 400 * 86400;
+  const results = await Promise.allSettled(
+    Object.entries(history).map(([identity, missions]) =>
+      dynamo.send(new PutCommand({ TableName: tableName, Item: { gameId: historyRow(identity), missions, expiresAt } })),
+    ),
+  );
+  const failed = results.filter((result) => result.status === 'rejected').length;
+  if (failed) console.warn('Some mission history was not saved', { failed });
+}
+
 async function create(payload: unknown, ownerIdentity: string, requestId: string): Promise<GameEvent> {
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const id = deterministicGameCode(requestId, attempt);
@@ -336,6 +373,9 @@ async function mutate(
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const existing = await getStoredGame(id);
     const now = new Date();
+    // Deals look at what each player has held before, in any group, to hand out missions new to them.
+    const dealtTo = historyNeeded(existing, action, ownerIdentity);
+    const had = dealtTo.length ? await loadHistory(dealtTo) : null;
     const result = await applyAction(
       existing,
       action,
@@ -344,6 +384,7 @@ async function mutate(
       requestId,
       now,
       proofExists,
+      had ?? {},
     );
     if (!result.changed) return { gameId: id, revision: existing.revision };
     try {
@@ -372,6 +413,7 @@ async function mutate(
           deliverPushes(existing, result.game),
           recordStats(statsForChange(existing, result.game, now)),
           newcomer ? trackPerson(ownerIdentity, 'joined', now) : Promise.resolve(),
+          had ? saveHistory(historyAfter(existing, result.game, had), now) : Promise.resolve(),
         ]);
       }
       return { gameId: id, revision: result.game.revision };

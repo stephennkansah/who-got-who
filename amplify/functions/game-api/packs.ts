@@ -1443,20 +1443,71 @@ function shuffle<T>(items: T[]): T[] {
   return result;
 }
 
+// The task this player has never had, or failing that had longest ago.
+// `had` lists the ids of tasks they held in earlier games, oldest first.
+// Pass shuffled tasks: the first of equally fresh ones wins.
+function freshest(tasks: Task[], had: string[]): Task | undefined {
+  let best: Task | undefined;
+  let bestLastHad = Infinity;
+  for (const task of tasks) {
+    const lastHad = had.lastIndexOf(task.id);
+    if (lastHad < bestLastHad) {
+      best = task;
+      bestLastHad = lastHad;
+    }
+  }
+  return best;
+}
+
+// Shares tasks out a turn at a time, `sizes[i]` of them to player i, so that
+// players get tasks new to them where possible (see `freshest`).
+function share(tasks: Task[], sizes: number[], had: string[][]): Task[][] {
+  const pool = shuffle(tasks);
+  const piles: Task[][] = sizes.map(() => []);
+  const isNew = (player: number, task: Task) => !had[player]?.includes(task.id);
+  // Whoever has played most has the fewest new tasks left, so they pick first.
+  const order = sizes
+    .map((_, player) => player)
+    .sort((a, b) => (had[b]?.length ?? 0) - (had[a]?.length ?? 0));
+
+  for (let turn = 0; turn < Math.max(0, ...sizes); turn += 1) {
+    for (const player of order) {
+      if (piles[player].length >= sizes[player]) continue;
+      let pick = freshest(pool, had[player] ?? []);
+      if (!pick) continue;
+      pool.splice(pool.indexOf(pick), 1);
+      if (!isNew(player, pick)) {
+        // Only repeats are left for this player: trade with someone if that
+        // leaves both of them holding a task new to them.
+        for (let other = 0; other < piles.length; other += 1) {
+          if (!isNew(other, pick)) continue;
+          const index = piles[other].findIndex((task) => isNew(player, task));
+          if (index < 0) continue;
+          [pick, piles[other][index]] = [piles[other][index], pick];
+          break;
+        }
+      }
+      piles[player].push(pick);
+    }
+  }
+  return piles;
+}
+
 // Deal one hand per player so no task appears twice anywhere in the game.
 // Core hands get 1 bonus task each while bonus tasks last.
-export function dealTasks(packId: string, playerCount: number, count: number): Task[][] {
+// `had[i]` is what player i held in earlier games, with any group.
+export function dealTasks(packId: string, playerCount: number, count: number, had: string[][] = []): Task[][] {
   const pack = getPackById(packId);
   if (!pack || count <= 0) return [];
 
-  const regularTasks = shuffle(packId === 'core' ? coreRegularTasks : pack.tasks);
-  const bonusTasks = packId === 'core' ? shuffle(coreConnectionTasks) : [];
-
-  return Array.from({ length: playerCount }, () => {
-    const hand = bonusTasks.splice(0, 1);
-    hand.push(...regularTasks.splice(0, count - hand.length));
-    return shuffle(hand);
-  });
+  const players = Array.from({ length: playerCount });
+  const bonus = share(packId === 'core' ? coreConnectionTasks : [], players.map(() => 1), had);
+  const regular = share(
+    packId === 'core' ? coreRegularTasks : pack.tasks,
+    bonus.map((pile) => count - pile.length),
+    had,
+  );
+  return bonus.map((pile, player) => shuffle([...pile, ...regular[player]]));
 }
 
 // Swaps per player (up to `maxSwaps`) that can never run out of tasks nobody
@@ -1477,59 +1528,30 @@ export function getRandomTasks(packId: string, count: number): Task[] {
   return dealTasks(packId, 1, count)[0] ?? [];
 }
 
-// Helper function to get a replacement task for swapping (respects bonus task limit for Core pack).
-// `takenIds` are tasks other players hold, so a swap never duplicates another player's task.
+// A replacement task for a swap or a late arrival, keeping Core hands to 1 bonus task.
+// `takenIds` are tasks other players hold, so it never duplicates another player's task.
+// `had` is what this player held in earlier games: tasks new to them come first.
 export function getReplacementTask(
   packId: string,
   currentTasks: Task[],
   isSwappingBonusTask: boolean,
-  takenIds: string[] = []
+  takenIds: string[] = [],
+  had: string[] = []
 ): Task | null {
   const pack = getPackById(packId);
   if (!pack) return null;
 
   // Tasks this player or anyone else in the game already has
   const usedTaskIds = [...currentTasks.map(task => task.id), ...takenIds];
+  const pick = (tasks: Task[]) =>
+    freshest(shuffle(tasks.filter(task => !usedTaskIds.includes(task.id))), had) ?? null;
 
-  if (packId === 'core') {
-    // Core pack logic: maintain 1 bonus task rule
-    // Check if player currently has a bonus task
-    const hasBonusTask = currentTasks.some(task => coreConnectionTasks.some(bonus => bonus.id === task.id));
-
-    if (isSwappingBonusTask) {
-      // Swapping away a bonus task - can get any type as replacement
-      const availableRegular = coreRegularTasks.filter(task => !usedTaskIds.includes(task.id));
-      const availableBonus = coreConnectionTasks.filter(task => !usedTaskIds.includes(task.id));
-      const allAvailable = [...availableRegular, ...availableBonus];
-      
-      if (allAvailable.length === 0) return null;
-      return allAvailable[Math.floor(Math.random() * allAvailable.length)];
-    } else {
-      // Swapping a regular task
-      if (hasBonusTask) {
-        // Already has bonus task - only give regular tasks
-        const availableRegular = coreRegularTasks.filter(task => !usedTaskIds.includes(task.id));
-        if (availableRegular.length === 0) return null;
-        return availableRegular[Math.floor(Math.random() * availableRegular.length)];
-      } else {
-        // No bonus task yet - can give any type (but prefer regular to maintain 1 bonus rule)
-        const availableRegular = coreRegularTasks.filter(task => !usedTaskIds.includes(task.id));
-        if (availableRegular.length === 0) {
-          // Only bonus tasks left
-          const availableBonus = coreConnectionTasks.filter(task => !usedTaskIds.includes(task.id));
-          if (availableBonus.length === 0) return null;
-          return availableBonus[Math.floor(Math.random() * availableBonus.length)];
-        }
-        return availableRegular[Math.floor(Math.random() * availableRegular.length)];
-      }
-    }
-  } else {
-    // Remote pack logic: simple random replacement
-    const availableTasks = pack.tasks.filter(task => !usedTaskIds.includes(task.id));
-    
-    if (availableTasks.length === 0) return null;
-    return availableTasks[Math.floor(Math.random() * availableTasks.length)];
-  }
+  if (packId !== 'core') return pick(pack.tasks);
+  // Swapping away the bonus task: anything can replace it.
+  if (isSwappingBonusTask) return pick([...coreRegularTasks, ...coreConnectionTasks]);
+  // Otherwise a regular task, unless only bonus tasks are left and the hand has none.
+  const hasBonusTask = currentTasks.some(task => coreConnectionTasks.some(bonus => bonus.id === task.id));
+  return pick(coreRegularTasks) ?? (hasBonusTask ? null : pick(coreConnectionTasks));
 }
 
 // Helper function to check if a task is a bonus/connection task (Core pack only)
