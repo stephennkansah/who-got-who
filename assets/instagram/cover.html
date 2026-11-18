@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<meta charset="UTF-8">
+<title>Who Got Who: Facebook cover</title>
+<!--
+  Facebook Page cover, 1640 x 720. Facebook crops the sides on phones and the
+  top and bottom on desktop, so everything sits in the middle 1200 x 480.
+  Render to cover.jpg with: node assets/instagram/render-cover.mjs
+-->
+<style>
+@font-face{font-family:Bebas;src:url('fonts/BebasNeue.woff2')}
+@font-face{font-family:Outfit;src:url('fonts/Outfit-Variable.woff2');font-weight:300 800}
+:root{--ink:#12100c;--text:#f1ede0;--muted:#a8a190;--red:#e5484d;--amber:#e8b554}
+html,body{margin:0;background:#000}
+.cover{position:relative;width:1640px;height:720px;overflow:hidden;font-family:Outfit,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;gap:56px;background:
+  radial-gradient(rgba(241,237,224,.045) 1px,transparent 1px) 0 0/4px 4px,
+  radial-gradient(70% 90% at 50% 10%,rgba(232,181,84,.2),transparent 60%),
+  radial-gradient(60% 80% at 88% 110%,rgba(229,72,77,.13),transparent 60%),
+  var(--ink)}
+img{width:230px;height:230px;border-radius:52px;box-shadow:0 10px 0 rgba(0,0,0,.5)}
+.kicker{font-weight:700;font-size:26px;letter-spacing:.3em;color:var(--amber);text-transform:uppercase}
+h1{font:400 170px/.9 Bebas,sans-serif;letter-spacing:.02em;margin:10px 0 0;text-transform:uppercase}
+h1 b{font-weight:400;color:var(--amber)}
+.sub{font-size:34px;font-weight:500;margin-top:14px}
+.pill{display:inline-block;margin-top:22px;padding:12px 22px 10px;border-radius:12px;background:var(--amber);color:#1a160c;font:700 24px/1 Outfit,sans-serif;letter-spacing:.14em;text-transform:uppercase;box-shadow:0 5px 0 rgba(0,0,0,.45)}
+.pill + span{margin-left:20px;font-weight:700;font-size:22px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+</style>
+<div class="cover">
+  <img src="../../public/icons/spy-1024.png" alt="">
+  <div>
+    <div class="kicker">Party coming up? Liven it up</div>
+    <h1>Who Got <b>Who</b></h1>
+    <div class="sub">The party game of secret missions</div>
+    <div><span class="pill">Free on iPhone &amp; Android</span><span>Up to 18 players</span></div>
+  </div>
+</div>
+</html>
