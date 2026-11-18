@@ -777,12 +777,31 @@ async function run() {
 
     // And joining a third group late.
     const strangers = await liveGame(['memory-s1', 'memory-s2', 'memory-s3']);
-    assert.deepEqual(historyNeeded(strangers, 'JOIN', 'memory-regular'), ['memory-regular']);
+    assert.deepEqual(
+      historyNeeded(strangers, 'JOIN', 'memory-regular'),
+      ['memory-s1', 'memory-s2', 'memory-s3', 'memory-regular'],
+      'a late arrival is dealt around what the whole group has had',
+    );
     const known = [...had['memory-regular']];
     game = await remembering(strangers, 'JOIN', 'memory-regular', playerPayload('Regular'));
     assert.equal(hand(game, 'memory-regular').length, 7);
     assert.deepEqual(hand(game, 'memory-regular').filter((id) => known.includes(id)), []);
     assert.equal(had['memory-s1'], undefined, 'nobody else was dealt anything');
+
+    // Two regulars from different parties in one group: nobody is dealt, swapped
+    // or late-joined a mission either of them has held, so neither can recognise one.
+    {
+      const elsewhere = await liveGame(['memory-other', 'memory-x']);
+      had = { ...had, 'memory-other': byIdentity(elsewhere, 'memory-other').tasks.map((task) => task.templateId) };
+      const seen = new Set([...had['memory-regular'], ...had['memory-other']]);
+      const mixed = ['memory-new-1', 'memory-regular', 'memory-other', 'memory-new-2'];
+      let party = await remembering(await lobby(mixed), 'START', mixed[0]);
+      party = await remembering(party, 'SWAP_TASK', 'memory-new-1', { taskId: byIdentity(party, 'memory-new-1').tasks[0].id });
+      party = await remembering(party, 'JOIN', 'memory-new-3', playerPayload('Latecomer'));
+      assert.equal(party.players.length, 5);
+      const dealt = party.players.flatMap((player) => player.tasks.map((task) => task.templateId));
+      assert.deepEqual(dealt.filter((id) => seen.has(id)), []);
+    }
 
     // Having a mission again moves it to the end; the oldest drop off after 400.
     const longMemory = { 'memory-s1': Array.from({ length: 400 }, (_, index) => `old-${index}`) };

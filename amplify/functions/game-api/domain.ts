@@ -606,20 +606,20 @@ function makeTasks(
 
 /**
  * Missions each device has held in earlier games, oldest first, keyed by its
- * identity. It follows the player from group to group, so a deal can give them
- * missions they have not had yet.
+ * identity. It follows the player from group to group, so a deal can give out
+ * missions nobody in the game has had yet, or at least ones new to the holder.
  */
 export type MissionHistory = Record<string, string[]>;
 
 /** Enough to cycle through every pack before a mission comes round again. */
 const HISTORY_LIMIT = 400;
 
-/** Whose history this action deals from: everyone at the start, else the player joining late or swapping. */
+/** Whose history this action deals from: everyone in the game, plus the player joining it late. */
 export function historyNeeded(game: StoredGame, action: GameActionName, identityId: string): string[] {
   if (game.gameType === 'holiday-challenge') return [];
-  if (action === 'START') return game.players.map((player) => player.identityId);
-  if (action === 'SWAP_TASK' || (action === 'JOIN' && game.status === 'live')) return [identityId];
-  return [];
+  const deals = action === 'START' || action === 'SWAP_TASK' || (action === 'JOIN' && game.status === 'live');
+  if (!deals) return [];
+  return [...new Set([...game.players.map((player) => player.identityId), identityId])];
 }
 
 /** The updated history of every player this change handed new missions to. */
@@ -640,11 +640,12 @@ function lateArrivalHand(
   game: StoredGame,
   count: number,
   had: string[],
+  groupHad: string[],
 ): Array<{ id: string; text: string; tips?: string }> {
   const taken = game.players.flatMap((player) => player.tasks.map((task) => task.templateId));
   const hand: Array<{ id: string; text: string; tips?: string }> = [];
   while (hand.length < count) {
-    const next = getReplacementTask(game.packId, hand, false, taken, had);
+    const next = getReplacementTask(game.packId, hand, false, taken, had, groupHad);
     if (!next) break;
     hand.push(next);
   }
@@ -688,7 +689,7 @@ export async function applyAction(
           joining.challengeCompletions = [];
         } else {
           const size = game.players[0]?.tasks.length || handSize(game.players.length + 1);
-          joining.tasks = makeTasks(game, joining, lateArrivalHand(game, size, had[identityId] ?? []));
+          joining.tasks = makeTasks(game, joining, lateArrivalHand(game, size, had[identityId] ?? [], Object.values(had).flat()));
           joining.swapsLeft = game.settings.swapsAllowed;
         }
       }
@@ -938,6 +939,7 @@ export async function applyAction(
         }),
         takenIds,
         had[identityId] ?? [],
+        Object.values(had).flat(),
       );
       if (!replacement) throw new GameRuleError('No replacement task is available');
       task.templateId = replacement.id;

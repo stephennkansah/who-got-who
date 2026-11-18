@@ -373,7 +373,7 @@ async function mutate(
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const existing = await getStoredGame(id);
     const now = new Date();
-    // Deals look at what each player has held before, in any group, to hand out missions new to them.
+    // Deals look at what every player has held before, in any group, to hand out missions new to them all.
     const dealtTo = historyNeeded(existing, action, ownerIdentity);
     const had = dealtTo.length ? await loadHistory(dealtTo) : null;
     const result = await applyAction(

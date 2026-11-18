@@ -35,6 +35,29 @@ for (const keyword of EXAMPLE_ONLY_KEYWORDS) {
   const taken = all.filter((id) => !spare.includes(id));
   assert.equal(getReplacementTask('remote', [], false, taken, all)?.id, all[5]);
   assert.equal(getReplacementTask('remote', [], false, taken, [all[5]])?.id, all[50], 'a mission never had comes first');
+  // A mission nobody in the group has had beats one that is only new to this player.
+  assert.equal(getReplacementTask('remote', [], false, taken, [], [all[50]])?.id, all[5]);
+  assert.equal(getReplacementTask('remote', [], false, taken, [all[5]], [all[50]])?.id, all[50], 'but their own repeat comes last');
+}
+
+// Two regulars from different parties join four new players: while the pack is
+// big enough, nobody is dealt a mission either regular has held.
+{
+  const played = (games: number) => {
+    let mine: string[] = [];
+    for (let game = 0; game < games; game += 1) {
+      mine = [...mine, ...dealTasks('core', 6, 7, [mine])[0].map((task) => task.id)];
+    }
+    return mine;
+  };
+  const sam = played(4);
+  const jo = played(4);
+  const seen = new Set([...sam, ...jo]);
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const hands = dealTasks('core', 6, 7, [[], sam, [], jo, [], []]);
+    assert.deepEqual(hands.flat().filter((task) => seen.has(task.id)), []);
+    assert.equal(new Set(hands.flat().map((task) => task.id)).size, 42);
+  }
 }
 
 console.log('Mission pack checks passed');

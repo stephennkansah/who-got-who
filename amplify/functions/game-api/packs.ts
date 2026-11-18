@@ -1443,14 +1443,16 @@ function shuffle<T>(items: T[]): T[] {
   return result;
 }
 
-// The task this player has never had, or failing that had longest ago.
-// `had` lists the ids of tasks they held in earlier games, oldest first.
-// Pass shuffled tasks: the first of equally fresh ones wins.
-function freshest(tasks: Task[], had: string[]): Task | undefined {
+// The best task for this player: one nobody in the group has had, so nobody
+// can recognise it; then one only others have had; then the one this player
+// had longest ago. `had` lists the ids of tasks they held in earlier games,
+// oldest first; `groupHad` holds everyone's. Pass shuffled tasks: the first
+// of equally good ones wins.
+function freshest(tasks: Task[], had: string[], groupHad: Set<string>): Task | undefined {
   let best: Task | undefined;
   let bestLastHad = Infinity;
   for (const task of tasks) {
-    const lastHad = had.lastIndexOf(task.id);
+    const lastHad = groupHad.has(task.id) ? had.lastIndexOf(task.id) : -2;
     if (lastHad < bestLastHad) {
       best = task;
       bestLastHad = lastHad;
@@ -1460,10 +1462,11 @@ function freshest(tasks: Task[], had: string[]): Task | undefined {
 }
 
 // Shares tasks out a turn at a time, `sizes[i]` of them to player i, so that
-// players get tasks new to them where possible (see `freshest`).
+// players get tasks new to the whole group where possible (see `freshest`).
 function share(tasks: Task[], sizes: number[], had: string[][]): Task[][] {
   const pool = shuffle(tasks);
   const piles: Task[][] = sizes.map(() => []);
+  const groupHad = new Set(had.flat());
   const isNew = (player: number, task: Task) => !had[player]?.includes(task.id);
   // Whoever has played most has the fewest new tasks left, so they pick first.
   const order = sizes
@@ -1473,7 +1476,7 @@ function share(tasks: Task[], sizes: number[], had: string[][]): Task[][] {
   for (let turn = 0; turn < Math.max(0, ...sizes); turn += 1) {
     for (const player of order) {
       if (piles[player].length >= sizes[player]) continue;
-      let pick = freshest(pool, had[player] ?? []);
+      let pick = freshest(pool, had[player] ?? [], groupHad);
       if (!pick) continue;
       pool.splice(pool.indexOf(pick), 1);
       if (!isNew(player, pick)) {
@@ -1530,21 +1533,24 @@ export function getRandomTasks(packId: string, count: number): Task[] {
 
 // A replacement task for a swap or a late arrival, keeping Core hands to 1 bonus task.
 // `takenIds` are tasks other players hold, so it never duplicates another player's task.
-// `had` is what this player held in earlier games: tasks new to them come first.
+// `had` is what this player held in earlier games and `groupHad` what anyone in
+// the game did: tasks new to all of them come first, then tasks new to this player.
 export function getReplacementTask(
   packId: string,
   currentTasks: Task[],
   isSwappingBonusTask: boolean,
   takenIds: string[] = [],
-  had: string[] = []
+  had: string[] = [],
+  groupHad: string[] = []
 ): Task | null {
   const pack = getPackById(packId);
   if (!pack) return null;
 
   // Tasks this player or anyone else in the game already has
   const usedTaskIds = [...currentTasks.map(task => task.id), ...takenIds];
+  const everyoneHad = new Set([...had, ...groupHad]);
   const pick = (tasks: Task[]) =>
-    freshest(shuffle(tasks.filter(task => !usedTaskIds.includes(task.id))), had) ?? null;
+    freshest(shuffle(tasks.filter(task => !usedTaskIds.includes(task.id))), had, everyoneHad) ?? null;
 
   if (packId !== 'core') return pick(pack.tasks);
   // Swapping away the bonus task: anything can replace it.
