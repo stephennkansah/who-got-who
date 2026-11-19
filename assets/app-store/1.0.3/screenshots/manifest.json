@@ -1,0 +1,46 @@
+{
+  "version": "1.0.3",
+  "build": 7,
+  "sourceCommit": "2f2769e837794ec546c0d426b7bfaace9ce209ee",
+  "captureCommit": "8beb9caa",
+  "captureRun": "https://github.com/stephennkansah/who-got-who/actions/runs/43026487671",
+  "captureMethod": "Native iOS simulator; release React components with fictional offline game fixtures",
+  "excluded": [
+    "iphone-podium.png: blank capture",
+    "ipad-launch.png: blank capture"
+  ],
+  "images": [
+    {
+      "file": "1.0.3-ipad-01-packs.png",
+      "sha256": "174E9EF19D54470360BF06CF3C20128378D0016FF8DF6ACBFA0C311A7E20E746"
+    },
+    {
+      "file": "1.0.3-ipad-02-play.png",
+      "sha256": "198FE4E228BBD331C6529D40E5A54201B0C0BA6C7F96F58DBE14B7B540453558"
+    },
+    {
+      "file": "1.0.3-ipad-03-podium.png",
+      "sha256": "85F8D3DE41FD87C441F966CA3545D3677A4F212A41BEB4D76ADFC5531EC10CD5"
+    },
+    {
+      "file": "1.0.3-ipad-04-missions.png",
+      "sha256": "7DFC2DBCBF002B0B483F9E45BC5A250F234A22A02B3AF552976E77FBD757CE4F"
+    },
+    {
+      "file": "1.0.3-iphone-01-welcome.png",
+      "sha256": "80824E18BDF75AE80C736FEC31C71D0F3F5ADBFE0487D9CCEE67247A5AF0D7D2"
+    },
+    {
+      "file": "1.0.3-iphone-02-play.png",
+      "sha256": "81AF045C784769080652F1ED6AAC2B616F7583E1421BF20452269E8E5C1160CE"
+    },
+    {
+      "file": "1.0.3-iphone-03-packs.png",
+      "sha256": "0B9AFCB8CA0CDCF1F52C9997BD161EFCDD3FF7FE66D4B1EA9F896CBF9642AE45"
+    },
+    {
+      "file": "1.0.3-iphone-04-missions.png",
+      "sha256": "62310203EFCCEDE6B2556AE77A31AD4C602302C77E5A3EF117B0862DE52D7339"
+    }
+  ]
+}

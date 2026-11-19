@@ -91,7 +91,7 @@ come through Apple once the APNs setup above is complete. Verify on a device:
 allow notifications in the lobby, lock the phone, and have another player claim
 a gotcha or bust you.
 
-## iOS 1.0.3: prepared 10 November 2026
+## iOS 1.0.3: submitted 11 November 2026
 
 `MARKETING_VERSION` is `1.0.3`; the workflow sets the build number from its
 run number. This build carries the redesign, so it changes every screen.
@@ -104,9 +104,25 @@ the Android app still show the previous design until `main` is pushed.
   https://github.com/dentistrydashboard/myformatic-frontend/actions/runs/42845567964
 - Signed upload succeeded as **1.0.3 (build 7)** ("Upload succeeded", export
   succeeded): https://github.com/dentistrydashboard/myformatic-frontend/actions/runs/42846702143
-- Not yet done: confirming in App Store Connect that Apple finished processing
-  build 7, adding it to the TestFlight group, and submitting 1.0.3 for review.
-  1.0.2 was still Waiting for Review when last checked on 8 November.
+- Apple processed build 7 and it is in the existing internal TestFlight group.
+- Submitted on 11 November 2026, approximately 13:30 UTC. Apple confirmed
+  **1 Item Submitted** and **1.0.3 Waiting for Review**. Automatic release
+  after approval and immediate release to all users are selected.
+  Submission: https://appstoreconnect.apple.com/apps/6826935487/distribution/reviewsubmissions/details/7b8a2634-562d-4e26-b891-2a9ad4e4ec1e
+- Replaced the old screenshots with four iPhone and four iPad native simulator
+  captures of the release UI using fictional offline fixtures. Files and SHA-256
+  hashes are in `assets/app-store/1.0.3/screenshots/manifest.json`.
+  Capture branch `codex/ios-1.0.3-screenshots` starts from the exact source
+  commit above; it changes screenshot tooling and fixtures, not shipping UI.
+  Capture run: https://github.com/stephennkansah/who-got-who/actions/runs/43026487671
+  The run was cancelled after capture; its always-uploaded artifact preserved
+  ten images. Eight were visually checked and uploaded; two blank captures were
+  excluded. This is not a claim that the overall capture workflow passed.
+- Header v1 and search v2 are selected for 1.0.3. The earlier separate artwork
+  submission was cancelled to resolve Apple's conflict and consolidate review
+  with this app version. See `assets/app-store/1.0.3/CREATIVE_ASSETS.md`.
+- Version 1.0.2 was Ready for Distribution when checked on 11 November.
+  No additional real-device testing was performed during screenshot preparation.
 
 New for iPhone players since 1.0.2:
 
